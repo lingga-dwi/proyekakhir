@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Database Offline Switch (Local Convenience)
+    |--------------------------------------------------------------------------
+    |
+    | Set DB_OFFLINE=true in .env to skip database calls when you develop
+    | without MySQL running, avoiding slow connection attempts.
+    |
+    */
+    'db_offline' => env('DB_OFFLINE', false),
+
 ];

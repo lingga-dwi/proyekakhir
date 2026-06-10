@@ -18,9 +18,12 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nama',
         'email',
         'password',
+        'role',
+        'alamat',
+        'no_telp',
     ];
 
     /**
@@ -44,5 +47,37 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relationships
+    public function rfqs()
+    {
+        return $this->hasMany(Rfq::class, 'id_user');
+    }
+
+    public function pemesanans()
+    {
+        return $this->hasMany(Pemesanan::class, 'id_user');
+    }
+
+    public function konsultasis()
+    {
+        return $this->hasMany(Konsultasi::class);
+    }
+
+    // Helper methods
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isDesigner()
+    {
+        return $this->role === 'designer';
+    }
+
+    public function isPelanggan()
+    {
+        return $this->role === 'pelanggan';
     }
 }
