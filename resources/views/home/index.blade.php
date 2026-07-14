@@ -32,53 +32,53 @@
 </section>
 
 <!-- How It Works Section -->
-<section class="py-16 bg-white">
+<section class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Layanan Satu Atap</h2>
+        <div class="text-center mb-14">
+            <h2 class="text-4xl md:text-5xl font-semibold text-gray-900 mb-4">Layanan Satu Atap</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
                 Berikut langkah-langkah pemesanan desain interior di website Daiku:
             </p>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
             <!-- Step 1 -->
             <div class="relative text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-map-marker-alt text-2xl text-gray-400"></i>
+                <div class="relative z-10 w-24 h-24 md:w-28 md:h-28 bg-gray-100 rounded-[28px] flex items-center justify-center mx-auto mb-8">
+                    <i class="fas fa-map-marker-alt text-5xl text-gray-400"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Jadwalkan Survey</h3>
-                <p class="text-gray-600">Pilih dari katalog atau ajukan desain custom Anda.</p>
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Jadwalkan Survey</h3>
+                <p class="text-gray-600 max-w-xs mx-auto leading-relaxed">Pilih dari katalog atau ajukan desain custom Anda.</p>
 
-                <div class="hidden md:block absolute top-8 -right-8 w-40">
-                    <svg viewBox="0 0 160 40" class="w-full h-10">
-                        <path d="M0 20 C40 0 80 40 160 20" fill="none" stroke="#9CA3AF" stroke-width="2"/>
+                <div class="hidden md:block absolute top-10 left-[63%] w-[74%] pointer-events-none">
+                    <svg viewBox="0 0 360 100" class="w-full h-24">
+                        <path d="M8 70 C92 94 143 18 228 22 C275 24 318 34 352 42" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
             
             <!-- Step 2 -->
             <div class="relative text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
+                <div class="relative z-10 w-24 h-24 md:w-28 md:h-28 bg-gray-100 rounded-[28px] flex items-center justify-center mx-auto mb-8">
+                    <i class="fas fa-calendar-alt text-5xl text-gray-400"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Isi Detail Pesanan</h3>
-                <p class="text-gray-600">Masukkan ukuran, preferensi warna, upload denah jika ada.</p>
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Isi Detail Pesanan</h3>
+                <p class="text-gray-600 max-w-xs mx-auto leading-relaxed">Masukkan ukuran, preferensi warna, upload denah jika ada.</p>
 
-                <div class="hidden md:block absolute top-8 -right-8 w-40">
-                    <svg viewBox="0 0 160 40" class="w-full h-10">
-                        <path d="M0 20 C40 40 80 0 160 20" fill="none" stroke="#9CA3AF" stroke-width="2"/>
+                <div class="hidden md:block absolute top-10 left-[63%] w-[74%] pointer-events-none">
+                    <svg viewBox="0 0 360 100" class="w-full h-24">
+                        <path d="M8 70 C92 94 143 18 228 22 C275 24 318 34 352 42" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
             </div>
             
             <!-- Step 3 -->
             <div class="text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-comments text-2xl text-gray-400"></i>
+                <div class="w-24 h-24 md:w-28 md:h-28 bg-gray-100 rounded-[28px] flex items-center justify-center mx-auto mb-8">
+                    <i class="fas fa-comments text-5xl text-gray-400"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Konsultasi</h3>
-                <p class="text-gray-600">Diskusikan ide Anda bersama desainer profesional kami.</p>
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Konsultasi</h3>
+                <p class="text-gray-600 max-w-xs mx-auto leading-relaxed">Diskusikan ide Anda bersama desainer profesional kami.</p>
             </div>
         </div>
     </div>
@@ -129,16 +129,4 @@
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-16 bg-gray-800 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="flex items-center justify-center mb-4">
-            <i class="fas fa-shield-alt text-4xl text-yellow-500 mr-4"></i>
-            <div>
-                <h3 class="text-xl font-semibold">All your data are safe</h3>
-                <p class="text-gray-300">We are using the most advanced security to provide you the best experience ever.</p>
-            </div>
-        </div>
-    </div>
-</section>
 @endsection

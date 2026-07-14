@@ -330,18 +330,25 @@ console.log('Sidebar functions loaded in head');
         @if($katalogs->count() > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 @foreach($katalogs as $katalog)
-                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
+                    <article onclick="openSidebar({{ $katalog->id }})"
+                             tabindex="0"
+                             role="button"
+                             aria-label="Lihat detail {{ $katalog->nama_desain }}"
+                             onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSidebar({{ $katalog->id }}); }"
+                             class="catalog-card group bg-white rounded-lg shadow-md overflow-hidden cursor-pointer transition duration-300 hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
                         <!-- Image -->
                         <div class="relative h-48 overflow-hidden">
                             @if($katalog->gambar_utama_url)
                                 <img src="{{ $katalog->gambar_utama_url }}" 
                                      alt="{{ $katalog->nama_desain }}" 
-                                     class="w-full h-full object-cover">
+                                     class="w-full h-full object-cover transition duration-500 group-hover:scale-105">
                             @else
                                 <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                                     <i class="fas fa-image text-gray-400 text-4xl"></i>
                                 </div>
                             @endif
+
+                            <div class="absolute inset-0 bg-black/0 transition duration-300 group-hover:bg-black/10"></div>
                             
                             <!-- Category Badge -->
                             @if($katalog->category)
@@ -351,34 +358,20 @@ console.log('Sidebar functions loaded in head');
                                     </span>
                                 </div>
                             @endif
+
+                            <div class="absolute bottom-3 right-3 opacity-0 translate-y-2 transition duration-300 group-hover:opacity-100 group-hover:translate-y-0">
+                                <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white text-yellow-600 shadow-md">
+                                    <i class="fas fa-arrow-right text-sm"></i>
+                                </span>
+                            </div>
                         </div>
 
                         <!-- Content -->
-                        <div class="p-4">
+                        <div class="p-4 transition duration-300 group-hover:bg-yellow-50/30">
                             <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">{{ $katalog->nama_desain }}</h3>
-                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ $katalog->deskripsi }}</p>
-                            
-                            <!-- Action Buttons -->
-                            <div class="flex gap-2">
-                                <button onclick="openSidebar({{ $katalog->id }})" 
-                                        class="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-md hover:bg-gray-200 transition duration-200 text-sm font-medium">
-                                    <i class="fas fa-eye mr-1"></i>Lihat Detail
-                                </button>
-                                
-                                @auth
-                                    <a href="{{ route('pemesanan.create', ['katalog_id' => $katalog->id]) }}" 
-                                       class="flex-1 bg-yellow-500 text-gray-900 py-2 px-3 rounded-md hover:bg-yellow-600 transition duration-200 text-sm font-medium text-center">
-                                        <i class="fas fa-shopping-cart mr-1"></i>Buat Pesanan
-                                    </a>
-                                @else
-                                    <a href="{{ route('login') }}" 
-                                       class="flex-1 bg-yellow-500 text-gray-900 py-2 px-3 rounded-md hover:bg-yellow-600 transition duration-200 text-sm font-medium text-center">
-                                        <i class="fas fa-sign-in-alt mr-1"></i>Login
-                                    </a>
-                                @endauth
-                            </div>
+                            <p class="text-gray-600 text-sm line-clamp-2">{{ $katalog->deskripsi }}</p>
                         </div>
-                    </div>
+                    </article>
                 @endforeach
             </div>
 
@@ -406,17 +399,17 @@ console.log('Sidebar functions loaded in head');
         <div class="flex items-center justify-center h-64">
             <div class="text-gray-500 text-center">
                 <i class="fas fa-info-circle text-4xl mb-4"></i>
-                <p>Klik "Lihat Detail" untuk melihat informasi lengkap</p>
+                <p>Pilih desain untuk melihat informasi lengkap</p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Overlay -->
-<div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 opacity-0 pointer-events-none transition-opacity duration-500"></div>
+<div id="sidebarOverlay" onclick="closeSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-40 opacity-0 pointer-events-none transition-opacity duration-500"></div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 // Initialize DOM events
 document.addEventListener('DOMContentLoaded', function() {
@@ -436,7 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+@endpush
 
+@push('styles')
 <style>
 .line-clamp-2 {
     display: -webkit-box;
@@ -445,4 +440,4 @@ document.addEventListener('DOMContentLoaded', function() {
     overflow: hidden;
 }
 </style>
-@endsection
+@endpush
