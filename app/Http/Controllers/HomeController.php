@@ -15,16 +15,30 @@ class HomeController extends Controller
     {
         if (Config::get('app.db_offline')) {
             $featuredKatalogs = collect();
+            $caseStudy = null;
         } else {
             try {
+                $caseStudy = Katalog::with('category')
+                    ->whereNotNull('inspiration_story')
+                    ->whereNotNull('room_size')
+                    ->whereNotNull('style_tags')
+                    ->latest('id')
+                    ->first();
+
                 $featuredKatalogs = Katalog::with('category')->latest()->take(3)->get();
             } catch (\Throwable $e) {
                 // Saat DB mati, tampilkan tanpa data agar halaman tetap hidup
                 $featuredKatalogs = collect();
+                $caseStudy = null;
                 logger()->warning('DB unavailable when loading home featured katalogs', ['error' => $e->getMessage()]);
             }
         }
-        return view('home.index', compact('featuredKatalogs'));
+        return view('home.index', compact('featuredKatalogs', 'caseStudy'));
+    }
+
+    public function about()
+    {
+        return view('home.about');
     }
 
     public function katalog(Request $request)
@@ -143,15 +157,12 @@ class HomeController extends Controller
             'id' => $katalog->id,
             'nama_desain' => $katalog->nama_desain,
             'deskripsi' => $katalog->deskripsi,
-            'harga_estimasi' => $katalog->harga_estimasi,
-            'gambar_utama' => $katalog->gambar_utama,
             'gambar_utama_url' => $katalog->gambar_utama_url,
+            'galeri_gambar_urls' => $katalog->galeri_gambar_urls,
             'category' => $katalog->category ? $katalog->category->name : null,
             'style_tags' => $katalog->style_tags,
             'room_size' => $katalog->room_size,
             'inspiration_story' => $katalog->inspiration_story,
-            'product_spots' => $katalog->product_spots,
-            'formatted_price' => 'Rp ' . number_format($katalog->harga_estimasi, 0, ',', '.')
         ]);
     }
 }

@@ -7,12 +7,16 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\KonsultasiController;
+use App\Http\Controllers\CustomerActivityController;
+use App\Http\Controllers\SitemapController;
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/tentang-kami', [HomeController::class, 'about'])->name('about');
 Route::get('/katalog', [HomeController::class, 'katalog'])->name('katalog');
 Route::get('/katalog/{id}', [HomeController::class, 'katalogDetail'])->name('katalog.detail');
 Route::get('/api/katalog/{id}', [HomeController::class, 'katalogApi'])->name('katalog.api');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 // Konsultasi routes (public)
 Route::get('/konsultasi', [KonsultasiController::class, 'index'])->name('konsultasi.index');
@@ -37,8 +41,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
 
     // Customer routes
-    Route::get('/pesanan-saya', [PemesananController::class, 'myOrders'])->name('pesanan.saya');
-    Route::get('/konsultasi-saya', [KonsultasiController::class, 'myConsultations'])->name('konsultasi.saya');
+    Route::get('/aktivitas-saya', [CustomerActivityController::class, 'index'])->name('aktivitas.saya');
+    Route::redirect('/pesanan-saya', '/aktivitas-saya?tab=pesanan')->name('pesanan.saya');
+    Route::redirect('/konsultasi-saya', '/aktivitas-saya?tab=konsultasi')->name('konsultasi.saya');
     Route::get('/konsultasi/{id}', [KonsultasiController::class, 'show'])->name('konsultasi.show');
 
     Route::get('/pemesanan/create', [PemesananController::class, 'create'])->name('pemesanan.create');

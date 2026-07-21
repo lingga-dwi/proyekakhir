@@ -51,8 +51,6 @@ class AuthController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'alamat' => 'required|string',
-            'no_telp' => 'required|string',
         ]);
 
         $user = User::create([
@@ -60,8 +58,6 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'pelanggan',
-            'alamat' => $request->alamat,
-            'no_telp' => $request->no_telp,
         ]);
 
         Auth::login($user);

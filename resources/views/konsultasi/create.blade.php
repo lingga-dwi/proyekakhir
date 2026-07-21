@@ -42,9 +42,13 @@
 
                         <div>
                             <label for="no_telp" class="block text-sm font-medium text-gray-700 mb-2">No. Telepon</label>
-                            <input type="text" id="no_telp" name="no_telp" value="{{ auth()->user()->no_telp ?? old('no_telp') }}" required readonly
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <p class="mt-1 text-xs text-gray-500">Nomor telepon menggunakan profil akun untuk mencegah spoofing.</p>
+                            <input type="tel" id="no_telp" name="no_telp" value="{{ old('no_telp', auth()->user()->no_telp) }}" required
+                                @readonly(filled(auth()->user()->no_telp))
+                                placeholder="08xxxxxxxxxx"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg {{ filled(auth()->user()->no_telp) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="mt-1 text-xs text-gray-500">
+                                {{ filled(auth()->user()->no_telp) ? 'Mengikuti nomor telepon pada profil akun.' : 'Isi sekali agar tim Daiku dapat menghubungi Anda.' }}
+                            </p>
                             @error('no_telp')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
@@ -59,32 +63,32 @@
                         <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
                             <input type="radio" name="jenis_konsultasi" value="free_consultation" class="text-blue-600" required>
                             <div class="ml-3">
-                                <div class="font-medium text-gray-800">Konsultasi Gratis (30 menit)</div>
-                                <div class="text-sm text-gray-600">Video call gratis dengan designer</div>
+                                <div class="font-medium text-gray-800">Konsultasi Awal</div>
+                                <div class="text-sm text-gray-600">Pembahasan kebutuhan dan arah proyek</div>
                             </div>
                         </label>
 
                         <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
                             <input type="radio" name="jenis_konsultasi" value="virtual_design" class="text-blue-600">
                             <div class="ml-3">
-                                <div class="font-medium text-gray-800">Virtual Design + 3D Mockup</div>
-                                <div class="text-sm text-gray-600">Desain digital dengan visualisasi 3D</div>
+                                <div class="font-medium text-gray-800">Diskusi Desain Daring</div>
+                                <div class="text-sm text-gray-600">Pembahasan desain dilakukan secara daring</div>
                             </div>
                         </label>
 
                         <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
                             <input type="radio" name="jenis_konsultasi" value="in_home_visit" class="text-blue-600">
                             <div class="ml-3">
-                                <div class="font-medium text-gray-800">Kunjungan Designer ke Rumah</div>
-                                <div class="text-sm text-gray-600">Survey langsung oleh designer profesional</div>
+                                <div class="font-medium text-gray-800">Survei Lokasi</div>
+                                <div class="text-sm text-gray-600">Jadwal kunjungan dikonfirmasi setelah peninjauan awal</div>
                             </div>
                         </label>
 
                         <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
                             <input type="radio" name="jenis_konsultasi" value="chat_support" class="text-blue-600">
                             <div class="ml-3">
-                                <div class="font-medium text-gray-800">Chat Support Real-time</div>
-                                <div class="text-sm text-gray-600">Konsultasi via chat dengan expert</div>
+                                <div class="font-medium text-gray-800">Konsultasi Tertulis</div>
+                                <div class="text-sm text-gray-600">Sampaikan kebutuhan proyek secara terstruktur</div>
                             </div>
                         </label>
                     </div>

@@ -69,9 +69,9 @@ class CategorySeeder extends Seeder
         ]);
 
         \App\Models\Category::create([
-            'name' => 'Kamar Tidur Utama',
-            'slug' => 'kamar-tidur-utama',
-            'description' => 'Desain kamar tidur utama yang mewah dan nyaman',
+            'name' => 'Kamar Tidur',
+            'slug' => 'kamar-tidur',
+            'description' => 'Desain kamar tidur yang nyaman dan sesuai kebutuhan penghuni',
             'icon' => 'fas fa-bed',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 3,

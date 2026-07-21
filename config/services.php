@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'daiku' => [
+        'whatsapp_number' => env('DAIKU_WHATSAPP_NUMBER', '6282186888824'),
+    ],
+
 ];

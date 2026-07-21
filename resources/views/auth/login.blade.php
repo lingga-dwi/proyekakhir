@@ -30,7 +30,7 @@
             <input type="email"
                    name="email"
                    value="{{ old('email') }}"
-                   placeholder="linggarjw5@gmail.com"
+                   placeholder="nama@email.com"
                    class="w-full px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 focus:border-yellow-500 focus:bg-white focus:outline-none @error('email') border-red-500 @enderror"
                    required>
             @error('email')

@@ -36,7 +36,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">Konsultasi Gratis</h3>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Konsultasi Awal</h3>
                     <p class="text-gray-600 mb-4">30 menit video call dengan designer untuk diskusi awal</p>
                     <ul class="text-sm text-gray-600 text-left space-y-2">
                         <li>✓ Konsep desain dasar</li>
@@ -143,9 +143,9 @@
     <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
         <div class="container mx-auto px-4 text-center">
             <h2 class="text-3xl font-bold mb-4">Siap Mulai Transformasi Ruangan?</h2>
-            <p class="text-xl mb-8 opacity-90">Konsultasi gratis 30 menit dengan designer profesional</p>
+            <p class="text-xl mb-8 opacity-90">Sampaikan kebutuhan ruang Anda untuk ditinjau oleh tim Daiku</p>
             <a href="{{ route('konsultasi.create') }}" class="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition duration-300 inline-block">
-                Book Konsultasi Gratis
+                Mulai Konsultasi
             </a>
         </div>
     </div>

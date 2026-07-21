@@ -200,22 +200,14 @@
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Hubungi Kami</h2>
                     <div class="space-y-3">
                         <div class="flex items-center">
-                            <i class="fas fa-phone text-yellow-500 w-5"></i>
-                            <span class="ml-3 text-gray-700">+62 761-123456</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope text-yellow-500 w-5"></i>
-                            <span class="ml-3 text-gray-700">info@daikuinterior.com</span>
-                        </div>
-                        <div class="flex items-center">
                             <i class="fas fa-map-marker-alt text-yellow-500 w-5"></i>
                             <span class="ml-3 text-gray-700">Pekanbaru, Riau</span>
                         </div>
+                        <a href="{{ route('konsultasi.index') }}" class="flex items-center text-gray-700 hover:text-yellow-700">
+                            <i class="fas fa-comments text-yellow-500 w-5"></i>
+                            <span class="ml-3">Buka layanan konsultasi</span>
+                        </a>
                     </div>
-                    
-                    <button class="w-full mt-4 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition duration-200">
-                        <i class="fas fa-comments mr-2"></i>Chat dengan Designer
-                    </button>
                 </div>
 
                 @if(auth()->user()->isAdmin())

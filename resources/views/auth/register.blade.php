@@ -71,33 +71,8 @@
                    required>
         </div>
         
-        <!-- Alamat -->
-        <div class="mb-4">
-            <textarea name="alamat" 
-                      placeholder="Alamat Lengkap"
-                      rows="3"
-                      class="w-full px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 focus:border-yellow-500 focus:bg-white focus:outline-none @error('alamat') border-red-500 @enderror"
-                      required>{{ old('alamat') }}</textarea>
-            @error('alamat')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
-        
-        <!-- No Telp -->
-        <div class="mb-6">
-            <input type="text" 
-                   name="no_telp" 
-                   value="{{ old('no_telp') }}"
-                   placeholder="Nomor Telepon" 
-                   class="w-full px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 focus:border-yellow-500 focus:bg-white focus:outline-none @error('no_telp') border-red-500 @enderror"
-                   required>
-            @error('no_telp')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-            @enderror
-        </div>
-        
         <!-- Register Button -->
-        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+        <button type="submit" class="mt-2 w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
             Daftar
         </button>
     </form>

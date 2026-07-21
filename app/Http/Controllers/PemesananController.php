@@ -46,6 +46,21 @@ class PemesananController extends Controller
             $katalog = Katalog::findOrFail($request->katalog_id);
         }
 
+        $user = $request->user();
+        $missingProfileData = [];
+
+        if (!$user->no_telp) {
+            $missingProfileData['no_telp'] = trim((string) $request->no_hp);
+        }
+
+        if (!$user->alamat) {
+            $missingProfileData['alamat'] = trim((string) $request->alamat);
+        }
+
+        if ($missingProfileData !== []) {
+            $user->update($missingProfileData);
+        }
+
         // Handle file uploads
         $uploadedFiles = [];
         if ($request->hasFile('upload_denah_foto')) {

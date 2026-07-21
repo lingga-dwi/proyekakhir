@@ -71,10 +71,10 @@
                                    name="no_hp" 
                                    value="{{ old('no_hp', auth()->user()->no_telp ?? '') }}"
                                    placeholder="08xxxxxxxxxx" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('no_hp') border-red-500 @enderror"
-                                   readonly
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 {{ filled(auth()->user()->no_telp) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('no_hp') border-red-500 @enderror"
+                                   @readonly(filled(auth()->user()->no_telp))
                                    required>
-                            <p class="text-xs text-gray-500 mt-1">Nomor telepon transaksi mengikuti profil akun.</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ filled(auth()->user()->no_telp) ? 'Nomor telepon mengikuti profil akun.' : 'Isi sekali untuk melengkapi kontak proyek.' }}</p>
                             @error('no_hp')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -87,10 +87,10 @@
                             <textarea name="alamat" 
                                       rows="3"
                                       placeholder="Masukkan alamat lengkap proyek"
-                                      class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('alamat') border-red-500 @enderror"
-                                      readonly
+                                      class="w-full px-4 py-3 rounded-lg border border-gray-300 {{ filled(auth()->user()->alamat) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('alamat') border-red-500 @enderror"
+                                      @readonly(filled(auth()->user()->alamat))
                                       required>{{ old('alamat', auth()->user()->alamat ?? '') }}</textarea>
-                            <p class="text-xs text-gray-500 mt-1">Alamat mengikuti data akun agar histori proyek tetap konsisten.</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ filled(auth()->user()->alamat) ? 'Alamat mengikuti data akun agar histori proyek konsisten.' : 'Isi alamat lokasi proyek untuk melengkapi profil.' }}</p>
                             @error('alamat')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror

@@ -5,12 +5,26 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Konsultasi;
+use App\Models\Katalog;
+use Illuminate\Support\Facades\Config;
 
 class KonsultasiController extends Controller
 {
     public function index()
     {
-        return view('konsultasi.index');
+        $featuredKatalogs = collect();
+
+        if (!Config::get('app.db_offline')) {
+            try {
+                $featuredKatalogs = Katalog::with('category')->latest()->take(3)->get();
+            } catch (\Throwable $e) {
+                logger()->warning('DB unavailable when loading consultation portfolio', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return view('konsultasi.index', compact('featuredKatalogs'));
     }
 
     public function create()
@@ -23,7 +37,7 @@ class KonsultasiController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'email' => 'required|email',
-            'no_telp' => 'required|string',
+            'no_telp' => 'required|string|max:20',
             'jenis_konsultasi' => 'required|in:free_consultation,virtual_design,in_home_visit,chat_support',
             'jenis_ruangan' => 'required|in:living_room,bedroom,kitchen,bathroom,office,whole_house',
             'budget_range' => 'required|in:under_10m,10m_25m,25m_50m,50m_100m,above_100m',
@@ -37,6 +51,11 @@ class KonsultasiController extends Controller
         ]);
 
         $user = $request->user();
+        $contactNumber = $user->no_telp ?: trim((string) $request->no_telp);
+
+        if (!$user->no_telp) {
+            $user->update(['no_telp' => $contactNumber]);
+        }
 
         // Handle file uploads
         $uploadedFiles = [];
@@ -51,7 +70,7 @@ class KonsultasiController extends Controller
             'user_id' => $user->id,
             'nama' => $user->nama,
             'email' => $user->email,
-            'no_telp' => $user->no_telp,
+            'no_telp' => $contactNumber,
             'jenis_konsultasi' => $request->jenis_konsultasi,
             'jenis_ruangan' => $request->jenis_ruangan,
             'budget_range' => $request->budget_range,
