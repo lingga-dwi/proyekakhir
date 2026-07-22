@@ -12,9 +12,10 @@ class SitemapController extends Controller
     {
         $katalogs = collect();
 
-        if (!Config::get('app.db_offline')) {
+        if (! Config::get('app.db_offline')) {
             try {
                 $katalogs = Katalog::query()
+                    ->published()
                     ->select(['id', 'updated_at'])
                     ->latest('updated_at')
                     ->get();

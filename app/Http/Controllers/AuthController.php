@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
@@ -29,10 +28,8 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->has('remember'))) {
             $request->session()->regenerate();
-            
-            // Always redirect to home after login
-            $user = Auth::user();
-            return redirect()->route('home')->with('success', 'Selamat datang kembali, ' . $user->nama . '!');
+
+            return redirect()->route('home');
         }
 
         return back()->withErrors([
@@ -62,7 +59,7 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('home')->with('success', 'Akun berhasil dibuat! Selamat datang, ' . $user->nama . '!');
+        return redirect()->route('home')->with('success', 'Akun berhasil dibuat! Selamat datang, '.$user->nama.'!');
     }
 
     public function logout(Request $request)

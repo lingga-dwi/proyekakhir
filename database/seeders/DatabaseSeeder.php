@@ -11,14 +11,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if (app()->environment(['local', 'testing'])) {
-            $this->call(UserSeeder::class);
-        }
-
         $this->call([
             CategorySeeder::class,
             KatalogSeeder::class,
-            ProjectDummySeeder::class,
         ]);
     }
 }

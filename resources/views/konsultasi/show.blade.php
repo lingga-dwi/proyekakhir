@@ -150,10 +150,11 @@
                                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Foto Ruangan</h3>
                                 <div class="grid grid-cols-2 gap-4">
                                     @foreach($konsultasi->upload_foto as $foto)
+                                        @php($attachmentUrl = route('konsultasi.attachment', [$konsultasi, $loop->index]))
                                         <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                            <img src="{{ Storage::url($foto) }}" alt="Foto ruangan" 
+                                            <img src="{{ $attachmentUrl }}" alt="Foto ruangan"
                                                 class="w-full h-full object-cover hover:scale-105 transition duration-300 cursor-pointer"
-                                                onclick="openModal('{{ Storage::url($foto) }}')">
+                                                onclick="openModal(@js($attachmentUrl))">
                                         </div>
                                     @endforeach
                                 </div>

@@ -2,208 +2,129 @@
 
 @section('title', 'Status Proyek - Admin Dashboard')
 @section('page-title', 'Status Proyek')
-@section('page-description', 'Tracking progress dan status proyek interior')
+@section('page-description', 'Kelola desainer, target, progres, dan status proyek interior')
 
 @section('content')
+@include('admin._work_tabs')
 @php
-    $statusMeta = [
-        'pending' => [
-            'label' => 'Konsultasi',
-            'color' => 'orange',
-            'progress' => 15,
-            'note' => 'Menunggu tindak lanjut awal',
-        ],
-        'dikonfirmasi' => [
-            'label' => 'Konsultasi',
-            'color' => 'orange',
-            'progress' => 30,
-            'note' => 'Sudah disetujui, siap masuk tahap kerja',
-        ],
-        'sedang_dikerjakan' => [
-            'label' => 'Tahap Desain / Produksi',
-            'color' => 'blue',
-            'progress' => 70,
-            'note' => 'Sedang dalam pengerjaan aktif',
-        ],
-        'selesai' => [
-            'label' => 'Proyek selesai',
-            'color' => 'green',
-            'progress' => 100,
-            'note' => 'Pekerjaan sudah dituntaskan',
-        ],
-        'dibatalkan' => [
-            'label' => 'Persetujuan / Revisi',
-            'color' => 'purple',
-            'progress' => 45,
-            'note' => 'Butuh keputusan atau revisi lanjutan',
-        ],
+    $cards = [
+        ['label' => 'Persiapan', 'value' => $projectStats['persiapan'], 'note' => 'Pending atau dikonfirmasi', 'tone' => 'bg-orange-100 text-orange-700', 'icon' => 'fa-clipboard-list'],
+        ['label' => 'Desain / Produksi', 'value' => $projectStats['tahap_desain_produksi'], 'note' => 'Sedang dikerjakan', 'tone' => 'bg-blue-100 text-blue-700', 'icon' => 'fa-drafting-compass'],
+        ['label' => 'Proyek Selesai', 'value' => $projectStats['selesai'], 'note' => 'Pekerjaan dituntaskan', 'tone' => 'bg-green-100 text-green-700', 'icon' => 'fa-check-circle'],
+        ['label' => 'Dibatalkan', 'value' => $projectStats['dibatalkan'], 'note' => 'Tidak dilanjutkan', 'tone' => 'bg-red-100 text-red-700', 'icon' => 'fa-ban'],
+    ];
+    $statusLabels = [
+        'pending' => 'Persiapan',
+        'dikonfirmasi' => 'Dikonfirmasi',
+        'sedang_dikerjakan' => 'Desain / Produksi',
+        'selesai' => 'Selesai',
+        'dibatalkan' => 'Dibatalkan',
     ];
 @endphp
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-orange-100 rounded-lg">
-                <i class="fas fa-comments text-orange-600 text-xl"></i>
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach($cards as $card)
+        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex items-center gap-4">
+                <span class="flex h-11 w-11 items-center justify-center rounded-xl {{ $card['tone'] }}"><i class="fas {{ $card['icon'] }}"></i></span>
+                <div><p class="text-sm text-slate-500">{{ $card['label'] }}</p><p class="text-2xl font-bold text-slate-950">{{ $card['value'] }}</p><p class="text-xs text-slate-400">{{ $card['note'] }}</p></div>
             </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Konsultasi</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $projectStats['konsultasi'] }}</p>
-                <p class="text-xs text-gray-500">Menunggu atau baru dikonfirmasi</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-blue-100 rounded-lg">
-                <i class="fas fa-drafting-compass text-blue-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Tahap Desain / Produksi</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $projectStats['tahap_desain_produksi'] }}</p>
-                <p class="text-xs text-gray-500">Sedang dikerjakan</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-purple-100 rounded-lg">
-                <i class="fas fa-user-check text-purple-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Persetujuan / Revisi</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $projectStats['persetujuan'] }}</p>
-                <p class="text-xs text-gray-500">Butuh keputusan admin atau klien</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <div class="flex items-center">
-            <div class="p-2 bg-green-100 rounded-lg">
-                <i class="fas fa-check-circle text-green-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Proyek selesai</p>
-                <p class="text-2xl font-bold text-gray-900">{{ $projectStats['selesai'] }}</p>
-                <p class="text-xs text-gray-500">Pekerjaan selesai dituntaskan</p>
-            </div>
-        </div>
-    </div>
+        </article>
+    @endforeach
 </div>
 
-<div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div class="flex-1">
-            <div class="relative">
-                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" placeholder="Cari proyek..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
-            </div>
-        </div>
-        <div class="flex gap-3">
-            <button class="daiku-yellow text-white px-4 py-2 rounded-lg daiku-yellow-hover flex items-center">
-                <i class="fas fa-pen mr-2"></i>Update Progres
-            </button>
-            <button class="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center">
-                <i class="fas fa-filter mr-2"></i>Filter
-            </button>
-        </div>
-    </div>
-</div>
+<form method="GET" class="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[minmax(0,1fr)_220px_220px_auto_auto]">
+    <label class="relative"><span class="sr-only">Cari proyek</span><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input type="search" name="search" value="{{ request('search') }}" placeholder="Cari proyek atau pelanggan..." class="w-full rounded-xl border-slate-300 py-2.5 pl-10 pr-4 focus:border-amber-500 focus:ring-amber-500">
+    </label>
+    <select name="status" class="rounded-xl border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-amber-500">
+        <option value="">Semua status</option>
+        @foreach($statusLabels as $value => $label)<option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>@endforeach
+    </select>
+    <select name="designer" class="rounded-xl border-slate-300 px-4 py-2.5 focus:border-amber-500 focus:ring-amber-500">
+        <option value="">Semua desainer</option>
+        @foreach($designers as $designer)<option value="{{ $designer->id }}" @selected((string) request('designer') === (string) $designer->id)>{{ $designer->nama }}</option>@endforeach
+    </select>
+    <button class="rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Terapkan</button>
+    @if(request()->hasAny(['search', 'status', 'designer']))<a href="{{ route('admin.proyek.index') }}" class="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100">Reset</a>@endif
+</form>
 
-<div class="bg-white rounded-lg shadow-sm overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-medium text-gray-900">Semua Proyek</h3>
-        <p class="text-sm text-gray-500">Showing {{ $proyek->firstItem() ?? 0 }} to {{ $proyek->lastItem() ?? 0 }} of {{ $proyek->total() }} results</p>
+<section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-100 px-5 py-4">
+        <h2 class="font-semibold text-slate-950">Semua Proyek</h2>
+        <p class="text-xs text-slate-500">Menampilkan {{ $proyek->firstItem() ?? 0 }}-{{ $proyek->lastItem() ?? 0 }} dari {{ $proyek->total() }} proyek</p>
     </div>
-
     <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Proyek</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Klien</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Desainer</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Selesai</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progres</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+        <table class="w-full min-w-[1120px]">
+            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500"><tr>
+                <th class="px-5 py-3 font-medium">Proyek</th><th class="px-5 py-3 font-medium">Klien</th><th class="px-5 py-3 font-medium">Budget</th>
+                <th class="px-5 py-3 font-medium">Desainer</th><th class="px-5 py-3 font-medium">Target</th><th class="px-5 py-3 font-medium">Status</th>
+                <th class="px-5 py-3 font-medium">Progres</th><th class="px-5 py-3 font-medium">Aksi</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-100">
                 @forelse($proyek as $project)
                     @php
-                        $meta = $statusMeta[$project->status_pemesanan] ?? [
-                            'label' => ucfirst(str_replace('_', ' ', $project->status_pemesanan)),
-                            'color' => 'gray',
-                            'progress' => 35,
-                            'note' => 'Status proyek belum dikategorikan',
-                        ];
-                        $projectCode = 'PRJ-' . str_pad($project->id, 4, '0', STR_PAD_LEFT);
-                        $budget = $project->total_harga ? 'Rp ' . number_format((float) $project->total_harga, 0, ',', '.') : 'Belum ditentukan';
-                        $designer = data_get($project, 'role_desainer', 'Belum ditetapkan');
-                        $targetDate = $project->tanggal_pesan
-                            ? $project->tanggal_pesan->copy()->addDays(30)->format('d M Y')
-                            : $project->created_at->copy()->addDays(30)->format('d M Y');
+                        $statusClass = match($project->status_pemesanan) {
+                            'pending' => 'bg-orange-100 text-orange-800', 'dikonfirmasi' => 'bg-cyan-100 text-cyan-800',
+                            'sedang_dikerjakan' => 'bg-blue-100 text-blue-800', 'selesai' => 'bg-green-100 text-green-800',
+                            'dibatalkan' => 'bg-red-100 text-red-800', default => 'bg-slate-100 text-slate-700'
+                        };
+                        $barClass = match($project->status_pemesanan) {
+                            'selesai' => 'bg-green-500', 'dibatalkan' => 'bg-red-400', 'sedang_dikerjakan' => 'bg-blue-500', default => 'bg-amber-400'
+                        };
                     @endphp
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ $project->jenis_proyek ?? 'Proyek Interior' }}</div>
-                            <div class="text-sm text-gray-500">{{ $projectCode }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img class="h-8 w-8 rounded-full" src="https://ui-avatars.com/api/?name={{ urlencode($project->user->nama) }}&background=fbbf24&color=fff" alt="{{ $project->user->nama }}">
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">{{ $project->user->nama }}</div>
-                                    <div class="text-sm text-gray-500">{{ $project->user->email }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $budget }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $designer }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $targetDate }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $meta['color'] }}-100 text-{{ $meta['color'] }}-800">
-                                {{ $meta['label'] }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
-                                    <div class="bg-{{ $meta['color'] }}-500 h-2 rounded-full" style="width: {{ $meta['progress'] }}%"></div>
-                                </div>
-                                <span class="text-sm text-gray-600">{{ $meta['progress'] }}%</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-3">
-                                <button class="text-yellow-600 hover:text-yellow-900" title="Lihat Progres">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="text-blue-600 hover:text-blue-900" title="Update Progres">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                        </td>
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-5 py-4"><p class="text-sm font-semibold text-slate-900">{{ $project->jenis_proyek ?: 'Proyek Interior' }}</p><p class="text-xs text-slate-500">PRJ-{{ str_pad($project->id, 4, '0', STR_PAD_LEFT) }}{{ $project->jenis_bangunan ? ' - '.$project->jenis_bangunan : '' }}</p></td>
+                        <td class="px-5 py-4"><p class="text-sm font-medium text-slate-900">{{ $project->user->nama }}</p><p class="text-xs text-slate-500">{{ $project->user->email }}</p></td>
+                        <td class="px-5 py-4 text-sm text-slate-700">{{ (float) $project->total_harga > 0 ? 'Rp '.number_format((float) $project->total_harga, 0, ',', '.') : 'Belum ditentukan' }}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700">{{ $project->designer?->nama ?? 'Belum ditetapkan' }}</td>
+                        <td class="px-5 py-4 text-sm text-slate-700">{{ $project->target_selesai?->translatedFormat('d M Y') ?? 'Belum ditetapkan' }}</td>
+                        <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ $statusLabels[$project->status_pemesanan] ?? $project->status_pemesanan }}</span></td>
+                        <td class="px-5 py-4"><div class="flex items-center gap-2"><div class="h-2 w-24 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full {{ $barClass }}" style="width: {{ $project->progress }}%"></div></div><span class="text-xs font-semibold text-slate-600">{{ $project->progress }}%</span></div></td>
+                        <td class="px-5 py-4"><div class="flex items-center gap-3">
+                            <a href="{{ route('pemesanan.show', $project->id) }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</a>
+                            <button type="button" class="text-sm font-semibold text-blue-700 hover:text-blue-800" onclick='openProjectModal({{ $project->id }}, @js($project->status_pemesanan), {{ $project->progress }}, @js(optional($project->target_selesai)->format('Y-m-d')), @js($project->designer_id), @js((float) $project->total_harga), @js($project->catatan_progres))'>Update</button>
+                        </div></td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                            <i class="fas fa-project-diagram text-4xl mb-4 text-gray-300"></i>
-                            <p>Belum ada data proyek</p>
-                        </td>
-                    </tr>
+                    <tr><td colspan="8" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada proyek yang sesuai filter.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+    @if($proyek->hasPages())<div class="border-t border-slate-100 px-5 py-4">{{ $proyek->links() }}</div>@endif
+</section>
 
-    <div class="px-6 py-4 border-t border-gray-200">
-        {{ $proyek->links() }}
+<div id="projectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+    <div class="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div class="flex items-center justify-between"><h2 id="project-modal-title" class="text-lg font-semibold text-slate-950">Update Progres Proyek</h2><button type="button" onclick="closeProjectModal()" class="h-9 w-9 rounded-full text-slate-500 hover:bg-slate-100"><i class="fas fa-times"></i></button></div>
+        <form id="projectForm" method="POST" class="mt-5 grid gap-4 sm:grid-cols-2">@csrf @method('PUT')
+            <label class="block"><span class="text-sm font-medium text-slate-700">Status</span><select id="projectStatus" name="status_pemesanan" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">@foreach($statusLabels as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></label>
+            <label class="block"><span class="text-sm font-medium text-slate-700">Progres (%)</span><input id="projectProgress" name="progress" type="number" min="0" max="100" required class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500"></label>
+            <label class="block"><span class="text-sm font-medium text-slate-700">Target selesai</span><input id="projectTarget" name="target_selesai" type="date" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500"></label>
+            <label class="block"><span class="text-sm font-medium text-slate-700">Desainer</span><select id="projectDesigner" name="designer_id" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500"><option value="">Belum ditetapkan</option>@foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach</select></label>
+            <label class="block sm:col-span-2"><span class="text-sm font-medium text-slate-700">Budget</span><input id="projectBudget" name="total_harga" type="number" min="0" step="1000" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500"></label>
+            <label class="block sm:col-span-2"><span class="text-sm font-medium text-slate-700">Catatan progres</span><textarea id="projectNote" name="catatan_progres" rows="4" maxlength="2000" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500" placeholder="Contoh: Tahap desain awal telah disetujui klien"></textarea></label>
+            <div class="flex justify-end gap-3 sm:col-span-2"><button type="button" onclick="closeProjectModal()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Batal</button><button class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Simpan Perubahan</button></div>
+        </form>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function openProjectModal(id, status, progress, target, designer, budget, note) {
+    document.getElementById('projectForm').action = `{{ url('/admin/proyek') }}/${id}`;
+    document.getElementById('projectStatus').value = status;
+    document.getElementById('projectProgress').value = progress;
+    document.getElementById('projectTarget').value = target || '';
+    document.getElementById('projectDesigner').value = designer || '';
+    document.getElementById('projectBudget').value = budget > 0 ? budget : '';
+    document.getElementById('projectNote').value = note || '';
+    const modal = document.getElementById('projectModal'); modal.classList.remove('hidden'); modal.classList.add('flex');
+}
+function closeProjectModal() { const modal = document.getElementById('projectModal'); modal.classList.add('hidden'); modal.classList.remove('flex'); }
+document.getElementById('projectModal').addEventListener('click', event => { if (event.target.id === 'projectModal') closeProjectModal(); });
+document.getElementById('projectStatus').addEventListener('change', event => { if (event.target.value === 'selesai') document.getElementById('projectProgress').value = 100; });
+</script>
+@endpush

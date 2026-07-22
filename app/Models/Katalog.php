@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 class Katalog extends Model
@@ -24,6 +25,7 @@ class Katalog extends Model
         'style_tags',
         'room_size',
         'inspiration_story',
+        'status',
     ];
 
     protected $casts = [
@@ -43,10 +45,45 @@ class Katalog extends Model
         return $this->hasMany(Rfq::class, 'id_katalog');
     }
 
+    public function pemesanans()
+    {
+        return $this->hasMany(Pemesanan::class, 'katalog_id');
+    }
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('status', 'published');
+    }
+
+    public function scopeArchived(Builder $query): Builder
+    {
+        return $query->where('status', 'archived');
+    }
+
+    public function scopeIncomplete(Builder $query): Builder
+    {
+        return $query
+            ->where('status', '!=', 'archived')
+            ->where(function (Builder $query) {
+                $query->whereNull('category_id')
+                    ->orWhereNull('gambar_utama')
+                    ->orWhere('gambar_utama', '')
+                    ->orWhereNull('deskripsi')
+                    ->orWhere('deskripsi', '');
+            });
+    }
+
+    public function isCompleteForPublication(): bool
+    {
+        return filled($this->category_id)
+            && filled($this->gambar_utama)
+            && filled($this->deskripsi);
+    }
+
     // Helper methods
     public function getFormattedHargaAttribute()
     {
-        return 'Rp ' . number_format($this->harga_estimasi, 0, ',', '.');
+        return 'Rp '.number_format($this->harga_estimasi, 0, ',', '.');
     }
 
     public function getGambarUtamaUrlAttribute()
@@ -56,7 +93,7 @@ class Katalog extends Model
 
     public function getGaleriGambarUrlsAttribute(): array
     {
-        if (!$this->galeri_gambar) {
+        if (! $this->galeri_gambar) {
             return [];
         }
 
@@ -64,6 +101,11 @@ class Katalog extends Model
             // Do not force fallback image for gallery entries.
             return $this->resolveImageUrl($path, false);
         }, $this->galeri_gambar)));
+    }
+
+    public function galleryImageUrl(?string $path): ?string
+    {
+        return $this->resolveImageUrl($path, false);
     }
 
     private function resolveImageUrl(?string $path, bool $allowFallback = true): ?string
@@ -79,11 +121,11 @@ class Katalog extends Model
 
             if (str_starts_with($normalizedPath, 'katalog/')) {
                 // Legacy DB values from old seeder: katalog/file.jpg -> images/katalog/file.jpg
-                $candidates[] = 'images/' . $normalizedPath;
+                $candidates[] = 'images/'.$normalizedPath;
             }
 
-            if (!str_starts_with($normalizedPath, 'images/') && !str_starts_with($normalizedPath, 'storage/')) {
-                $candidates[] = 'images/' . ltrim($normalizedPath, '/');
+            if (! str_starts_with($normalizedPath, 'images/') && ! str_starts_with($normalizedPath, 'storage/')) {
+                $candidates[] = 'images/'.ltrim($normalizedPath, '/');
             }
 
             foreach (array_unique($candidates) as $candidate) {
@@ -99,7 +141,7 @@ class Katalog extends Model
             }
         }
 
-        if (!$allowFallback) {
+        if (! $allowFallback) {
             return null;
         }
 
@@ -108,7 +150,7 @@ class Katalog extends Model
 
     private function normalizePath(?string $path): ?string
     {
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
@@ -157,12 +199,12 @@ class Katalog extends Model
             return self::$catalogImageCache[$folder];
         }
 
-        $basePath = public_path('images/katalog/' . $folder);
-        $glob = glob($basePath . '/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', GLOB_BRACE) ?: [];
+        $basePath = public_path('images/katalog/'.$folder);
+        $glob = glob($basePath.'/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', GLOB_BRACE) ?: [];
         sort($glob);
 
         $relative = array_values(array_map(
-            fn ($fullPath) => 'images/katalog/' . $folder . '/' . basename($fullPath),
+            fn ($fullPath) => 'images/katalog/'.$folder.'/'.basename($fullPath),
             $glob
         ));
 
@@ -170,5 +212,4 @@ class Katalog extends Model
 
         return $relative;
     }
-
 }

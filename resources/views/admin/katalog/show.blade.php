@@ -1,95 +1,81 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Detail Katalog - Admin Panel')
+@section('title', 'Detail Katalog - Admin Dashboard')
+@section('page-title', 'Detail Katalog')
+@section('page-description', 'Tinjau informasi dan media portofolio desain')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Detail Katalog</h1>
-            <p class="text-gray-600">Informasi lengkap desain interior</p>
-        </div>
-        <div class="flex items-center space-x-3">
-            <a href="{{ route('admin.katalog.edit', $katalog) }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-                <i class="fas fa-edit mr-2"></i>Edit
-            </a>
-            <a href="{{ route('admin.katalog.index') }}" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200">
-                <i class="fas fa-arrow-left mr-2"></i>Kembali
-            </a>
-        </div>
+@php
+    $statusLabel = match($katalog->status) {
+        'published' => 'Dipublikasikan',
+        'archived' => 'Diarsipkan',
+        default => 'Draft',
+    };
+    $statusClass = match($katalog->status) {
+        'published' => 'bg-blue-50 text-blue-700',
+        'archived' => 'bg-stone-100 text-stone-600',
+        default => 'bg-slate-100 text-slate-600',
+    };
+@endphp
+
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <a href="{{ route('admin.katalog.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-950"><i class="fas fa-arrow-left text-xs"></i>Kembali ke katalog</a>
+    <a href="{{ route('admin.katalog.edit', $katalog) }}" class="inline-flex items-center justify-center rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300"><i class="fas fa-pencil-alt mr-2 text-xs"></i>Edit Katalog</a>
+</div>
+
+<div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <div class="space-y-6">
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div class="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p class="text-sm font-medium text-amber-700">{{ $katalog->category?->name ?? 'Tanpa kategori' }}</p>
+                    <h2 class="mt-1 text-2xl font-semibold text-slate-950">{{ $katalog->nama_desain }}</h2>
+                </div>
+                <span class="inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+            </div>
+
+            <div class="mt-5">
+                <h3 class="text-sm font-semibold text-slate-700">Deskripsi</h3>
+                <p class="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">{{ $katalog->deskripsi }}</p>
+            </div>
+
+            <dl class="mt-6 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
+                <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Gaya desain</dt><dd class="mt-1 text-sm font-semibold text-slate-700">{{ $katalog->style_tags ?: 'Belum diisi' }}</dd></div>
+                <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Ukuran ruangan</dt><dd class="mt-1 text-sm font-semibold text-slate-700">{{ $katalog->room_size ? $katalog->room_size.' m²' : 'Belum diisi' }}</dd></div>
+            </dl>
+
+            @if($katalog->inspiration_story)
+                <div class="mt-6 border-t border-slate-100 pt-5">
+                    <h3 class="text-sm font-semibold text-slate-700">Cerita inspirasi</h3>
+                    <p class="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">{{ $katalog->inspiration_story }}</p>
+                </div>
+            @endif
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h2 class="font-semibold text-slate-950">Galeri</h2>
+            @if(count($katalog->galeri_gambar_urls) > 0)
+                <div class="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+                    @foreach($katalog->galeri_gambar_urls as $image)
+                        <img src="{{ $image }}" alt="Galeri {{ $katalog->nama_desain }}" class="aspect-[4/3] w-full rounded-xl border border-slate-200 object-cover" loading="lazy">
+                    @endforeach
+                </div>
+            @else
+                <div class="mt-4 rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-400">Belum ada gambar galeri.</div>
+            @endif
+        </section>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Info -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">{{ $katalog->nama_desain }}</h2>
-                        <p class="text-gray-600 mt-1">{{ $katalog->category ? $katalog->category->name : $katalog->kategori }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-500">Harga Estimasi</p>
-                        <p class="text-2xl font-bold text-yellow-600">{{ $katalog->getFormattedHargaAttribute() }}</p>
-                    </div>
-                </div>
-
-                <div class="mt-6">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Deskripsi</h3>
-                    <p class="text-gray-600 leading-relaxed">{{ $katalog->deskripsi }}</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    <div>
-                        <p class="text-sm text-gray-500">Style Tags</p>
-                        <p class="text-gray-700">{{ $katalog->style_tags ?: 'Belum ada' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Ukuran Ruangan</p>
-                        <p class="text-gray-700">{{ $katalog->room_size ? $katalog->room_size . ' m²' : 'Belum ada' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Kategori Lama</p>
-                        <p class="text-gray-700">{{ $katalog->kategori ?: 'Belum ada' }}</p>
-                    </div>
-                </div>
-
-                @if($katalog->inspiration_story)
-                <div class="mt-6">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Cerita Inspirasi</h3>
-                    <p class="text-gray-600 leading-relaxed">{{ $katalog->inspiration_story }}</p>
-                </div>
-                @endif
-            </div>
+    <aside class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm xl:sticky xl:top-24">
+        @if($katalog->gambar_utama && $katalog->gambar_utama_url)
+            <img src="{{ $katalog->gambar_utama_url }}" alt="{{ $katalog->nama_desain }}" class="aspect-[4/3] w-full object-cover">
+        @else
+            <div class="flex aspect-[4/3] items-center justify-center bg-slate-50 text-slate-300"><i class="fas fa-image text-3xl"></i></div>
+        @endif
+        <div class="p-5 text-sm text-slate-500">
+            <p><span class="font-semibold text-slate-700">{{ 1 + count($katalog->galeri_gambar ?? []) }}</span> media tersimpan</p>
+            <p class="mt-1">Terakhir diubah {{ $katalog->updated_at->translatedFormat('d M Y, H:i') }} WIB</p>
         </div>
-
-        <!-- Sidebar -->
-        <div class="space-y-6">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Gambar Utama</h3>
-                @if($katalog->gambar_utama_url)
-                    <img src="{{ $katalog->gambar_utama_url }}" alt="{{ $katalog->nama_desain }}" class="w-full h-48 object-cover rounded-lg border">
-                @else
-                    <div class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-image text-gray-400 text-3xl"></i>
-                    </div>
-                @endif
-            </div>
-
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Galeri</h3>
-                @if($katalog->galeri_gambar_urls && count($katalog->galeri_gambar_urls) > 0)
-                    <div class="grid grid-cols-2 gap-3">
-                        @foreach($katalog->galeri_gambar_urls as $image)
-                            <img src="{{ $image }}" alt="{{ $katalog->nama_desain }}" class="w-full h-20 object-cover rounded-lg border">
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-sm text-gray-500">Belum ada galeri tambahan.</p>
-                @endif
-            </div>
-        </div>
-    </div>
+    </aside>
 </div>
 @endsection

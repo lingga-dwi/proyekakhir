@@ -4,10 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Katalog;
-use App\Models\Konsultasi;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProjectFlowHardeningTest extends TestCase
@@ -36,6 +37,7 @@ class ProjectFlowHardeningTest extends TestCase
             'kategori' => 'Ruang Tamu',
             'deskripsi' => 'Deskripsi',
             'harga_estimasi' => 25000000,
+            'status' => 'published',
         ]);
 
         $response = $this->actingAs($user)->post(route('pemesanan.store'), [
@@ -106,40 +108,35 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
     }
 
-    public function test_admin_dashboard_consultation_stat_comes_from_konsultasi_table(): void
+    public function test_customer_attachments_are_private_and_owner_authorized(): void
     {
-        $admin = User::create([
-            'nama' => 'Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password123'),
-            'role' => 'admin',
-        ]);
+        Storage::fake('local');
+        Storage::fake('public');
+        $owner = User::factory()->create(['role' => 'pelanggan']);
+        $otherCustomer = User::factory()->create(['role' => 'pelanggan']);
 
-        $customer = User::create([
-            'nama' => 'Customer',
-            'email' => 'customer@example.com',
-            'password' => Hash::make('password123'),
-            'role' => 'pelanggan',
-        ]);
+        $this->actingAs($owner)->post(route('pemesanan.store'), [
+            'nama' => $owner->nama,
+            'email' => $owner->email,
+            'no_hp' => '081234567890',
+            'alamat' => 'Pekanbaru',
+            'jenis_proyek' => 'desain_baru',
+            'jenis_bangunan' => 'rumah_tinggal',
+            'luas_area' => 42,
+            'jumlah_ruangan' => 2,
+            'gaya_desain_preferensi' => 'minimalis',
+            'warna_dominan' => 'putih',
+            'deskripsi_keinginan_desain' => 'Lampiran privat.',
+            'upload_denah_foto' => [UploadedFile::fake()->image('denah.jpg')],
+            'terms' => 'on',
+        ])->assertRedirect();
 
-        Konsultasi::create([
-            'user_id' => $customer->id,
-            'nama' => $customer->nama,
-            'email' => $customer->email,
-            'no_telp' => '081211111111',
-            'jenis_konsultasi' => 'virtual_design',
-            'jenis_ruangan' => 'office',
-            'budget_range' => '25m_50m',
-            'timeline' => '3_months',
-            'deskripsi_kebutuhan' => 'Perlu konsultasi kantor.',
-            'tanggal_konsultasi' => now()->addDays(2)->toDateString(),
-            'waktu_konsultasi' => '14:00',
-            'status' => 'confirmed',
-        ]);
+        $project = \App\Models\Pemesanan::latest('id')->firstOrFail();
+        $path = $project->upload_denah_foto[0];
+        Storage::disk('local')->assertExists($path);
+        Storage::disk('public')->assertMissing($path);
 
-        $response = $this->actingAs($admin)->get(route('dashboard.admin'));
-
-        $response->assertOk();
-        $response->assertViewHas('stats', fn (array $stats) => $stats['consultations'] === 1);
+        $this->actingAs($owner)->get(route('pemesanan.attachment', [$project, 0]))->assertOk();
+        $this->actingAs($otherCustomer)->get(route('pemesanan.attachment', [$project, 0]))->assertForbidden();
     }
 }

@@ -2,21 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Models\Konsultasi;
 use App\Models\Katalog;
+use App\Models\Konsultasi;
+use App\Models\Pemesanan;
+use App\Services\CustomerUploadService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class KonsultasiController extends Controller
 {
+    private const STATUS_TRANSITIONS = [
+        'pending' => ['pending', 'confirmed', 'cancelled'],
+        'confirmed' => ['confirmed', 'completed', 'cancelled'],
+        'completed' => ['completed'],
+        'cancelled' => ['cancelled'],
+    ];
+
+    public function __construct(private readonly CustomerUploadService $uploads) {}
+
     public function index()
     {
         $featuredKatalogs = collect();
 
-        if (!Config::get('app.db_offline')) {
+        if (! Config::get('app.db_offline')) {
             try {
-                $featuredKatalogs = Katalog::with('category')->latest()->take(3)->get();
+                $featuredKatalogs = Katalog::with('category')->published()->latest()->take(3)->get();
             } catch (\Throwable $e) {
                 logger()->warning('DB unavailable when loading consultation portfolio', [
                     'error' => $e->getMessage(),
@@ -46,25 +59,34 @@ class KonsultasiController extends Controller
             'gaya_preferensi' => 'nullable|string',
             'deskripsi_kebutuhan' => 'required|string',
             'tanggal_konsultasi' => 'required|date|after:today',
-            'waktu_konsultasi' => 'required',
+            'waktu_konsultasi' => 'required|date_format:H:i',
             'upload_foto.*' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
+
+        $slotTaken = Konsultasi::query()
+            ->whereDate('tanggal_konsultasi', $request->tanggal_konsultasi)
+            ->whereTime('waktu_konsultasi', $request->waktu_konsultasi)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->exists();
+
+        if ($slotTaken) {
+            throw ValidationException::withMessages([
+                'waktu_konsultasi' => 'Waktu tersebut sudah dipesan. Silakan pilih jadwal lain.',
+            ]);
+        }
 
         $user = $request->user();
         $contactNumber = $user->no_telp ?: trim((string) $request->no_telp);
 
-        if (!$user->no_telp) {
+        if (! $user->no_telp) {
             $user->update(['no_telp' => $contactNumber]);
         }
 
         // Handle file uploads
-        $uploadedFiles = [];
-        if ($request->hasFile('upload_foto')) {
-            foreach ($request->file('upload_foto') as $file) {
-                $path = $file->store('uploads/konsultasi', 'public');
-                $uploadedFiles[] = $path;
-            }
-        }
+        $uploadedFiles = $this->uploads->storeMany(
+            $request->file('upload_foto', []),
+            "customer-uploads/consultations/{$user->id}"
+        );
 
         $konsultasi = Konsultasi::create([
             'user_id' => $user->id,
@@ -85,53 +107,110 @@ class KonsultasiController extends Controller
         ]);
 
         return redirect()->route('konsultasi.show', $konsultasi->id)
-                        ->with('success', 'Konsultasi berhasil dijadwalkan! Tim kami akan menghubungi Anda segera.');
+            ->with('success', 'Konsultasi berhasil dijadwalkan! Tim kami akan menghubungi Anda segera.');
     }
 
     public function show($id)
     {
         $konsultasi = Konsultasi::with('user')->findOrFail($id);
-        
+
         // Ensure user can only see their own consultation
-        if (!auth()->user()->isAdmin() && $konsultasi->user_id !== auth()->id()) {
+        if (! auth()->user()->isAdmin() && $konsultasi->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
-        
+
         return view('konsultasi.show', compact('konsultasi'));
+    }
+
+    public function attachment(Konsultasi $konsultasi, int $index)
+    {
+        $user = auth()->user();
+        abort_unless($user->isAdmin() || $konsultasi->user_id === $user->id, 403);
+
+        return $this->uploads->response($konsultasi->upload_foto ?? [], $index);
+    }
+
+    public function updateStatus(Request $request, Konsultasi $konsultasi)
+    {
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['pending', 'confirmed', 'completed', 'cancelled'])],
+            'catatan_admin' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($konsultasi->pemesanan_id && $data['status'] === 'cancelled') {
+            throw ValidationException::withMessages([
+                'status' => 'Konsultasi yang sudah menjadi proyek tidak dapat dibatalkan dari antrean ini.',
+            ]);
+        }
+
+        if (! in_array($data['status'], self::STATUS_TRANSITIONS[$konsultasi->status] ?? [], true)) {
+            throw ValidationException::withMessages([
+                'status' => "Status {$konsultasi->status} tidak dapat langsung diubah menjadi {$data['status']}.",
+            ]);
+        }
+
+        $konsultasi->update($data);
+
+        return back()->with('success', 'Status konsultasi berhasil diperbarui.');
+    }
+
+    public function convertToProject(Request $request, Konsultasi $konsultasi)
+    {
+        if ($konsultasi->pemesanan_id) {
+            return redirect()->route('pemesanan.show', $konsultasi->pemesanan_id)
+                ->with('success', 'Konsultasi ini sudah terhubung ke proyek.');
+        }
+
+        if ($konsultasi->status !== 'confirmed') {
+            throw ValidationException::withMessages([
+                'status' => 'Konfirmasi konsultasi sebelum meneruskannya menjadi proyek.',
+            ]);
+        }
+
+        $project = DB::transaction(function () use ($request, $konsultasi): Pemesanan {
+            $project = Pemesanan::create([
+                'id_user' => $konsultasi->user_id,
+                'tanggal_pesan' => now()->toDateString(),
+                'status_pemesanan' => 'dikonfirmasi',
+                'progress' => 10,
+                'total_harga' => 0,
+                'jenis_proyek' => 'Konsultasi '.$konsultasi->getJenisRuanganLabel(),
+                'jenis_bangunan' => 'Belum ditentukan',
+                'luas_area' => $konsultasi->luas_ruangan,
+                'jumlah_ruangan' => 1,
+                'gaya_desain_preferensi' => $konsultasi->gaya_preferensi,
+                'deskripsi_keinginan_desain' => $konsultasi->deskripsi_kebutuhan,
+                'upload_denah_foto' => $konsultasi->upload_foto,
+            ]);
+
+            $project->statusTrackings()->create([
+                'actor_id' => $request->user()->id,
+                'previous_status' => null,
+                'status' => 'dikonfirmasi',
+                'progress' => 10,
+                'tanggal_update' => now()->toDateString(),
+                'catatan' => 'Proyek dibuat dari permintaan konsultasi.',
+            ]);
+
+            $konsultasi->update([
+                'pemesanan_id' => $project->id,
+                'status' => 'completed',
+                'catatan_admin' => 'Permintaan diteruskan menjadi proyek DI-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT).'.',
+            ]);
+
+            return $project;
+        });
+
+        return redirect()->route('pemesanan.show', $project)
+            ->with('success', 'Konsultasi berhasil diteruskan menjadi proyek.');
     }
 
     public function myConsultations()
     {
         $konsultasis = auth()->user()->konsultasis()
-                                  ->latest()
-                                  ->paginate(10);
-        
+            ->latest()
+            ->paginate(10);
+
         return view('konsultasi.my-consultations', compact('konsultasis'));
-    }
-
-    // Admin methods
-    public function adminIndex()
-    {
-        $konsultasis = Konsultasi::with('user')
-                                ->latest()
-                                ->paginate(15);
-        
-        return view('admin.konsultasi.index', compact('konsultasis'));
-    }
-
-    public function updateStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:pending,confirmed,completed,cancelled',
-            'catatan_admin' => 'nullable|string'
-        ]);
-
-        $konsultasi = Konsultasi::findOrFail($id);
-        $konsultasi->update([
-            'status' => $request->status,
-            'catatan_admin' => $request->catatan_admin
-        ]);
-
-        return back()->with('success', 'Status konsultasi berhasil diperbarui.');
     }
 }

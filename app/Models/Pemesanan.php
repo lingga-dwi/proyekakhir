@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Pemesanan extends Model
 {
@@ -14,9 +14,13 @@ class Pemesanan extends Model
     protected $fillable = [
         'id_rfq',
         'id_user',
+        'designer_id',
         'katalog_id',
         'tanggal_pesan',
         'status_pemesanan',
+        'progress',
+        'target_selesai',
+        'catatan_progres',
         'total_harga',
         'jenis_proyek',
         'jenis_bangunan',
@@ -30,6 +34,8 @@ class Pemesanan extends Model
 
     protected $casts = [
         'tanggal_pesan' => 'date',
+        'target_selesai' => 'date',
+        'progress' => 'integer',
         'upload_denah_foto' => 'array',
         'luas_area' => 'decimal:2',
         'total_harga' => 'decimal:2',
@@ -39,6 +45,11 @@ class Pemesanan extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user');
+    }
+
+    public function designer()
+    {
+        return $this->belongsTo(User::class, 'designer_id');
     }
 
     public function rfq()

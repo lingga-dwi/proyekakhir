@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Konsultasi extends Model
 {
@@ -13,6 +13,7 @@ class Konsultasi extends Model
 
     protected $fillable = [
         'user_id',
+        'pemesanan_id',
         'nama',
         'email',
         'no_telp',
@@ -43,10 +44,15 @@ class Konsultasi extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function pemesanan()
+    {
+        return $this->belongsTo(Pemesanan::class);
+    }
+
     // Helper methods
     public function getJenisKonsultasiLabel()
     {
-        return match($this->jenis_konsultasi) {
+        return match ($this->jenis_konsultasi) {
             'free_consultation' => 'Konsultasi Gratis (30 menit)',
             'virtual_design' => 'Virtual Design + 3D Mockup',
             'in_home_visit' => 'Kunjungan Designer ke Rumah',
@@ -57,7 +63,7 @@ class Konsultasi extends Model
 
     public function getBudgetRangeLabel()
     {
-        return match($this->budget_range) {
+        return match ($this->budget_range) {
             'under_10m' => 'Di bawah Rp 10 Juta',
             '10m_25m' => 'Rp 10 - 25 Juta',
             '25m_50m' => 'Rp 25 - 50 Juta',
@@ -69,13 +75,26 @@ class Konsultasi extends Model
 
     public function getTimelineLabel()
     {
-        return match($this->timeline) {
+        return match ($this->timeline) {
             'immediate' => 'Segera (1-2 minggu)',
             '1_month' => '1 Bulan',
             '3_months' => '3 Bulan',
             '6_months' => '6 Bulan',
             'flexible' => 'Fleksibel',
             default => $this->timeline
+        };
+    }
+
+    public function getJenisRuanganLabel(): string
+    {
+        return match ($this->jenis_ruangan) {
+            'living_room' => 'Ruang Tamu',
+            'bedroom' => 'Kamar Tidur',
+            'kitchen' => 'Dapur',
+            'bathroom' => 'Kamar Mandi',
+            'office' => 'Ruang Kerja',
+            'whole_house' => 'Seluruh Hunian',
+            default => (string) $this->jenis_ruangan,
         };
     }
 }

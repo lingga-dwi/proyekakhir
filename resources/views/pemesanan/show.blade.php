@@ -137,7 +137,7 @@
                         <div class="border border-gray-200 rounded-lg p-4 text-center">
                             <i class="fas fa-file-image text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600">{{ basename($file) }}</p>
-                            <a href="{{ Storage::url($file) }}" target="_blank" class="text-blue-600 text-sm hover:text-blue-800">
+                            <a href="{{ route('pemesanan.attachment', [$pemesanan, $loop->index]) }}" target="_blank" rel="noopener" class="text-blue-600 text-sm hover:text-blue-800">
                                 Lihat File
                             </a>
                         </div>

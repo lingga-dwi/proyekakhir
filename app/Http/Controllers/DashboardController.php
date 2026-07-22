@@ -2,137 +2,159 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Pemesanan;
-use App\Models\Invoice;
-use App\Models\Konsultasi;
+use App\Models\StatusTracking;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function admin()
     {
+        $today = today();
+        $deadlineLimit = $today->copy()->addDays(7);
+
         $stats = [
-            'total_projects' => Pemesanan::count(),
+            'active_projects' => Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'sedang_dikerjakan'])->count(),
             'pending_orders' => Pemesanan::where('status_pemesanan', 'pending')->count(),
-            'completed_projects' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
-            'total_revenue' => Invoice::query()
-                ->where('status_invoice', 'dibayar')
-                ->whereHas('pemesanan', fn ($query) => $query->where('status_pemesanan', 'selesai'))
-                ->sum('total_tagihan'),
-            'consultations' => Konsultasi::where('status', 'confirmed')->count(),
+            'deadlines_soon' => Pemesanan::whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+                ->whereNotNull('target_selesai')
+                ->whereDate('target_selesai', '<=', $deadlineLimit)
+                ->count(),
             'new_customers' => User::where('role', 'pelanggan')->where('created_at', '>=', Carbon::now()->subDays(30))->count(),
         ];
 
-        $recent_projects = Pemesanan::with(['user', 'katalog', 'rfq.katalog'])
-                                  ->latest()
-                                  ->take(5)
-                                  ->get();
+        $attentionProjects = Pemesanan::with(['user', 'designer'])
+            ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+            ->orderByRaw(
+                "CASE
+                    WHEN status_pemesanan = 'pending' THEN 0
+                    WHEN target_selesai IS NOT NULL AND target_selesai < ? THEN 1
+                    WHEN target_selesai IS NOT NULL AND target_selesai <= ? THEN 2
+                    WHEN designer_id IS NULL THEN 3
+                    ELSE 4
+                END",
+                [$today->toDateString(), $deadlineLimit->toDateString()]
+            )
+            ->orderByRaw('CASE WHEN target_selesai IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('target_selesai')
+            ->latest('updated_at')
+            ->take(8)
+            ->get();
 
-        $monthly_orders = Pemesanan::query()
-            ->whereYear('created_at', Carbon::now()->year)
-            ->get(['created_at'])
-            ->groupBy(fn ($pemesanan) => $pemesanan->created_at->month)
-            ->map(fn ($items) => $items->count())
-            ->toArray();
+        $recentActivities = StatusTracking::with(['pemesanan.user'])
+            ->whereHas('pemesanan')
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (StatusTracking $tracking) => [
+                'icon' => match ($tracking->status) {
+                    'pending' => 'fa-inbox',
+                    'dikonfirmasi' => 'fa-circle-check',
+                    'sedang_dikerjakan' => 'fa-drafting-compass',
+                    'selesai' => 'fa-flag-checkered',
+                    'dibatalkan' => 'fa-ban',
+                    default => 'fa-clock-rotate-left',
+                },
+                'title' => match ($tracking->status) {
+                    'pending' => 'Pesanan baru diterima',
+                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                    'selesai' => 'Proyek diselesaikan',
+                    'dibatalkan' => 'Proyek dibatalkan',
+                    default => 'Progres diperbarui',
+                },
+                'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
+                'occurred_at' => $tracking->created_at,
+                'url' => route('pemesanan.show', $tracking->pemesanan),
+            ]);
 
-        return view('dashboard.admin', compact('stats', 'recent_projects', 'monthly_orders'));
+        return view('dashboard.admin', compact('stats', 'attentionProjects', 'recentActivities'));
     }
 
     public function designer()
     {
+        $designer = auth()->user();
+        $assignedProjects = Pemesanan::where('designer_id', $designer->id);
+
         $stats = [
-            'assigned_projects' => Pemesanan::count(), // In real app, filter by assigned designer
-            'in_progress' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'completed_this_month' => Pemesanan::where('status_pemesanan', 'selesai')
-                                              ->whereMonth('updated_at', Carbon::now()->month)
-                                              ->count(),
-            'pending_reviews' => Pemesanan::where('status_pemesanan', 'dikonfirmasi')->count(),
+            'assigned_projects' => (clone $assignedProjects)->count(),
+            'in_progress' => (clone $assignedProjects)->where('status_pemesanan', 'sedang_dikerjakan')->count(),
+            'completed_this_month' => (clone $assignedProjects)->where('status_pemesanan', 'selesai')
+                ->whereYear('updated_at', now()->year)
+                ->whereMonth('updated_at', now()->month)
+                ->count(),
+            'pending_reviews' => (clone $assignedProjects)->where('status_pemesanan', 'dikonfirmasi')->count(),
         ];
 
-        $my_projects = Pemesanan::with(['user', 'katalog', 'rfq.katalog'])
-                               ->latest()
-                               ->take(5)
-                               ->get();
+        $my_projects = Pemesanan::with(['user', 'katalog'])
+            ->where('designer_id', $designer->id)
+            ->latest('updated_at')
+            ->take(8)
+            ->get();
 
         return view('dashboard.designer', compact('stats', 'my_projects'));
     }
 
-    public function pelangganDashboard()
-    {
-        $user = auth()->user();
-        
-        $stats = [
-            'total_projects' => $user->pemesanans()->count(),
-            'active_projects' => $user->pemesanans()->whereIn('status_pemesanan', ['pending', 'dikonfirmasi', 'sedang_dikerjakan'])->count(),
-            'completed_projects' => $user->pemesanans()->where('status_pemesanan', 'selesai')->count(),
-            'total_spent' => Invoice::query()
-                ->where('status_invoice', 'dibayar')
-                ->whereHas('pemesanan', fn ($query) => $query->where('id_user', $user->id))
-                ->sum('total_tagihan'),
-        ];
-
-        $my_orders = $user->pemesanans()
-                         ->with(['katalog', 'rfq.katalog'])
-                         ->latest()
-                         ->take(5)
-                         ->get();
-
-        $upcoming_activities = [
-            [
-                'time' => '09:00',
-                'title' => 'Konsultasi Ruang - Maya Indira',
-                'type' => 'meeting'
-            ],
-            [
-                'time' => '12:00',
-                'title' => 'Review Progress Proyek Mingguan',
-                'type' => 'review'
-            ],
-            [
-                'time' => '01:30',
-                'title' => 'Inspeksi Furniture - Budi Santoso',
-                'type' => 'inspection'
-            ]
-        ];
-
-        return view('dashboard.pelanggan', compact('stats', 'my_orders', 'upcoming_activities'));
-    }
-
     // Admin Pages
-    public function pelanggan()
+    public function pelanggan(Request $request)
     {
-        $pelanggan = User::where('role', 'pelanggan')
-                        ->withCount(['pemesanans'])
-                        ->latest()
-                        ->paginate(10);
-        
-        return view('admin.pelanggan.index', compact('pelanggan'));
+        $stats = [
+            'total' => User::where('role', 'pelanggan')->count(),
+            'active' => User::where('role', 'pelanggan')->whereHas('pemesanans')->count(),
+            'new' => User::where('role', 'pelanggan')->where('created_at', '>=', now()->subDays(30))->count(),
+            'projects' => Pemesanan::count(),
+        ];
+
+        $pelanggan = User::query()
+            ->where('role', 'pelanggan')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(fn ($nested) => $nested
+                    ->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('no_telp', 'like', "%{$search}%"));
+            })
+            ->withCount('pemesanans')
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.pelanggan.index', compact('pelanggan', 'stats'));
     }
 
-    public function proyek()
+    public function proyek(Request $request)
     {
         $projectStats = [
-            'konsultasi' => Pemesanan::whereIn('status_pemesanan', ['pending', 'dikonfirmasi'])->count(),
+            'persiapan' => Pemesanan::whereIn('status_pemesanan', ['pending', 'dikonfirmasi'])->count(),
             'tahap_desain_produksi' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'persetujuan' => Pemesanan::where('status_pemesanan', 'dibatalkan')->count(),
             'selesai' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
+            'dibatalkan' => Pemesanan::where('status_pemesanan', 'dibatalkan')->count(),
         ];
 
-        $featuredProjects = Pemesanan::with(['user'])
+        $proyek = Pemesanan::with(['user', 'designer'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(fn ($nested) => $nested
+                    ->where('jenis_proyek', 'like', "%{$search}%")
+                    ->orWhere('jenis_bangunan', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery
+                        ->where('nama', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")));
+            })
+            ->when($request->filled('status'), fn ($query) => $query->where('status_pemesanan', $request->status))
+            ->when($request->filled('designer'), fn ($query) => $query->where('designer_id', $request->designer))
             ->latest()
-            ->take(4)
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        $proyek = Pemesanan::with(['user'])
-            ->latest()
-            ->paginate(10);
-        
-        return view('admin.proyek.index', compact('proyek', 'projectStats', 'featuredProjects'));
+        $designers = User::where('role', 'designer')->orderBy('nama')->get(['id', 'nama']);
+
+        return view('admin.proyek.index', compact('proyek', 'projectStats', 'designers'));
     }
 
-    public function users()
+    public function users(Request $request)
     {
         $userStats = [
             'total' => User::count(),
@@ -141,8 +163,18 @@ class DashboardController extends Controller
             'pelanggan' => User::where('role', 'pelanggan')->count(),
         ];
 
-        $users = User::latest()->paginate(10);
-        
+        $users = User::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(fn ($nested) => $nested
+                    ->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return view('admin.users.index', compact('users', 'userStats'));
     }
 }
