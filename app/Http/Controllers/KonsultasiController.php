@@ -15,10 +15,10 @@ use Illuminate\Validation\ValidationException;
 class KonsultasiController extends Controller
 {
     private const STATUS_TRANSITIONS = [
-        'pending' => ['pending', 'confirmed', 'cancelled'],
-        'confirmed' => ['confirmed', 'completed', 'cancelled'],
-        'completed' => ['completed'],
-        'cancelled' => ['cancelled'],
+        Konsultasi::STATUS_PENDING => [Konsultasi::STATUS_PENDING, Konsultasi::STATUS_CONFIRMED, Konsultasi::STATUS_CANCELLED],
+        Konsultasi::STATUS_CONFIRMED => [Konsultasi::STATUS_CONFIRMED, Konsultasi::STATUS_COMPLETED, Konsultasi::STATUS_CANCELLED],
+        Konsultasi::STATUS_COMPLETED => [Konsultasi::STATUS_COMPLETED],
+        Konsultasi::STATUS_CANCELLED => [Konsultasi::STATUS_CANCELLED],
     ];
 
     public function __construct(private readonly CustomerUploadService $uploads) {}
@@ -66,7 +66,7 @@ class KonsultasiController extends Controller
         $slotTaken = Konsultasi::query()
             ->whereDate('tanggal_konsultasi', $request->tanggal_konsultasi)
             ->whereTime('waktu_konsultasi', $request->waktu_konsultasi)
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereIn('status', [Konsultasi::STATUS_PENDING, Konsultasi::STATUS_CONFIRMED])
             ->exists();
 
         if ($slotTaken) {
@@ -103,7 +103,7 @@ class KonsultasiController extends Controller
             'upload_foto' => $uploadedFiles,
             'tanggal_konsultasi' => $request->tanggal_konsultasi,
             'waktu_konsultasi' => $request->waktu_konsultasi,
-            'status' => 'pending',
+            'status' => Konsultasi::STATUS_PENDING,
         ]);
 
         return redirect()->route('konsultasi.show', $konsultasi->id)
@@ -133,11 +133,11 @@ class KonsultasiController extends Controller
     public function updateStatus(Request $request, Konsultasi $konsultasi)
     {
         $data = $request->validate([
-            'status' => ['required', Rule::in(['pending', 'confirmed', 'completed', 'cancelled'])],
+            'status' => ['required', Rule::in(Konsultasi::STATUSES)],
             'catatan_admin' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        if ($konsultasi->pemesanan_id && $data['status'] === 'cancelled') {
+        if ($konsultasi->pemesanan_id && $data['status'] === Konsultasi::STATUS_CANCELLED) {
             throw ValidationException::withMessages([
                 'status' => 'Konsultasi yang sudah menjadi proyek tidak dapat dibatalkan dari antrean ini.',
             ]);
@@ -161,7 +161,7 @@ class KonsultasiController extends Controller
                 ->with('success', 'Konsultasi ini sudah terhubung ke proyek.');
         }
 
-        if ($konsultasi->status !== 'confirmed') {
+        if ($konsultasi->status !== Konsultasi::STATUS_CONFIRMED) {
             throw ValidationException::withMessages([
                 'status' => 'Konfirmasi konsultasi sebelum meneruskannya menjadi proyek.',
             ]);
@@ -171,7 +171,8 @@ class KonsultasiController extends Controller
             $project = Pemesanan::create([
                 'id_user' => $konsultasi->user_id,
                 'tanggal_pesan' => now()->toDateString(),
-                'status_pemesanan' => 'dikonfirmasi',
+                'sumber_masuk' => 'website',
+                'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
                 'progress' => 10,
                 'total_harga' => 0,
                 'jenis_proyek' => 'Konsultasi '.$konsultasi->getJenisRuanganLabel(),
@@ -186,7 +187,7 @@ class KonsultasiController extends Controller
             $project->statusTrackings()->create([
                 'actor_id' => $request->user()->id,
                 'previous_status' => null,
-                'status' => 'dikonfirmasi',
+                'status' => Pemesanan::STATUS_CONFIRMED,
                 'progress' => 10,
                 'tanggal_update' => now()->toDateString(),
                 'catatan' => 'Proyek dibuat dari permintaan konsultasi.',
@@ -194,7 +195,7 @@ class KonsultasiController extends Controller
 
             $konsultasi->update([
                 'pemesanan_id' => $project->id,
-                'status' => 'completed',
+                'status' => Konsultasi::STATUS_COMPLETED,
                 'catatan_admin' => 'Permintaan diteruskan menjadi proyek DI-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT).'.',
             ]);
 
@@ -203,14 +204,5 @@ class KonsultasiController extends Controller
 
         return redirect()->route('pemesanan.show', $project)
             ->with('success', 'Konsultasi berhasil diteruskan menjadi proyek.');
-    }
-
-    public function myConsultations()
-    {
-        $konsultasis = auth()->user()->konsultasis()
-            ->latest()
-            ->paginate(10);
-
-        return view('konsultasi.my-consultations', compact('konsultasis'));
     }
 }

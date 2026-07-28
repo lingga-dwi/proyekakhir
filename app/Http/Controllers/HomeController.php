@@ -112,24 +112,6 @@ class HomeController extends Controller
         return view('home.katalog', compact('katalogs', 'parentCategories', 'selectedCategory'));
     }
 
-    public function katalogFilter(Request $request)
-    {
-        $query = Katalog::published();
-
-        if ($request->has('kategori') && $request->kategori != '') {
-            $query->where('kategori', $request->kategori);
-        }
-
-        if ($request->has('search') && $request->search != '') {
-            $query->where('nama_desain', 'like', '%'.$request->search.'%');
-        }
-
-        $katalogs = $query->paginate(8);
-        $categories = Katalog::published()->distinct('kategori')->pluck('kategori');
-
-        return view('home.katalog', compact('katalogs', 'categories'));
-    }
-
     public function katalogDetail($id)
     {
         if (Config::get('app.db_offline')) {

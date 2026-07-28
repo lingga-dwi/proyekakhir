@@ -14,7 +14,7 @@ class CustomerActivityController extends Controller
 
         $user = $request->user();
         $pemesanans = $user->pemesanans()
-            ->with(['katalog', 'rfq.katalog'])
+            ->with('katalog')
             ->latest()
             ->paginate(10, ['*'], 'pesanan_page')
             ->withQueryString();

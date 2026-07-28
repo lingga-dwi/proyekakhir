@@ -126,7 +126,7 @@
                         </div>
                         <div class="p-6">
                             <p class="text-xs font-bold uppercase tracking-wider text-amber-700">
-                                {{ $katalog->category?->name ?? $katalog->kategori }}
+                                {{ $katalog->category?->name ?? 'Tanpa kategori' }}
                             </p>
                             <h3 class="mt-2 text-xl font-bold text-slate-900">{{ $katalog->nama_desain }}</h3>
                             <p class="mt-3 text-sm leading-relaxed text-gray-600">{{ Str::limit($katalog->deskripsi, 110) }}</p>

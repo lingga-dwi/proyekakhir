@@ -56,7 +56,7 @@
 
             <article class="self-start rounded-2xl bg-white p-7 shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-24">
                 <p class="text-sm font-bold uppercase tracking-[0.16em] text-amber-700">
-                    {{ $katalog->category?->name ?? $katalog->kategori }}
+                    {{ $katalog->category?->name ?? 'Tanpa kategori' }}
                 </p>
                 <h1 class="mt-3 text-3xl font-bold text-slate-900">{{ $katalog->nama_desain }}</h1>
                 <p class="mt-5 leading-relaxed text-gray-600">{{ $katalog->deskripsi }}</p>
@@ -122,7 +122,7 @@
                                      height="448">
                             @endif
                             <div class="p-5">
-                                <p class="text-xs font-bold uppercase tracking-wider text-amber-700">{{ $related->category?->name ?? $related->kategori }}</p>
+                                <p class="text-xs font-bold uppercase tracking-wider text-amber-700">{{ $related->category?->name ?? 'Tanpa kategori' }}</p>
                                 <h3 class="mt-2 text-lg font-bold text-slate-900">{{ $related->nama_desain }}</h3>
                                 <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">{{ $related->deskripsi }}</p>
                             </div>

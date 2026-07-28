@@ -45,7 +45,6 @@
                 @forelse($pemesanans as $pemesanan)
                     @php
                         $orderTitle = $pemesanan->katalog?->nama_desain
-                            ?? $pemesanan->rfq?->katalog?->nama_desain
                             ?? ucfirst(str_replace('_', ' ', $pemesanan->jenis_proyek));
                         [$statusLabel, $statusClass, $progress] = match ($pemesanan->status_pemesanan) {
                             'pending' => ['Menunggu Konfirmasi', 'bg-amber-100 text-amber-800', 25],

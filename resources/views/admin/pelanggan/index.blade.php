@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Data Pelanggan - Admin Dashboard')
-@section('page-title', 'Data Pelanggan')
+@section('title', 'Kelola Pelanggan - Admin Dashboard')
+@section('page-title', 'Kelola Pelanggan')
 @section('page-description', 'Lihat informasi akun dan riwayat aktivitas pelanggan')
 
 @section('content')

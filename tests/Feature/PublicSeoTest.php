@@ -37,4 +37,13 @@ class PublicSeoTest extends TestCase
             ->assertSee('Tentang Daiku')
             ->assertSee('Pekanbaru');
     }
+
+    public function test_consultation_page_offers_web_form_and_whatsapp_paths(): void
+    {
+        $this->get(route('konsultasi.index'))
+            ->assertOk()
+            ->assertSee('Daftar untuk Konsultasi')
+            ->assertSee('https://wa.me/6285805908809', false)
+            ->assertSee('Chat WhatsApp');
+    }
 }

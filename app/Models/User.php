@@ -50,19 +50,24 @@ class User extends Authenticatable
     }
 
     // Relationships
-    public function rfqs()
-    {
-        return $this->hasMany(Rfq::class, 'id_user');
-    }
-
     public function pemesanans()
     {
         return $this->hasMany(Pemesanan::class, 'id_user');
     }
 
+    public function assignedProjects()
+    {
+        return $this->hasMany(Pemesanan::class, 'designer_id');
+    }
+
     public function konsultasis()
     {
         return $this->hasMany(Konsultasi::class);
+    }
+
+    public function statusTrackings()
+    {
+        return $this->hasMany(StatusTracking::class, 'actor_id');
     }
 
     // Helper methods

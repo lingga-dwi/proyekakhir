@@ -72,14 +72,12 @@
                 <!-- Detail Proyek -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Detail Proyek</h2>
-                    @php
-                        $selectedKatalog = $pemesanan->katalog ?: ($pemesanan->rfq ? $pemesanan->rfq->katalog : null);
-                    @endphp
+                    @php($selectedKatalog = $pemesanan->katalog)
                     @if($selectedKatalog)
                     <div class="mb-4 p-4 bg-yellow-50 rounded-lg">
                         <h3 class="font-medium text-gray-800">Desain Terpilih</h3>
                         <p class="text-gray-600">{{ $selectedKatalog->nama_desain }}</p>
-                        <p class="text-sm text-gray-500">{{ $selectedKatalog->category ? $selectedKatalog->category->name : $selectedKatalog->kategori }}</p>
+                        <p class="text-sm text-gray-500">{{ $selectedKatalog->category?->name ?? 'Tanpa kategori' }}</p>
                     </div>
                     @endif
                     

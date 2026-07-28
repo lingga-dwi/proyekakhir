@@ -23,7 +23,7 @@
                          height="960">
                 @endif
                 <span class="absolute left-5 top-5 rounded-full bg-white/95 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-800 shadow-sm backdrop-blur-sm">
-                    {{ $caseStudy->category?->name ?? $caseStudy->kategori }}
+                    {{ $caseStudy->category?->name ?? 'Tanpa kategori' }}
                 </span>
             </div>
 
@@ -46,7 +46,7 @@
                 <dl class="mt-9 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-gray-200 py-6">
                     <div>
                         <dt class="text-xs font-bold uppercase tracking-wider text-gray-500">Jenis ruang</dt>
-                        <dd class="mt-1 font-semibold text-slate-900">{{ $caseStudy->category?->name ?? $caseStudy->kategori }}</dd>
+                        <dd class="mt-1 font-semibold text-slate-900">{{ $caseStudy->category?->name ?? 'Tanpa kategori' }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs font-bold uppercase tracking-wider text-gray-500">Luas ruang</dt>

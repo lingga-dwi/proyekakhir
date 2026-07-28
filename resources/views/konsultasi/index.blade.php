@@ -28,11 +28,12 @@
                             Daftar untuk Konsultasi
                         </a>
                     @endauth
-                    <a href="{{ route('katalog') }}" class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-6 py-3.5 font-semibold text-gray-800 transition hover:border-amber-400 hover:text-amber-700">
-                        Lihat Portofolio
+                    <a href="https://wa.me/6285805908809?text=Halo%20Daiku%2C%20saya%20ingin%20berkonsultasi%20tentang%20desain%20interior." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-lg border border-green-600 px-6 py-3.5 font-semibold text-green-700 transition hover:bg-green-50">
+                        <i class="fab fa-whatsapp text-lg" aria-hidden="true"></i>
+                        Chat WhatsApp
                     </a>
                 </div>
-                <p class="mt-5 text-sm text-gray-500">Ruang lingkup, jadwal, dan biaya dibahas setelah kebutuhan awal ditinjau.</p>
+                <p class="mt-5 text-sm text-gray-500">Gunakan form agar kebutuhan tercatat lengkap, atau WhatsApp untuk bertanya lebih cepat.</p>
             </div>
         </div>
         <div class="min-h-[420px] overflow-hidden bg-gray-100 lg:min-h-full">
@@ -94,7 +95,7 @@
                          width="800"
                          height="600">
                     <div class="bg-white p-5">
-                        <p class="text-xs font-bold uppercase tracking-wider text-amber-700">{{ $katalog->category?->name ?? $katalog->kategori }}</p>
+                        <p class="text-xs font-bold uppercase tracking-wider text-amber-700">{{ $katalog->category?->name ?? 'Tanpa kategori' }}</p>
                         <h3 class="mt-2 text-lg font-bold text-slate-900">{{ $katalog->nama_desain }}</h3>
                     </div>
                 </a>
@@ -108,12 +109,16 @@
     <div class="mx-auto max-w-3xl px-4 text-center sm:px-6">
         <h2 class="text-3xl font-bold">Siap membahas ruang Anda?</h2>
         <p class="mt-4 text-lg text-slate-300">Mulai dari informasi dasar. Tim Daiku akan membantu mengarahkan langkah berikutnya.</p>
-        <div class="mt-8">
+        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             @auth
                 <a href="{{ route('konsultasi.create') }}" class="inline-flex rounded-lg bg-amber-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-amber-300">Mulai Konsultasi</a>
             @else
                 <a href="{{ route('register') }}" class="inline-flex rounded-lg bg-amber-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-amber-300">Buat Akun</a>
             @endauth
+            <a href="https://wa.me/6285805908809?text=Halo%20Daiku%2C%20saya%20ingin%20berkonsultasi%20tentang%20desain%20interior." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/50 px-7 py-3.5 font-semibold text-white transition hover:bg-white/10">
+                <i class="fab fa-whatsapp text-lg" aria-hidden="true"></i>
+                WhatsApp Daiku
+            </a>
         </div>
     </div>
 </section>

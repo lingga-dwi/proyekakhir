@@ -11,17 +11,26 @@ class Katalog extends Model
 {
     use HasFactory;
 
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_ARCHIVED = 'archived';
+
+    public const STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_PUBLISHED,
+        self::STATUS_ARCHIVED,
+    ];
+
     protected $table = 'katalog';
 
     protected $fillable = [
         'category_id',
         'nama_desain',
-        'kategori',
         'deskripsi',
-        'harga_estimasi',
         'gambar_utama',
         'galeri_gambar',
-        'product_spots',
         'style_tags',
         'room_size',
         'inspiration_story',
@@ -30,19 +39,12 @@ class Katalog extends Model
 
     protected $casts = [
         'galeri_gambar' => 'array',
-        'product_spots' => 'array',
-        'harga_estimasi' => 'decimal:2',
     ];
 
     // Relationships
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
-    }
-
-    public function rfqs()
-    {
-        return $this->hasMany(Rfq::class, 'id_katalog');
     }
 
     public function pemesanans()
@@ -52,18 +54,33 @@ class Katalog extends Model
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'published');
+        return $query->where('status', self::STATUS_PUBLISHED);
     }
 
     public function scopeArchived(Builder $query): Builder
     {
-        return $query->where('status', 'archived');
+        return $query->where('status', self::STATUS_ARCHIVED);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', '!=', self::STATUS_ARCHIVED);
+    }
+
+    public function scopeComplete(Builder $query): Builder
+    {
+        return $query->active()
+            ->whereNotNull('category_id')
+            ->whereNotNull('gambar_utama')
+            ->where('gambar_utama', '!=', '')
+            ->whereNotNull('deskripsi')
+            ->where('deskripsi', '!=', '');
     }
 
     public function scopeIncomplete(Builder $query): Builder
     {
         return $query
-            ->where('status', '!=', 'archived')
+            ->active()
             ->where(function (Builder $query) {
                 $query->whereNull('category_id')
                     ->orWhereNull('gambar_utama')
@@ -78,12 +95,6 @@ class Katalog extends Model
         return filled($this->category_id)
             && filled($this->gambar_utama)
             && filled($this->deskripsi);
-    }
-
-    // Helper methods
-    public function getFormattedHargaAttribute()
-    {
-        return 'Rp '.number_format($this->harga_estimasi, 0, ',', '.');
     }
 
     public function getGambarUtamaUrlAttribute()
@@ -177,7 +188,7 @@ class Katalog extends Model
 
     private function fallbackFolder(): string
     {
-        $kategori = strtolower((string) $this->kategori);
+        $kategori = strtolower((string) $this->category?->name);
 
         if (str_contains($kategori, 'kantor')) {
             return 'kantor';

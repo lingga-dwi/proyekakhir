@@ -10,6 +10,19 @@ class LoginTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_login_screen_uses_simple_daiku_layout(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Selamat Datang')
+            ->assertSee('Silakan login di sini.')
+            ->assertDontSee('Portal pelanggan')
+            ->assertDontSee('Masuk untuk melanjutkan pengelolaan proyek interior Anda.')
+            ->assertSee('images/hero/daiku-home-hero.jpg', false)
+            ->assertSee('Tampilkan password')
+            ->assertSee('Lupa password?');
+    }
+
     public function test_login_redirects_home_without_welcome_notification(): void
     {
         $user = User::factory()->create([

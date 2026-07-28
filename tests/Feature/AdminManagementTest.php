@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Konsultasi;
 use App\Models\Pemesanan;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -119,12 +121,32 @@ class AdminManagementTest extends TestCase
         foreach ([
             'dashboard.admin',
             'admin.pemesanan.index',
-            'admin.proyek.index',
             'admin.katalog.index',
+            'admin.pelanggan.index',
             'admin.users.index',
         ] as $route) {
             $this->actingAs($admin)->get(route($route))->assertOk();
         }
+    }
+
+    public function test_admin_navigation_separates_orders_customers_and_user_management(): void
+    {
+        $admin = $this->user('admin@example.com', 'admin');
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('Kelola Pesanan')
+            ->assertSee('Kelola Pelanggan')
+            ->assertSee('Manajemen User')
+            ->assertSee('Daftar Permintaan &amp; Pesanan', false)
+            ->assertSee('Cari nama, email, atau nomor telepon')
+            ->assertSee('Tambah pelanggan baru')
+            ->assertDontSee('Pelanggan lama')
+            ->assertDontSee('>Pekerjaan<', false)
+            ->assertDontSee('Status Proyek');
+
+        $this->actingAs($admin)->get(route('admin.proyek.index'))
+            ->assertRedirect(route('admin.pemesanan.index'));
     }
 
     public function test_consultation_is_managed_inside_existing_order_page_and_can_become_project(): void
@@ -149,7 +171,10 @@ class AdminManagementTest extends TestCase
         $this->actingAs($admin)->get('/admin/konsultasi')->assertNotFound();
         $this->actingAs($admin)->get(route('admin.pemesanan.index'))
             ->assertOk()
-            ->assertSee('Permintaan Konsultasi')
+            ->assertSee('Daftar Permintaan &amp; Pesanan', false)
+            ->assertSee('Konsultasi masuk')
+            ->assertDontSee('Daftar Pemesanan')
+            ->assertDontSee('Permintaan Konsultasi')
             ->assertSee('Membutuhkan desain ruang tamu.');
 
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $consultation), [
@@ -167,6 +192,11 @@ class AdminManagementTest extends TestCase
             'status_pemesanan' => 'dikonfirmasi',
             'progress' => 10,
         ]);
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('DI-'.str_pad((string) $consultation->pemesanan_id, 3, '0', STR_PAD_LEFT))
+            ->assertDontSee('KS-'.str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT));
     }
 
     public function test_project_workflow_rejects_inconsistent_status_and_progress(): void
@@ -253,6 +283,83 @@ class AdminManagementTest extends TestCase
             ->assertSee('Proyek Milik Desainer')
             ->assertSee('45%')
             ->assertDontSee('Proyek Desainer Lain');
+    }
+
+    public function test_only_assigned_designer_can_open_project_detail(): void
+    {
+        $customer = $this->user('customer@example.com', 'pelanggan');
+        $designer = $this->user('designer@example.com', 'designer');
+        $otherDesigner = $this->user('other-designer@example.com', 'designer');
+
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => 'sedang_dikerjakan',
+            'jenis_proyek' => 'Interior Kantor',
+        ]);
+
+        $this->actingAs($designer)
+            ->get(route('pemesanan.show', $project))
+            ->assertOk();
+
+        $this->actingAs($otherDesigner)
+            ->get(route('pemesanan.show', $project))
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_record_whatsapp_order_for_existing_customer(): void
+    {
+        $admin = $this->user('admin@example.com', 'admin');
+        $customer = $this->user('customer@example.com', 'pelanggan');
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.store'), [
+            'customer_mode' => 'existing',
+            'id_user' => $customer->id,
+            'sumber_masuk' => 'whatsapp',
+            'tanggal_pesan' => now()->toDateString(),
+            'jenis_proyek' => 'Kitchen Set',
+            'jenis_bangunan' => 'Rumah tinggal',
+            'deskripsi_keinginan_desain' => 'Pelanggan mengirim ukuran awal melalui WhatsApp.',
+        ])->assertRedirect(route('admin.pemesanan.index'));
+
+        $this->assertDatabaseHas('pemesanan', [
+            'id_user' => $customer->id,
+            'sumber_masuk' => 'whatsapp',
+            'jenis_proyek' => 'Kitchen Set',
+            'status_pemesanan' => 'pending',
+        ]);
+        $this->assertDatabaseHas('status_tracking', [
+            'actor_id' => $admin->id,
+            'status' => 'pending',
+            'catatan' => 'Pesanan dicatat admin dari WhatsApp.',
+        ]);
+    }
+
+    public function test_admin_can_record_offline_order_and_create_customer(): void
+    {
+        Notification::fake();
+        $admin = $this->user('admin@example.com', 'admin');
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.store'), [
+            'customer_mode' => 'new',
+            'nama' => 'Pelanggan Kantor',
+            'email' => 'pelanggan-kantor@example.com',
+            'no_telp' => '085805908809',
+            'alamat' => 'Pekanbaru',
+            'sumber_masuk' => 'kantor',
+            'tanggal_pesan' => now()->toDateString(),
+            'jenis_proyek' => 'Interior Ruang Tamu',
+        ])->assertRedirect(route('admin.pemesanan.index'));
+
+        $customer = User::where('email', 'pelanggan-kantor@example.com')->firstOrFail();
+        $this->assertSame('pelanggan', $customer->role);
+        $this->assertDatabaseHas('pemesanan', [
+            'id_user' => $customer->id,
+            'sumber_masuk' => 'kantor',
+            'jenis_proyek' => 'Interior Ruang Tamu',
+        ]);
+        Notification::assertSentTo($customer, ResetPassword::class);
     }
 
     private function user(string $email, string $role): User

@@ -8,11 +8,10 @@
 @php
     $activeStatus = request('status', 'all');
     $statusTabs = [
-        'all' => ['label' => 'Semua Aktif', 'count' => $stats['all']],
-        'published' => ['label' => 'Dipublikasikan', 'count' => $stats['published']],
+        'all' => ['label' => 'Semua', 'count' => $stats['all']],
+        'published' => ['label' => 'Publik', 'count' => $stats['published']],
         'draft' => ['label' => 'Draft', 'count' => $stats['draft']],
-        'archived' => ['label' => 'Diarsipkan', 'count' => $stats['archived']],
-        'incomplete' => ['label' => 'Perlu Dilengkapi', 'count' => $stats['incomplete']],
+        'archived' => ['label' => 'Arsip', 'count' => $stats['archived']],
     ];
 @endphp
 
@@ -27,10 +26,10 @@
     </div>
 @endif
 
-<div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
-        <h2 class="text-xl font-semibold text-slate-950">Daftar Katalog</h2>
-        <p class="mt-1 text-sm text-slate-500">Pantau dan perbarui katalog dari satu tempat.</p>
+        <p class="text-sm font-medium text-slate-600"><span class="font-semibold text-slate-950">{{ $stats['all'] }}</span> katalog aktif</p>
+        <p class="mt-1 text-xs text-slate-400">Terakhir diubah ditampilkan lebih dahulu.</p>
     </div>
     <a href="{{ route('admin.katalog.create') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
         <i class="fas fa-plus mr-2"></i>Tambah Katalog
@@ -54,22 +53,27 @@
         @endforeach
     </nav>
 
-    <form method="GET" class="grid gap-3 border-b border-slate-200 p-4 md:grid-cols-[minmax(240px,1fr)_200px_180px_auto]">
+    <form method="GET" class="flex flex-col gap-3 border-b border-slate-200 p-4 lg:flex-row lg:items-center">
         @if($activeStatus !== 'all')
             <input type="hidden" name="status" value="{{ $activeStatus }}">
         @endif
-        <label class="relative">
+        <label class="relative min-w-0 flex-1">
             <span class="sr-only">Cari katalog</span>
             <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
             <input type="search" name="search" value="{{ request('search') }}" placeholder="Cari nama atau deskripsi..." class="w-full rounded-xl border-slate-300 py-2.5 pl-10 pr-4 text-sm focus:border-amber-500 focus:ring-amber-500">
         </label>
-        <select name="category" class="rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:ring-amber-500" aria-label="Filter kategori">
+        <select name="category" class="rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:ring-amber-500 lg:w-48" aria-label="Filter kategori">
             <option value="">Semua kategori</option>
             @foreach($categories as $category)
                 <option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>{{ $category->name }}</option>
             @endforeach
         </select>
-        <select name="sort" class="rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:ring-amber-500" aria-label="Urutkan katalog">
+        <select name="completeness" class="rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:ring-amber-500 lg:w-52" aria-label="Filter kelengkapan katalog">
+            <option value="">Semua kelengkapan</option>
+            <option value="complete" @selected(request('completeness') === 'complete')>Lengkap ({{ $stats['complete'] }})</option>
+            <option value="incomplete" @selected(request('completeness') === 'incomplete')>Perlu dilengkapi ({{ $stats['incomplete'] }})</option>
+        </select>
+        <select name="sort" class="rounded-xl border-slate-300 px-3 py-2.5 text-sm focus:border-amber-500 focus:ring-amber-500 lg:w-44" aria-label="Urutkan katalog">
             <option value="latest" @selected(request('sort', 'latest') === 'latest')>Terakhir diubah</option>
             <option value="oldest" @selected(request('sort') === 'oldest')>Paling lama diubah</option>
             <option value="name_asc" @selected(request('sort') === 'name_asc')>Nama A-Z</option>
@@ -77,7 +81,7 @@
         </select>
         <div class="flex gap-2">
             <button class="inline-flex flex-1 items-center justify-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Terapkan</button>
-            @if(request()->hasAny(['search', 'category', 'sort', 'status']))
+            @if(request()->hasAny(['search', 'category', 'completeness', 'sort', 'status']))
                 <a href="{{ route('admin.katalog.index') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50" title="Reset filter"><i class="fas fa-redo-alt"></i></a>
             @endif
         </div>
@@ -105,8 +109,8 @@
         </div>
     </form>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-[980px] w-full text-left">
+    <div class="overflow-x-auto lg:overflow-visible">
+        <table class="w-full min-w-[860px] text-left">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
                     <th class="w-12 px-4 py-3">
@@ -114,7 +118,6 @@
                     </th>
                     <th class="px-3 py-3">Desain</th>
                     <th class="px-3 py-3">Kategori</th>
-                    <th class="px-3 py-3">Media</th>
                     <th class="px-3 py-3">Kelengkapan</th>
                     <th class="px-3 py-3">Status</th>
                     <th class="px-3 py-3">Terakhir Diubah</th>
@@ -124,7 +127,7 @@
             <tbody class="divide-y divide-slate-100">
                 @forelse($katalogs as $katalog)
                     @php
-                        $categoryName = $katalog->category?->name ?: $katalog->kategori ?: 'Tanpa kategori';
+                        $categoryName = $katalog->category?->name ?: 'Tanpa kategori';
                         $imageCount = ($katalog->gambar_utama ? 1 : 0) + count($katalog->galeri_gambar ?? []);
                         $isComplete = $katalog->isCompleteForPublication();
                     @endphp
@@ -141,12 +144,11 @@
                                 @endif
                                 <div class="min-w-0">
                                     <a href="{{ route('admin.katalog.edit', $katalog) }}" class="line-clamp-1 font-semibold text-slate-950 hover:text-amber-700">{{ $katalog->nama_desain }}</a>
-                                    <p class="mt-1 text-xs text-slate-400">ID #{{ $katalog->id }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">ID #{{ $katalog->id }} <span class="mx-1">&middot;</span> {{ $imageCount }} gambar</p>
                                 </div>
                             </div>
                         </td>
                         <td class="px-3 py-3 text-sm text-slate-600">{{ $categoryName }}</td>
-                        <td class="px-3 py-3 text-sm text-slate-600"><i class="far fa-images mr-1.5 text-slate-400"></i>{{ $imageCount }}</td>
                         <td class="px-3 py-3">
                             @if($isComplete)
                                 <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"><i class="fas fa-check mr-1.5"></i>Lengkap</span>
@@ -168,45 +170,52 @@
                             <span class="text-xs text-slate-400">{{ $katalog->updated_at->format('H:i') }} WIB</span>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-1.5">
-                                <a href="{{ route('admin.katalog.edit', $katalog) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800" title="Edit katalog" aria-label="Edit {{ $katalog->nama_desain }}"><i class="fas fa-pencil-alt text-xs"></i></a>
-
+                            <div class="flex items-center justify-end gap-1.5" x-data="{ menuOpen: false }">
                                 @if($katalog->status === 'published')
-                                    <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
-                                        <input type="hidden" name="action" value="draft">
-                                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100" title="Jadikan draft" aria-label="Jadikan {{ $katalog->nama_desain }} draft"><i class="fas fa-file-alt text-xs"></i></button>
-                                    </form>
-                                @elseif($katalog->status === 'archived')
-                                    <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
-                                        <input type="hidden" name="action" value="draft">
-                                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100" title="Pulihkan sebagai draft" aria-label="Pulihkan {{ $katalog->nama_desain }} sebagai draft"><i class="fas fa-undo-alt text-xs"></i></button>
-                                    </form>
-                                @elseif($isComplete)
-                                    <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
-                                        <input type="hidden" name="action" value="publish">
-                                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Publikasikan" aria-label="Publikasikan {{ $katalog->nama_desain }}"><i class="fas fa-upload text-xs"></i></button>
-                                    </form>
+                                    <a href="{{ route('katalog.detail', $katalog) }}" target="_blank" rel="noopener" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Lihat di website" aria-label="Lihat {{ $katalog->nama_desain }} di website"><i class="fas fa-eye text-xs"></i></a>
                                 @endif
+                                <a href="{{ route('admin.katalog.edit', $katalog) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800" title="Edit katalog" aria-label="Edit {{ $katalog->nama_desain }}"><i class="fas fa-pencil-alt text-xs"></i></a>
+                                <div class="relative">
+                                    <button type="button" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100" aria-label="Tindakan lainnya untuk {{ $katalog->nama_desain }}"><i class="fas fa-ellipsis-v text-xs"></i></button>
+                                    <div x-cloak x-show="menuOpen" x-transition.origin.top.right @click.outside="menuOpen = false" class="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
+                                        @if($katalog->status === 'published')
+                                            <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
+                                                <input type="hidden" name="action" value="draft">
+                                                <button class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-file-alt w-4 text-slate-400"></i>Jadikan draft</button>
+                                            </form>
+                                        @elseif($katalog->status === 'archived')
+                                            <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
+                                                <input type="hidden" name="action" value="draft">
+                                                <button class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-undo-alt w-4 text-slate-400"></i>Pulihkan sebagai draft</button>
+                                            </form>
+                                        @elseif($isComplete)
+                                            <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
+                                                @csrf
+                                                <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
+                                                <input type="hidden" name="action" value="publish">
+                                                <button class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-blue-700 hover:bg-blue-50"><i class="fas fa-upload w-4"></i>Publikasikan</button>
+                                            </form>
+                                        @endif
 
-                                @if($katalog->status !== 'archived')
-                                    <form action="{{ route('admin.katalog.destroy', $katalog) }}" method="POST" onsubmit="return confirm('Arsipkan katalog ini? Katalog tidak akan tampil kepada pengunjung, tetapi riwayatnya tetap tersimpan.')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-stone-300 hover:bg-stone-100 hover:text-stone-700" title="Arsipkan katalog" aria-label="Arsipkan {{ $katalog->nama_desain }}"><i class="fas fa-archive text-xs"></i></button>
-                                    </form>
-                                @endif
+                                        @if($katalog->status !== 'archived')
+                                            <form action="{{ route('admin.katalog.destroy', $katalog) }}" method="POST" onsubmit="return confirm('Arsipkan katalog ini? Katalog tidak akan tampil kepada pengunjung, tetapi riwayatnya tetap tersimpan.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-archive w-4 text-slate-400"></i>Arsipkan</button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-16 text-center">
+                            <td colspan="7" class="px-6 py-16 text-center">
                             <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400"><i class="fas fa-folder-open text-xl"></i></span>
                             <h3 class="mt-4 text-base font-semibold text-slate-900">Tidak ada katalog yang sesuai</h3>
                             <p class="mt-1 text-sm text-slate-500">Ubah filter atau tambahkan katalog baru.</p>
@@ -217,12 +226,12 @@
         </table>
     </div>
 
-    @if($katalogs->hasPages())
-        <div class="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm text-slate-500">Menampilkan {{ $katalogs->firstItem() }}-{{ $katalogs->lastItem() }} dari {{ $katalogs->total() }} katalog</p>
+    <div class="flex flex-col gap-3 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-sm text-slate-500">Menampilkan {{ $katalogs->firstItem() ?? 0 }}-{{ $katalogs->lastItem() ?? 0 }} dari {{ $katalogs->total() }} katalog</p>
+        @if($katalogs->hasPages())
             {{ $katalogs->links() }}
-        </div>
-    @endif
+        @endif
+    </div>
 </section>
 
 <script>

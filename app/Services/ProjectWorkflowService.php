@@ -11,11 +11,11 @@ use Illuminate\Validation\ValidationException;
 class ProjectWorkflowService
 {
     private const TRANSITIONS = [
-        'pending' => ['pending', 'dikonfirmasi', 'dibatalkan'],
-        'dikonfirmasi' => ['dikonfirmasi', 'sedang_dikerjakan', 'dibatalkan'],
-        'sedang_dikerjakan' => ['sedang_dikerjakan', 'selesai', 'dibatalkan'],
-        'selesai' => ['selesai'],
-        'dibatalkan' => ['dibatalkan'],
+        Pemesanan::STATUS_PENDING => [Pemesanan::STATUS_PENDING, Pemesanan::STATUS_CONFIRMED, Pemesanan::STATUS_CANCELLED],
+        Pemesanan::STATUS_CONFIRMED => [Pemesanan::STATUS_CONFIRMED, Pemesanan::STATUS_IN_PROGRESS, Pemesanan::STATUS_CANCELLED],
+        Pemesanan::STATUS_IN_PROGRESS => [Pemesanan::STATUS_IN_PROGRESS, Pemesanan::STATUS_COMPLETED, Pemesanan::STATUS_CANCELLED],
+        Pemesanan::STATUS_COMPLETED => [Pemesanan::STATUS_COMPLETED],
+        Pemesanan::STATUS_CANCELLED => [Pemesanan::STATUS_CANCELLED],
     ];
 
     private const PROJECT_FIELDS = [
@@ -80,11 +80,11 @@ class ProjectWorkflowService
 
     private function normalizedProgress(string $status, ?int $requested, int $current): int
     {
-        if ($status === 'selesai') {
+        if ($status === Pemesanan::STATUS_COMPLETED) {
             return 100;
         }
 
-        if ($status === 'pending') {
+        if ($status === Pemesanan::STATUS_PENDING) {
             if ($requested !== null && $requested !== 0) {
                 $this->invalidProgress('Pesanan baru harus memiliki progres 0%.');
             }
@@ -92,7 +92,7 @@ class ProjectWorkflowService
             return 0;
         }
 
-        if ($status === 'dikonfirmasi') {
+        if ($status === Pemesanan::STATUS_CONFIRMED) {
             $progress = $requested ?? max($current, 10);
             if ($progress < 10 || $progress > 24) {
                 $this->invalidProgress('Tahap persiapan harus memiliki progres 10–24%.');
@@ -101,7 +101,7 @@ class ProjectWorkflowService
             return $progress;
         }
 
-        if ($status === 'sedang_dikerjakan') {
+        if ($status === Pemesanan::STATUS_IN_PROGRESS) {
             $progress = $requested ?? max($current, 25);
             if ($progress < 25 || $progress > 99) {
                 $this->invalidProgress('Proyek aktif harus memiliki progres 25–99%.');

@@ -9,14 +9,32 @@ class Pemesanan extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_CONFIRMED = 'dikonfirmasi';
+
+    public const STATUS_IN_PROGRESS = 'sedang_dikerjakan';
+
+    public const STATUS_COMPLETED = 'selesai';
+
+    public const STATUS_CANCELLED = 'dibatalkan';
+
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
+    ];
+
     protected $table = 'pemesanan';
 
     protected $fillable = [
-        'id_rfq',
         'id_user',
         'designer_id',
         'katalog_id',
         'tanggal_pesan',
+        'sumber_masuk',
         'status_pemesanan',
         'progress',
         'target_selesai',
@@ -52,11 +70,6 @@ class Pemesanan extends Model
         return $this->belongsTo(User::class, 'designer_id');
     }
 
-    public function rfq()
-    {
-        return $this->belongsTo(Rfq::class, 'id_rfq');
-    }
-
     public function katalog()
     {
         return $this->belongsTo(Katalog::class, 'katalog_id');
@@ -67,34 +80,8 @@ class Pemesanan extends Model
         return $this->hasMany(StatusTracking::class, 'id_pemesanan');
     }
 
-    public function invoice()
+    public function konsultasi()
     {
-        return $this->hasOne(Invoice::class, 'id_pemesanan');
-    }
-
-    // Helper methods
-    public function isPending()
-    {
-        return $this->status_pemesanan === 'pending';
-    }
-
-    public function isDikonfirmasi()
-    {
-        return $this->status_pemesanan === 'dikonfirmasi';
-    }
-
-    public function getSedangDikerjakan()
-    {
-        return $this->status_pemesanan === 'sedang_dikerjakan';
-    }
-
-    public function isSelesai()
-    {
-        return $this->status_pemesanan === 'selesai';
-    }
-
-    public function isDibatalkan()
-    {
-        return $this->status_pemesanan === 'dibatalkan';
+        return $this->hasOne(Konsultasi::class, 'pemesanan_id');
     }
 }

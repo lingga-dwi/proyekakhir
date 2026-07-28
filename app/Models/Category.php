@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
@@ -13,8 +13,6 @@ class Category extends Model
         'name',
         'slug',
         'description',
-        'icon',
-        'image',
         'parent_id',
         'sort_order',
         'is_active',
@@ -35,11 +33,6 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id')->where('is_active', true)->orderBy('sort_order');
     }
 
-    public function allChildren()
-    {
-        return $this->hasMany(Category::class, 'parent_id')->orderBy('sort_order');
-    }
-
     public function katalogs()
     {
         return $this->hasMany(Katalog::class, 'category_id');
@@ -56,52 +49,8 @@ class Category extends Model
         return $query->whereNull('parent_id');
     }
 
-    public function scopeChildren($query)
-    {
-        return $query->whereNotNull('parent_id');
-    }
-
-    // Helper methods
-    public function isParent()
-    {
-        return is_null($this->parent_id);
-    }
-
     public function hasChildren()
     {
         return $this->children()->count() > 0;
-    }
-
-    public function getFullNameAttribute()
-    {
-        if ($this->parent) {
-            return $this->parent->name . ' > ' . $this->name;
-        }
-        return $this->name;
-    }
-
-    public function getBreadcrumbAttribute()
-    {
-        $breadcrumb = collect([$this]);
-        
-        $parent = $this->parent;
-        while ($parent) {
-            $breadcrumb->prepend($parent);
-            $parent = $parent->parent;
-        }
-        
-        return $breadcrumb;
-    }
-
-    // Get all catalog count including children
-    public function getAllCatalogCountAttribute()
-    {
-        $count = $this->katalogs()->count();
-        
-        foreach ($this->children as $child) {
-            $count += $child->getAllCatalogCountAttribute();
-        }
-        
-        return $count;
     }
 }

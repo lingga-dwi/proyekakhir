@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/katalog/bulk-action', [KatalogController::class, 'bulkAction'])->name('admin.katalog.bulk-action');
         Route::resource('admin/katalog', KatalogController::class, ['as' => 'admin']);
         Route::get('/admin/pemesanan', [PemesananController::class, 'index'])->name('admin.pemesanan.index');
+        Route::post('/admin/pemesanan', [PemesananController::class, 'storeAdmin'])->name('admin.pemesanan.store');
         Route::put('/admin/pemesanan/{id}/status', [PemesananController::class, 'updateStatus'])->name('admin.pemesanan.updateStatus');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/status', [KonsultasiController::class, 'updateStatus'])
             ->name('admin.pemesanan.konsultasi.update');
@@ -67,14 +68,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.konsultasi.convert');
 
         // Admin Data Pelanggan
-        Route::get('/admin/pelanggan', fn () => redirect()->route('admin.users.index', ['role' => 'pelanggan']))
-            ->name('admin.pelanggan.index');
+        Route::get('/admin/pelanggan', [DashboardController::class, 'pelanggan'])->name('admin.pelanggan.index');
 
-        // Admin Status Pembayaran digabung ke Kelola Pemesanan
-        Route::redirect('/admin/pembayaran', '/admin/pemesanan')->name('admin.pembayaran.index');
-
-        // Admin Status Proyek
-        Route::get('/admin/proyek', [DashboardController::class, 'proyek'])->name('admin.proyek.index');
+        // URL lama diarahkan ke alur pesanan yang kini memuat pengelolaan proyek.
+        Route::redirect('/admin/proyek', '/admin/pemesanan')->name('admin.proyek.index');
         Route::put('/admin/proyek/{pemesanan}', [PemesananController::class, 'updateProject'])->name('admin.proyek.update');
 
         // Admin Manajemen User

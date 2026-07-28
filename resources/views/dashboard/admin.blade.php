@@ -37,7 +37,7 @@
             <h2 id="attention-title" class="font-semibold text-slate-950">Perlu Ditindaklanjuti</h2>
             <p class="mt-0.5 text-xs text-slate-500">Pesanan baru, deadline dekat, dan proyek yang belum memiliki desainer.</p>
         </div>
-        <a href="{{ route('admin.proyek.index') }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Kelola semua proyek</a>
+        <a href="{{ route('admin.pemesanan.index') }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Kelola semua pesanan</a>
     </div>
 
     <div class="overflow-x-auto">

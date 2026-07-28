@@ -3,18 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\Katalog;
-use App\Models\Konsultasi;
 use App\Models\Pemesanan;
+use App\Models\User;
+use App\Services\AdminWorkItemService;
 use App\Services\CustomerUploadService;
+use App\Services\ManualOrderService;
 use App\Services\ProjectWorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 
 class PemesananController extends Controller
 {
     public function __construct(
         private readonly ProjectWorkflowService $workflow,
-        private readonly CustomerUploadService $uploads
+        private readonly CustomerUploadService $uploads,
+        private readonly AdminWorkItemService $workItems,
+        private readonly ManualOrderService $manualOrders
     ) {}
 
     public function create(Request $request)
@@ -79,7 +84,8 @@ class PemesananController extends Controller
             'id_user' => auth()->id(),
             'katalog_id' => $katalog?->id,
             'tanggal_pesan' => now()->toDateString(),
-            'status_pemesanan' => 'pending',
+            'sumber_masuk' => 'website',
+            'status_pemesanan' => Pemesanan::STATUS_PENDING,
             // Nilai proyek ditentukan setelah kebutuhan pelanggan ditinjau.
             'total_harga' => 0,
             'jenis_proyek' => $request->jenis_proyek,
@@ -95,7 +101,7 @@ class PemesananController extends Controller
         $pemesanan->statusTrackings()->create([
             'actor_id' => $user->id,
             'previous_status' => null,
-            'status' => 'pending',
+            'status' => Pemesanan::STATUS_PENDING,
             'progress' => 0,
             'tanggal_update' => now()->toDateString(),
             'catatan' => 'Pesanan baru diajukan oleh pelanggan.',
@@ -107,12 +113,14 @@ class PemesananController extends Controller
 
     public function show($id)
     {
-        $pemesanan = Pemesanan::with(['user', 'katalog', 'rfq.katalog'])->findOrFail($id);
+        $pemesanan = Pemesanan::with(['user', 'katalog'])->findOrFail($id);
 
-        // Ensure user can only see their own orders (unless admin)
-        if (! auth()->user()->isAdmin() && $pemesanan->id_user !== auth()->id()) {
-            abort(403, 'Unauthorized action.');
-        }
+        $user = auth()->user();
+        $canAccess = $user->isAdmin()
+            || $pemesanan->id_user === $user->id
+            || ($user->isDesigner() && $pemesanan->designer_id === $user->id);
+
+        abort_unless($canAccess, 403);
 
         return view('pemesanan.show', compact('pemesanan'));
     }
@@ -129,59 +137,56 @@ class PemesananController extends Controller
         return $this->uploads->response($pemesanan->upload_denah_foto ?? [], $index);
     }
 
-    public function myOrders()
-    {
-        $pemesanans = auth()->user()->pemesanans()
-            ->with(['katalog', 'rfq.katalog'])
-            ->latest()
-            ->paginate(10);
-
-        return view('pemesanan.my-orders', compact('pemesanans'));
-    }
-
     public function index(Request $request)
     {
-        $stats = [
-            'total' => Pemesanan::count(),
-            'pending' => Pemesanan::where('status_pemesanan', 'pending')->count(),
-            'confirmed' => Pemesanan::where('status_pemesanan', 'dikonfirmasi')->count(),
-            'active' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'completed' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
-            'consultations_pending' => Konsultasi::where('status', 'pending')->count(),
-        ];
+        $stats = $this->workItems->stats();
+        $workItems = $this->workItems->paginate($request);
 
-        $consultations = Konsultasi::with(['user', 'pemesanan'])
-            ->when($request->filled('consultation_status'), fn ($query) => $query->where('status', $request->consultation_status))
-            ->orderByRaw("CASE WHEN status = 'pending' THEN 0 WHEN status = 'confirmed' THEN 1 ELSE 2 END")
-            ->orderBy('tanggal_konsultasi')
-            ->orderBy('waktu_konsultasi')
-            ->paginate(5, ['*'], 'consultations_page')
-            ->withQueryString();
+        $designers = User::where('role', 'designer')->orderBy('nama')->get(['id', 'nama']);
+        $customers = User::where('role', 'pelanggan')->orderBy('nama')->get(['id', 'nama', 'email', 'no_telp']);
 
-        $pemesanans = Pemesanan::with(['user', 'katalog', 'invoice'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->string('search')->trim();
-                $numericId = (int) preg_replace('/\D/', '', (string) $search);
-                $query->where(fn ($nested) => $nested
-                    ->when($numericId > 0, fn ($idQuery) => $idQuery->orWhere('id', $numericId))
-                    ->orWhere('jenis_proyek', 'like', "%{$search}%")
-                    ->orWhere('jenis_bangunan', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery
-                        ->where('nama', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")));
-            })
-            ->when($request->filled('status'), fn ($query) => $query->where('status_pemesanan', $request->status))
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+        return view('admin.pemesanan.index', compact('workItems', 'stats', 'designers', 'customers'));
+    }
 
-        return view('admin.pemesanan.index', compact('pemesanans', 'consultations', 'stats'));
+    public function storeAdmin(Request $request)
+    {
+        $data = $request->validateWithBag('manualOrder', [
+            'customer_mode' => ['required', Rule::in(['existing', 'new'])],
+            'id_user' => [
+                'nullable',
+                'required_if:customer_mode,existing',
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'pelanggan')),
+            ],
+            'nama' => ['nullable', 'required_if:customer_mode,new', 'string', 'max:255'],
+            'email' => ['nullable', 'required_if:customer_mode,new', 'email', 'max:255', Rule::unique('users', 'email')],
+            'no_telp' => ['nullable', 'required_if:customer_mode,new', 'string', 'max:20'],
+            'alamat' => ['nullable', 'string', 'max:1000'],
+            'sumber_masuk' => ['required', Rule::in(['kantor', 'whatsapp', 'telepon', 'instagram', 'website'])],
+            'tanggal_pesan' => ['required', 'date', 'before_or_equal:today'],
+            'jenis_proyek' => ['required', 'string', 'max:255'],
+            'jenis_bangunan' => ['nullable', 'string', 'max:255'],
+            'deskripsi_keinginan_desain' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $pemesanan = $this->manualOrders->create($data, $request->user());
+
+        $message = 'Pesanan DI-'.str_pad((string) $pemesanan->id, 3, '0', STR_PAD_LEFT).' berhasil dicatat.';
+
+        if ($data['customer_mode'] === 'new') {
+            $resetStatus = Password::sendResetLink(['email' => $data['email']]);
+            $message .= $resetStatus === Password::RESET_LINK_SENT
+                ? ' Tautan aktivasi akun telah dikirim ke email pelanggan.'
+                : ' Akun pelanggan dibuat, tetapi tautan aktivasi belum terkirim. Periksa konfigurasi email.';
+        }
+
+        return redirect()->route('admin.pemesanan.index')
+            ->with('success', $message);
     }
 
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,dikonfirmasi,sedang_dikerjakan,selesai,dibatalkan',
+            'status' => ['required', Rule::in(Pemesanan::STATUSES)],
         ]);
 
         $pemesanan = Pemesanan::findOrFail($id);
@@ -198,7 +203,7 @@ class PemesananController extends Controller
     public function updateProject(Request $request, Pemesanan $pemesanan)
     {
         $data = $request->validate([
-            'status_pemesanan' => ['required', Rule::in(['pending', 'dikonfirmasi', 'sedang_dikerjakan', 'selesai', 'dibatalkan'])],
+            'status_pemesanan' => ['required', Rule::in(Pemesanan::STATUSES)],
             'progress' => ['required', 'integer', 'between:0,100'],
             'target_selesai' => ['nullable', 'date'],
             'designer_id' => [

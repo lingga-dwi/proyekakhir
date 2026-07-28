@@ -3,95 +3,106 @@
 @section('title', 'Login - Daiku Interior')
 
 @section('content')
-<div class="bg-white rounded-lg shadow-lg p-8">
-    <!-- Logo -->
-    <div class="text-center mb-8">
-        <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-6 mx-auto mb-4">
+<div>
+    <div class="mb-10">
+        <a href="{{ route('home') }}" class="inline-flex" aria-label="Daiku Interior - kembali ke beranda">
+            <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-9 w-auto sm:h-10">
+        </a>
     </div>
 
-    <!-- Welcome Text -->
-    <div class="text-center mb-8">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-2">Selamat Datang</h2>
-        <p class="text-gray-600">Silahkan login dulu!</p>
+    <div class="mb-8">
+        <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Selamat Datang</h1>
+        <p class="mt-3 text-sm text-slate-500 sm:text-base">Silakan login di sini.</p>
     </div>
 
     @if (session('status'))
-        <div class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+        <div class="mb-5 flex gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
+            <i class="fas fa-circle-check mt-0.5"></i>
             {{ session('status') }}
         </div>
     @endif
 
-    <!-- Form -->
-    <form method="POST" action="{{ route('login.post') }}">
+    <form method="POST" action="{{ route('login.post') }}" class="space-y-5">
         @csrf
 
-        <!-- Email -->
-        <div class="mb-4">
-            <input type="email"
-                   name="email"
-                   value="{{ old('email') }}"
-                   placeholder="nama@email.com"
-                   class="w-full px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 focus:border-yellow-500 focus:bg-white focus:outline-none @error('email') border-red-500 @enderror"
-                   required>
+        <div>
+            <label for="email" class="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+            <div class="relative">
+                <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value="{{ old('email') }}"
+                    placeholder="nama@email.com"
+                    autocomplete="email"
+                    autofocus
+                    class="w-full rounded-xl border bg-white py-3.5 pl-11 pr-4 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-amber-100 @error('email') border-red-400 focus:border-red-400 @else border-slate-300 focus:border-amber-500 @enderror"
+                    required
+                    aria-describedby="email-error"
+                >
+            </div>
             @error('email')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                <p id="email-error" class="mt-2 text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Password -->
-        <div class="mb-4">
+        <div>
+            <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Password</label>
             <div class="relative">
-                <input type="password"
-                       name="password"
-                       placeholder="Password"
-                       class="w-full px-4 py-3 rounded-lg bg-yellow-50 border border-yellow-200 focus:border-yellow-500 focus:bg-white focus:outline-none @error('password') border-red-500 @enderror"
-                       required>
-                <button type="button" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-eye"></i>
+                <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-sm text-slate-400" aria-hidden="true"></i>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Masukkan password"
+                    autocomplete="current-password"
+                    class="w-full rounded-xl border bg-white py-3.5 pl-11 pr-12 text-slate-900 outline-none transition placeholder:text-slate-400 focus:ring-4 focus:ring-amber-100 @error('password') border-red-400 focus:border-red-400 @else border-slate-300 focus:border-amber-500 @enderror"
+                    required
+                >
+                <button type="button" id="togglePassword" class="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Tampilkan password" aria-pressed="false">
+                    <i class="fas fa-eye" aria-hidden="true"></i>
                 </button>
             </div>
             @error('password')
-                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Remember Me -->
-        <div class="flex items-center justify-between mb-6">
-            <label class="flex items-center">
-                <input type="checkbox" name="remember" class="w-4 h-4 text-yellow-500 border-gray-300 rounded focus:ring-yellow-500">
-                <span class="ml-2 text-sm text-gray-600">Remember Me</span>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <label class="flex cursor-pointer items-center gap-2.5 text-sm text-slate-600">
+                <input type="checkbox" name="remember" value="1" class="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400">
+                Ingat saya
             </label>
-            <a href="{{ route('password.request') }}" class="text-sm text-blue-600 hover:text-blue-800">Forgot Password?</a>
+            <a href="{{ route('password.request') }}" class="text-sm font-semibold text-amber-700 transition hover:text-amber-800">Lupa password?</a>
         </div>
 
-        <!-- Login Button -->
-        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-            Login
+        <button type="submit" class="group flex w-full items-center justify-center gap-3 rounded-xl bg-amber-400 px-5 py-3.5 font-semibold text-slate-950 shadow-[0_12px_28px_rgba(251,191,36,0.24)] transition hover:bg-amber-300 focus:outline-none focus:ring-4 focus:ring-amber-200">
+            Masuk
+            <i class="fas fa-arrow-right text-xs transition-transform group-hover:translate-x-1" aria-hidden="true"></i>
         </button>
     </form>
 
-    <!-- Register Link -->
-    <div class="text-center mt-6">
-        <p class="text-gray-600">Belum punya akun? <a href="{{ route('register') }}" class="text-blue-600 hover:text-blue-800 font-semibold">Daftar sekarang</a></p>
-    </div>
+    <p class="mt-8 text-center text-sm text-slate-500">
+        Belum memiliki akun?
+        <a href="{{ route('register') }}" class="font-semibold text-slate-900 underline decoration-amber-400 decoration-2 underline-offset-4 transition hover:text-amber-700">Daftar sekarang</a>
+    </p>
 </div>
 
 @push('scripts')
 <script>
-// Toggle password visibility
-document.querySelector('.fa-eye').addEventListener('click', function() {
-    const passwordInput = document.querySelector('input[name="password"]');
-    const icon = this;
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
 
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
+togglePassword.addEventListener('click', () => {
+    const willShow = passwordInput.type === 'password';
+    passwordInput.type = willShow ? 'text' : 'password';
+    togglePassword.setAttribute('aria-pressed', String(willShow));
+    togglePassword.setAttribute('aria-label', willShow ? 'Sembunyikan password' : 'Tampilkan password');
+
+    const icon = togglePassword.querySelector('i');
+    icon.classList.toggle('fa-eye', ! willShow);
+    icon.classList.toggle('fa-eye-slash', willShow);
 });
 </script>
 @endpush

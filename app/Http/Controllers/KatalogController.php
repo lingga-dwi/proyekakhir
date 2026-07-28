@@ -25,14 +25,15 @@ class KatalogController extends Controller
                     ->orWhere('deskripsi', 'like', "%{$search}%"));
             })
             ->when($request->filled('category'), fn ($query) => $query->where('category_id', $request->category))
-            ->when($request->status === 'published', fn ($query) => $query->published())
-            ->when($request->status === 'draft', fn ($query) => $query->where('status', 'draft'))
-            ->when($request->status === 'archived', fn ($query) => $query->archived())
-            ->when($request->status === 'incomplete', fn ($query) => $query->incomplete())
+            ->when($request->status === Katalog::STATUS_PUBLISHED, fn ($query) => $query->published())
+            ->when($request->status === Katalog::STATUS_DRAFT, fn ($query) => $query->where('status', Katalog::STATUS_DRAFT))
+            ->when($request->status === Katalog::STATUS_ARCHIVED, fn ($query) => $query->archived())
             ->when(
-                ! in_array($request->status, ['published', 'draft', 'archived', 'incomplete'], true),
-                fn ($query) => $query->where('status', '!=', 'archived')
-            );
+                ! in_array($request->status, Katalog::STATUSES, true),
+                fn ($query) => $query->active()
+            )
+            ->when($request->completeness === 'complete', fn ($query) => $query->complete())
+            ->when($request->completeness === 'incomplete', fn ($query) => $query->incomplete());
 
         match ($request->get('sort', 'latest')) {
             'oldest' => $query->oldest('updated_at'),
@@ -46,12 +47,15 @@ class KatalogController extends Controller
             ->withQueryString();
 
         $categories = Category::orderBy('name')->get(['id', 'name']);
+        $activeCount = Katalog::active()->count();
+        $incompleteCount = Katalog::incomplete()->count();
         $stats = [
-            'all' => Katalog::where('status', '!=', 'archived')->count(),
+            'all' => $activeCount,
             'published' => Katalog::published()->count(),
-            'draft' => Katalog::where('status', 'draft')->count(),
+            'draft' => Katalog::where('status', Katalog::STATUS_DRAFT)->count(),
             'archived' => Katalog::archived()->count(),
-            'incomplete' => Katalog::incomplete()->count(),
+            'complete' => $activeCount - $incompleteCount,
+            'incomplete' => $incompleteCount,
         ];
 
         return view('admin.katalog.index', compact('katalogs', 'categories', 'stats'));
@@ -68,15 +72,11 @@ class KatalogController extends Controller
     {
         $data = $this->validatedData($request);
 
-        if ($request->status === 'published' && (! $request->filled('category_id') || ! $request->hasFile('gambar_utama'))) {
+        if ($request->status === Katalog::STATUS_PUBLISHED && (! $request->filled('category_id') || ! $request->hasFile('gambar_utama'))) {
             throw ValidationException::withMessages([
                 'status' => 'Katalog harus memiliki kategori dan gambar utama sebelum dipublikasikan.',
             ]);
         }
-
-        $data['kategori'] = $this->legacyCategoryName($data['category_id'] ?? null);
-        // Harga ditentukan per proyek, bukan pada item portofolio katalog.
-        $data['harga_estimasi'] = 0;
 
         // Handle main image upload
         if ($request->hasFile('gambar_utama')) {
@@ -114,14 +114,12 @@ class KatalogController extends Controller
     {
         $data = $this->validatedData($request, true);
 
-        if ($request->status === 'published'
+        if ($request->status === Katalog::STATUS_PUBLISHED
             && (! $request->filled('category_id') || (! $request->hasFile('gambar_utama') && ! $katalog->gambar_utama))) {
             throw ValidationException::withMessages([
                 'status' => 'Katalog harus memiliki kategori dan gambar utama sebelum dipublikasikan.',
             ]);
         }
-
-        $data['kategori'] = $this->legacyCategoryName($data['category_id'] ?? null);
 
         // Handle main image upload
         if ($request->hasFile('gambar_utama')) {
@@ -164,7 +162,7 @@ class KatalogController extends Controller
 
     public function destroy(Katalog $katalog)
     {
-        $katalog->update(['status' => 'archived']);
+        $katalog->update(['status' => Katalog::STATUS_ARCHIVED]);
 
         return redirect()->route('admin.katalog.index')
             ->with('success', 'Katalog berhasil diarsipkan tanpa menghapus riwayatnya.');
@@ -198,16 +196,16 @@ class KatalogController extends Controller
         DB::transaction(function () use ($validated, $catalogs) {
             switch ($validated['action']) {
                 case 'publish':
-                    Katalog::whereIn('id', $validated['ids'])->update(['status' => 'published']);
+                    Katalog::whereIn('id', $validated['ids'])->update(['status' => Katalog::STATUS_PUBLISHED]);
                     break;
                 case 'draft':
-                    Katalog::whereIn('id', $validated['ids'])->update(['status' => 'draft']);
+                    Katalog::whereIn('id', $validated['ids'])->update(['status' => Katalog::STATUS_DRAFT]);
                     break;
                 case 'change_category':
                     $this->changeCategory($catalogs, (int) $validated['category_id']);
                     break;
                 case 'archive':
-                    Katalog::whereIn('id', $validated['ids'])->update(['status' => 'archived']);
+                    Katalog::whereIn('id', $validated['ids'])->update(['status' => Katalog::STATUS_ARCHIVED]);
                     break;
             }
         });
@@ -224,14 +222,8 @@ class KatalogController extends Controller
 
     private function changeCategory($catalogs, int $categoryId): void
     {
-        $category = Category::findOrFail($categoryId);
-
-        foreach ($catalogs as $catalog) {
-            $catalog->update([
-                'category_id' => $category->id,
-                'kategori' => $category->name,
-            ]);
-        }
+        Category::findOrFail($categoryId);
+        Katalog::whereIn('id', $catalogs->pluck('id'))->update(['category_id' => $categoryId]);
     }
 
     private function validatedData(Request $request, bool $editing = false): array
@@ -250,15 +242,8 @@ class KatalogController extends Controller
             'remove_gallery.*' => ['string'],
             'status' => [
                 'required',
-                Rule::in($editing ? ['draft', 'published', 'archived'] : ['draft', 'published']),
+                Rule::in($editing ? Katalog::STATUSES : [Katalog::STATUS_DRAFT, Katalog::STATUS_PUBLISHED]),
             ],
         ]);
-    }
-
-    private function legacyCategoryName(?int $categoryId): string
-    {
-        return $categoryId
-            ? Category::findOrFail($categoryId)->name
-            : 'Belum dikategorikan';
     }
 }

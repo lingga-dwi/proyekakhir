@@ -124,36 +124,6 @@ class DashboardController extends Controller
         return view('admin.pelanggan.index', compact('pelanggan', 'stats'));
     }
 
-    public function proyek(Request $request)
-    {
-        $projectStats = [
-            'persiapan' => Pemesanan::whereIn('status_pemesanan', ['pending', 'dikonfirmasi'])->count(),
-            'tahap_desain_produksi' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'selesai' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
-            'dibatalkan' => Pemesanan::where('status_pemesanan', 'dibatalkan')->count(),
-        ];
-
-        $proyek = Pemesanan::with(['user', 'designer'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->string('search')->trim();
-                $query->where(fn ($nested) => $nested
-                    ->where('jenis_proyek', 'like', "%{$search}%")
-                    ->orWhere('jenis_bangunan', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery
-                        ->where('nama', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")));
-            })
-            ->when($request->filled('status'), fn ($query) => $query->where('status_pemesanan', $request->status))
-            ->when($request->filled('designer'), fn ($query) => $query->where('designer_id', $request->designer))
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
-
-        $designers = User::where('role', 'designer')->orderBy('nama')->get(['id', 'nama']);
-
-        return view('admin.proyek.index', compact('proyek', 'projectStats', 'designers'));
-    }
-
     public function users(Request $request)
     {
         $userStats = [

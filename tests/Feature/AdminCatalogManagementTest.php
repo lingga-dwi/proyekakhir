@@ -24,10 +24,34 @@ class AdminCatalogManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.katalog.index', ['status' => 'draft']))
             ->assertOk()
-            ->assertSee('Daftar Katalog')
+            ->assertSee('Kelola Katalog')
             ->assertSee('Kelengkapan')
             ->assertSee('Desain Draft')
             ->assertDontSee('Desain Publik');
+    }
+
+    public function test_catalog_completeness_filter_is_separate_from_publication_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $category = $this->category('Kamar Tidur');
+        $this->catalog($category, [
+            'nama_desain' => 'Draft Lengkap',
+            'status' => 'draft',
+        ]);
+        $this->catalog($category, [
+            'nama_desain' => 'Draft Belum Lengkap',
+            'gambar_utama' => null,
+            'status' => 'draft',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.katalog.index', [
+                'status' => 'draft',
+                'completeness' => 'incomplete',
+            ]))
+            ->assertOk()
+            ->assertSee('Draft Belum Lengkap')
+            ->assertDontSee('Draft Lengkap');
     }
 
     public function test_admin_can_apply_bulk_catalog_actions(): void
@@ -55,7 +79,6 @@ class AdminCatalogManagementTest extends TestCase
         $this->assertDatabaseHas('katalog', [
             'id' => $first->id,
             'category_id' => $newCategory->id,
-            'kategori' => 'Dapur',
         ]);
 
         $this->actingAs($admin)->post(route('admin.katalog.bulk-action'), [
@@ -146,8 +169,6 @@ class AdminCatalogManagementTest extends TestCase
         $this->assertDatabaseHas('katalog', [
             'nama_desain' => 'Ruang Kerja Produktif',
             'category_id' => $category->id,
-            'kategori' => 'Ruang Kerja',
-            'harga_estimasi' => 0,
             'status' => 'draft',
         ]);
     }
@@ -231,9 +252,7 @@ class AdminCatalogManagementTest extends TestCase
         return Katalog::create(array_merge([
             'category_id' => $category->id,
             'nama_desain' => 'Desain Utama',
-            'kategori' => $category->name,
             'deskripsi' => 'Deskripsi desain yang lengkap.',
-            'harga_estimasi' => 10000000,
             'gambar_utama' => 'images/katalog/rumah/contoh.jpg',
             'galeri_gambar' => [],
             'status' => 'draft',

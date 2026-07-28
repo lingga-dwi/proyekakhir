@@ -35,13 +35,16 @@
                         <i class="fas fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
                     </a>
                     <a href="{{ route('admin.pemesanan.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.pemesanan.*', 'admin.proyek.*') ? $activeNav : $inactiveNav }}">
-                        <i class="fas fa-briefcase w-5 text-center"></i><span>Pekerjaan</span>
+                        <i class="fas fa-clipboard-list w-5 text-center"></i><span>Kelola Pesanan</span>
                     </a>
                     <a href="{{ route('admin.katalog.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.katalog.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-images w-5 text-center"></i><span>Kelola Katalog</span>
                     </a>
+                    <a href="{{ route('admin.pelanggan.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.pelanggan.*') ? $activeNav : $inactiveNav }}">
+                        <i class="fas fa-address-book w-5 text-center"></i><span>Kelola Pelanggan</span>
+                    </a>
                     <a href="{{ route('admin.users.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.users.*') ? $activeNav : $inactiveNav }}">
-                        <i class="fas fa-users w-5 text-center"></i><span>Pengguna</span>
+                        <i class="fas fa-user-shield w-5 text-center"></i><span>Manajemen User</span>
                     </a>
                 @else
                     <a href="{{ route('dashboard.designer') }}" class="{{ $baseNav }} {{ request()->routeIs('dashboard.designer') ? $activeNav : $inactiveNav }}">

@@ -34,9 +34,7 @@ class ProjectFlowHardeningTest extends TestCase
         $katalog = Katalog::create([
             'category_id' => $category->id,
             'nama_desain' => 'Desain Aman',
-            'kategori' => 'Ruang Tamu',
             'deskripsi' => 'Deskripsi',
-            'harga_estimasi' => 25000000,
             'status' => 'published',
         ]);
 

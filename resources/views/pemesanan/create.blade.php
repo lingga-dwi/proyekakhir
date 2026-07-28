@@ -28,7 +28,7 @@
                             @endif
                             <div>
                                 <p class="font-medium text-gray-800">{{ $katalog->nama_desain }}</p>
-                                <p class="text-sm text-gray-600">{{ $katalog->category->name ?? $katalog->kategori }}</p>
+                                <p class="text-sm text-gray-600">{{ $katalog->category?->name ?? 'Tanpa kategori' }}</p>
                                 <p class="text-blue-600 font-semibold">{{ $katalog->getFormattedHargaAttribute() }}</p>
                             </div>
                         </div>
