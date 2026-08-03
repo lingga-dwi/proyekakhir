@@ -67,6 +67,47 @@ class AdminManagementTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_assigned_designer_can_update_progress_but_other_designer_cannot(): void
+    {
+        $customer = $this->user('customer@example.com', 'pelanggan');
+        $designer = $this->user('designer@example.com', 'designer');
+        $otherDesigner = $this->user('other-designer@example.com', 'designer');
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'progress' => 10,
+        ]);
+
+        $payload = [
+            'status_pemesanan' => Pemesanan::STATUS_IN_PROGRESS,
+            'progress' => 35,
+            'target_selesai' => now()->addMonth()->toDateString(),
+            'catatan_progres' => 'Pengukuran dan rancangan awal telah selesai.',
+        ];
+
+        $this->actingAs($otherDesigner)
+            ->put(route('designer.proyek.update', $project), $payload)
+            ->assertForbidden();
+
+        $this->actingAs($designer)
+            ->put(route('designer.proyek.update', $project), $payload)
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('pemesanan', [
+            'id' => $project->id,
+            'status_pemesanan' => Pemesanan::STATUS_IN_PROGRESS,
+            'progress' => 35,
+            'designer_id' => $designer->id,
+        ]);
+        $this->assertDatabaseHas('status_tracking', [
+            'id_pemesanan' => $project->id,
+            'actor_id' => $designer->id,
+            'catatan' => 'Pengukuran dan rancangan awal telah selesai.',
+        ]);
+    }
+
     public function test_admin_can_create_update_and_delete_user(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
@@ -103,6 +144,27 @@ class AdminManagementTest extends TestCase
 
         $response->assertRedirect()->assertSessionHas('error');
         $this->assertDatabaseHas('users', ['id' => $admin->id]);
+    }
+
+    public function test_admin_cannot_change_role_of_user_with_business_history(): void
+    {
+        $admin = $this->user('admin@example.com', 'admin');
+        $customer = $this->user('customer@example.com', 'pelanggan');
+        Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.users.update', $customer), [
+            'nama' => $customer->nama,
+            'email' => $customer->email,
+            'role' => 'designer',
+            'password' => '',
+            'password_confirmation' => '',
+        ])->assertRedirect()->assertSessionHas('error');
+
+        $this->assertSame('pelanggan', $customer->fresh()->role);
     }
 
     public function test_all_admin_management_pages_render_with_real_records(): void
@@ -339,6 +401,11 @@ class AdminManagementTest extends TestCase
     public function test_admin_can_record_offline_order_and_create_customer(): void
     {
         Notification::fake();
+        config([
+            'mail.default' => 'smtp',
+            'mail.mailers.smtp.host' => 'smtp.example.com',
+            'mail.from.address' => 'noreply@daiku.test',
+        ]);
         $admin = $this->user('admin@example.com', 'admin');
 
         $this->actingAs($admin)->post(route('admin.pemesanan.store'), [
@@ -360,6 +427,26 @@ class AdminManagementTest extends TestCase
             'jenis_proyek' => 'Interior Ruang Tamu',
         ]);
         Notification::assertSentTo($customer, ResetPassword::class);
+    }
+
+    public function test_offline_order_reports_when_activation_email_is_not_configured(): void
+    {
+        Notification::fake();
+        config(['mail.default' => 'log']);
+        $admin = $this->user('admin@example.com', 'admin');
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.store'), [
+            'customer_mode' => 'new',
+            'nama' => 'Pelanggan Tanpa Email Aktif',
+            'email' => 'mail-log@example.com',
+            'no_telp' => '081234567890',
+            'sumber_masuk' => 'kantor',
+            'tanggal_pesan' => now()->toDateString(),
+            'jenis_proyek' => 'Interior Kamar',
+        ])->assertRedirect(route('admin.pemesanan.index'))
+            ->assertSessionHas('success', fn (string $message) => str_contains($message, 'belum dikirim karena layanan email belum dikonfigurasi'));
+
+        Notification::assertNothingSent();
     }
 
     private function user(string $email, string $role): User

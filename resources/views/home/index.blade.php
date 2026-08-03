@@ -26,38 +26,35 @@
     <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-slate-950/25 to-transparent"></div>
 
     <div class="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center px-4 pb-32 pt-20 text-center sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-5xl text-white">
-            <h1 class="text-5xl font-bold leading-[0.98] tracking-tight sm:text-6xl lg:text-7xl">
-                Interior yang tertata,
-                <span class="mt-2 block font-light italic">dari layout hingga furnitur custom.</span>
+        <div class="mx-auto max-w-6xl text-white">
+            <h1 class="text-5xl font-bold leading-[0.98] tracking-tight sm:text-6xl lg:text-6xl xl:text-7xl">
+                Wujudkan interior impian Anda,
+                <span class="mt-2 block font-light italic">bersama Daiku Interior Pekanbaru.</span>
             </h1>
             <p class="mx-auto mt-7 max-w-3xl text-base leading-relaxed text-white/90 sm:text-lg">
-                Untuk rumah, kantor, dan tempat usaha di Pekanbaru. Siapkan ukuran, denah, atau foto kondisi ruang agar pembahasan desain lebih terarah.
+                Dari ide hingga ruang impian, Daiku membantu mewujudkan desain interior yang sesuai kebutuhan dan gaya Anda.
             </p>
-            <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <div class="mt-8 flex justify-center">
                 <a href="{{ route('konsultasi.index') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
-                    Bahas Proyek Anda
-                </a>
-                <a href="{{ route('katalog') }}" class="inline-flex items-center justify-center rounded-lg border border-white/60 bg-white/5 px-6 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:bg-white hover:text-slate-950">
-                    Jelajahi Portofolio
+                    Buat Pesanan Sekarang
                 </a>
             </div>
         </div>
     </div>
 
     <div class="absolute inset-x-0 bottom-5 z-20 flex justify-center px-4 sm:bottom-6" aria-label="Keunggulan layanan Daiku">
-        <div class="grid w-full max-w-[500px] grid-cols-3 items-center gap-3 rounded-xl bg-[#241f1d]/65 px-4 py-3 text-white backdrop-blur-sm sm:gap-5 sm:px-5">
+        <div class="flex w-fit max-w-full flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-white/20 bg-white/15 px-5 py-3 text-white shadow-lg shadow-slate-950/15 backdrop-blur-md sm:gap-x-8 sm:px-6">
             <div class="flex items-center justify-center gap-2">
-                <i class="fas fa-ruler-combined shrink-0 text-xs text-emerald-400" aria-hidden="true"></i>
-                <span class="text-[10px] font-medium leading-tight sm:text-xs">Custom sesuai ukuran</span>
+                <i class="fas fa-comments shrink-0 text-xs text-emerald-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Gratis konsultasi</span>
             </div>
             <div class="flex items-center justify-center gap-2">
-                <i class="fas fa-home shrink-0 text-xs text-amber-400" aria-hidden="true"></i>
-                <span class="text-[10px] font-medium leading-tight sm:text-xs">Beragam jenis ruang</span>
+                <i class="fas fa-bolt shrink-0 text-xs text-amber-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Responsif</span>
             </div>
             <div class="flex items-center justify-center gap-2">
-                <i class="fas fa-shield-alt shrink-0 text-xs text-blue-400" aria-hidden="true"></i>
-                <span class="text-[10px] font-medium leading-tight sm:text-xs">Progres dapat dipantau</span>
+                <i class="fas fa-couch shrink-0 text-xs text-blue-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Furnitur kustom</span>
             </div>
         </div>
     </div>
@@ -93,8 +90,6 @@
     </div>
 </section>
 
-@include('home.partials.case-study')
-
 <!-- Featured Portfolio -->
 <section class="bg-white py-20" aria-labelledby="portfolio-title">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -109,29 +104,146 @@
             </a>
         </div>
 
-        @if($featuredKatalogs->isNotEmpty())
+        @if($portfolioKatalogs->isNotEmpty())
+            <div
+                x-data="{
+                    active: 0,
+                    count: {{ $portfolioKatalogs->count() }},
+                    timer: null,
+                    start() {
+                        if (this.count < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                        this.stop();
+                        this.timer = window.setInterval(() => this.next(), 5000);
+                    },
+                    stop() {
+                        if (this.timer) window.clearInterval(this.timer);
+                        this.timer = null;
+                    },
+                    next() {
+                        this.active = (this.active + 1) % this.count;
+                    },
+                    previous() {
+                        this.active = (this.active - 1 + this.count) % this.count;
+                    },
+                    select(index) {
+                        this.active = index;
+                        this.start();
+                    }
+                }"
+                x-init="start()"
+                @mouseenter="stop()"
+                @mouseleave="start()"
+                @focusin="stop()"
+                @focusout="start()"
+                class="relative mb-10 overflow-hidden rounded-3xl bg-slate-950 shadow-xl"
+                aria-roledescription="carousel"
+                aria-label="Sorotan portofolio Daiku"
+            >
+                <div class="relative min-h-[480px] sm:min-h-[600px] lg:min-h-[620px]">
+                    @foreach($portfolioKatalogs as $katalog)
+                        @php
+                            $slideImages = collect([$katalog->gambar_utama_url])
+                                ->merge($katalog->galeri_gambar_urls)
+                                ->filter()
+                                ->unique()
+                                ->take(3)
+                                ->values()
+                                ->all();
+                            $hasGalleryThumbs = count($slideImages) > 1;
+                        @endphp
+                        <article
+                            x-data="{ selectedImage: 0, images: @js($slideImages) }"
+                            x-cloak
+                            x-show="active === {{ $loop->index }}"
+                            x-transition:enter="transition duration-700 ease-out"
+                            x-transition:enter-start="opacity-0 scale-[1.02]"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition duration-500 ease-in"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            class="absolute inset-0"
+                            aria-label="{{ $loop->iteration }} dari {{ $portfolioKatalogs->count() }}"
+                        >
+                            <div @class([
+                                'flex h-full flex-col',
+                                'lg:grid lg:grid-cols-[minmax(0,1fr)_240px]' => $hasGalleryThumbs,
+                            ])>
+                                <a href="{{ route('katalog', ['design' => $katalog->id]) }}" class="group relative block min-h-0 flex-1 overflow-hidden">
+                                    @if($slideImages)
+                                    <img
+                                        src="{{ $slideImages[0] }}"
+                                        :src="images[selectedImage] || '{{ $slideImages[0] }}'"
+                                        alt="{{ $katalog->nama_desain }}"
+                                        class="absolute inset-0 h-full w-full object-cover transition duration-[1600ms] group-hover:scale-[1.025]"
+                                        @if($loop->first) fetchpriority="high" @else loading="lazy" @endif
+                                        decoding="async"
+                                        width="1440"
+                                        height="800"
+                                    >
+                                    @endif
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/15 to-transparent"></div>
+                                    <div class="absolute inset-x-0 bottom-0 p-7 text-white sm:p-10 lg:p-12">
+                                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">
+                                            {{ $katalog->category?->name ?? 'Portofolio Daiku' }}
+                                        </p>
+                                        <h3 class="mt-3 max-w-3xl text-3xl font-bold sm:text-4xl lg:text-5xl">{{ $katalog->nama_desain }}</h3>
+                                        <p class="mt-4 max-w-2xl text-sm leading-relaxed text-white/80 sm:text-base">
+                                            {{ Str::limit($katalog->deskripsi, 145) }}
+                                        </p>
+                                        <span class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                            Lihat desain <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                        </span>
+                                    </div>
+                                </a>
+
+                                @if($hasGalleryThumbs)
+                                    <div class="flex shrink-0 gap-3 bg-slate-950 p-3 lg:grid lg:grid-rows-2 lg:gap-3">
+                                        @foreach(array_slice($slideImages, 1, 2) as $image)
+                                            <button
+                                                type="button"
+                                                @click="selectedImage = {{ $loop->index + 1 }}"
+                                                class="relative h-20 min-w-28 flex-1 overflow-hidden rounded-xl border-2 border-transparent transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 lg:h-auto lg:min-w-0"
+                                                :class="selectedImage === {{ $loop->index + 1 }} ? 'border-amber-300 opacity-100' : 'border-white/15 opacity-70 hover:opacity-100'"
+                                                aria-label="Tampilkan foto {{ $loop->index + 2 }} dari {{ $katalog->nama_desain }}"
+                                            >
+                                                <img src="{{ $image }}" alt="{{ $katalog->nama_desain }} - foto {{ $loop->index + 2 }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+
+                @if($portfolioKatalogs->count() > 1)
+                    <div class="absolute right-5 top-5 z-10 flex gap-2 sm:right-7 sm:top-7 lg:right-[260px]">
+                        <button type="button" @click="previous(); start()" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-slate-950/35 text-white backdrop-blur-md transition hover:bg-white hover:text-slate-950" aria-label="Tampilkan desain sebelumnya">
+                            <i class="fas fa-arrow-left text-sm" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" @click="next(); start()" class="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-slate-950/35 text-white backdrop-blur-md transition hover:bg-white hover:text-slate-950" aria-label="Tampilkan desain berikutnya">
+                            <i class="fas fa-arrow-right text-sm" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <div class="absolute bottom-7 right-7 z-10 hidden items-center gap-2 sm:flex lg:bottom-12 lg:right-[270px]" aria-label="Pilih desain">
+                        @foreach($portfolioKatalogs as $katalog)
+                            <button
+                                type="button"
+                                @click="select({{ $loop->index }})"
+                                class="h-1.5 rounded-full bg-white transition-all duration-300"
+                                :class="active === {{ $loop->index }} ? 'w-9 opacity-100' : 'w-4 opacity-45 hover:opacity-80'"
+                                aria-label="Tampilkan {{ $katalog->nama_desain }}"
+                                :aria-current="active === {{ $loop->index }} ? 'true' : 'false'"
+                            ></button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+
             <div class="grid gap-7 md:grid-cols-3">
-                @foreach($featuredKatalogs as $katalog)
-                    <a href="{{ route('katalog.detail', $katalog->id) }}" class="group overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200 transition hover:-translate-y-1 hover:shadow-xl">
-                        <div class="h-64 overflow-hidden bg-gray-100">
-                            @if($katalog->gambar_utama_url)
-                                <img src="{{ $katalog->gambar_utama_url }}"
-                                     alt="{{ $katalog->nama_desain }}"
-                                     class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                                     loading="lazy"
-                                     decoding="async"
-                                     width="800"
-                                     height="640">
-                            @endif
-                        </div>
-                        <div class="p-6">
-                            <p class="text-xs font-bold uppercase tracking-wider text-amber-700">
-                                {{ $katalog->category?->name ?? 'Tanpa kategori' }}
-                            </p>
-                            <h3 class="mt-2 text-xl font-bold text-slate-900">{{ $katalog->nama_desain }}</h3>
-                            <p class="mt-3 text-sm leading-relaxed text-gray-600">{{ Str::limit($katalog->deskripsi, 110) }}</p>
-                        </div>
-                    </a>
+                @foreach($portfolioKatalogs->take(3) as $katalog)
+                    <x-catalog-card :katalog="$katalog" />
                 @endforeach
             </div>
         @else

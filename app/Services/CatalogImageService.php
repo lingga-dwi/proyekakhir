@@ -10,9 +10,15 @@ class CatalogImageService
 {
     public function store(UploadedFile $file, string $directory): string
     {
+        if (! function_exists('imagecreatefromstring')
+            || ! function_exists('imagecreatetruecolor')
+            || ! function_exists('imagewebp')) {
+            return $file->store($directory, 'public');
+        }
+
         $source = @imagecreatefromstring((string) file_get_contents($file->getRealPath()));
 
-        if (! $source || ! function_exists('imagewebp')) {
+        if (! $source) {
             return $file->store($directory, 'public');
         }
 

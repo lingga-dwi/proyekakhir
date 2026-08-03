@@ -6,6 +6,7 @@ use App\Models\Katalog;
 use App\Models\Konsultasi;
 use App\Models\Pemesanan;
 use App\Services\CustomerUploadService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -48,8 +49,6 @@ class KonsultasiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255',
-            'email' => 'required|email',
             'no_telp' => 'required|string|max:20',
             'jenis_konsultasi' => 'required|in:free_consultation,virtual_design,in_home_visit,chat_support',
             'jenis_ruangan' => 'required|in:living_room,bedroom,kitchen,bathroom,office,whole_house',
@@ -88,23 +87,29 @@ class KonsultasiController extends Controller
             "customer-uploads/consultations/{$user->id}"
         );
 
-        $konsultasi = Konsultasi::create([
-            'user_id' => $user->id,
-            'nama' => $user->nama,
-            'email' => $user->email,
-            'no_telp' => $contactNumber,
-            'jenis_konsultasi' => $request->jenis_konsultasi,
-            'jenis_ruangan' => $request->jenis_ruangan,
-            'budget_range' => $request->budget_range,
-            'timeline' => $request->timeline,
-            'luas_ruangan' => $request->luas_ruangan,
-            'gaya_preferensi' => $request->gaya_preferensi,
-            'deskripsi_kebutuhan' => $request->deskripsi_kebutuhan,
-            'upload_foto' => $uploadedFiles,
-            'tanggal_konsultasi' => $request->tanggal_konsultasi,
-            'waktu_konsultasi' => $request->waktu_konsultasi,
-            'status' => Konsultasi::STATUS_PENDING,
-        ]);
+        try {
+            $konsultasi = Konsultasi::create([
+                'user_id' => $user->id,
+                'nama' => $user->nama,
+                'email' => $user->email,
+                'no_telp' => $contactNumber,
+                'jenis_konsultasi' => $request->jenis_konsultasi,
+                'jenis_ruangan' => $request->jenis_ruangan,
+                'budget_range' => $request->budget_range,
+                'timeline' => $request->timeline,
+                'luas_ruangan' => $request->luas_ruangan,
+                'gaya_preferensi' => $request->gaya_preferensi,
+                'deskripsi_kebutuhan' => $request->deskripsi_kebutuhan,
+                'upload_foto' => $uploadedFiles,
+                'tanggal_konsultasi' => $request->tanggal_konsultasi,
+                'waktu_konsultasi' => $request->waktu_konsultasi,
+                'status' => Konsultasi::STATUS_PENDING,
+            ]);
+        } catch (QueryException $exception) {
+            $this->uploads->deleteMany($uploadedFiles);
+            $this->throwIfSlotConflict($exception);
+            throw $exception;
+        }
 
         return redirect()->route('konsultasi.show', $konsultasi->id)
             ->with('success', 'Konsultasi berhasil dijadwalkan! Tim kami akan menghubungi Anda segera.');
@@ -149,9 +154,23 @@ class KonsultasiController extends Controller
             ]);
         }
 
-        $konsultasi->update($data);
+        try {
+            $konsultasi->update($data);
+        } catch (QueryException $exception) {
+            $this->throwIfSlotConflict($exception);
+            throw $exception;
+        }
 
         return back()->with('success', 'Status konsultasi berhasil diperbarui.');
+    }
+
+    private function throwIfSlotConflict(QueryException $exception): void
+    {
+        if (str_contains(strtolower($exception->getMessage()), 'active_slot')) {
+            throw ValidationException::withMessages([
+                'waktu_konsultasi' => 'Waktu tersebut sudah dipesan. Silakan pilih jadwal lain.',
+            ]);
+        }
     }
 
     public function convertToProject(Request $request, Konsultasi $konsultasi)

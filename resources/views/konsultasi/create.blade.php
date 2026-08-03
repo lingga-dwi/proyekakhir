@@ -22,22 +22,16 @@
                     <div class="grid md:grid-cols-3 gap-6">
                         <div>
                             <label for="nama" class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                            <input type="text" id="nama" name="nama" value="{{ auth()->user()->nama ?? old('nama') }}" required readonly
+                            <input type="text" id="nama" value="{{ auth()->user()->nama }}" readonly
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <p class="mt-1 text-xs text-gray-500">Mengikuti data akun yang sedang login.</p>
-                            @error('nama')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
                         </div>
 
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" id="email" name="email" value="{{ auth()->user()->email ?? old('email') }}" required readonly
+                            <input type="email" id="email" value="{{ auth()->user()->email }}" readonly
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <p class="mt-1 text-xs text-gray-500">Email konsultasi selalu mengikuti identitas akun.</p>
-                            @error('email')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
                         </div>
 
                         <div>

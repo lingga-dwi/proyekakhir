@@ -2,7 +2,7 @@
 
 @section('title', 'Tentang Daiku Interior & Exterior Pekanbaru')
 @section('meta_description', 'Kenali Daiku Interior & Exterior, studio desain dan pengerjaan interior-eksterior di Pekanbaru yang melayani klien sejak 2017.')
-@section('meta_image', asset('images/katalog/rumah/rumah (660).jpg'))
+@section('meta_image', asset('images/founder-daiku.jpg'))
 
 @push('styles')
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,11 +23,11 @@
             <h1 id="about-title" class="about-display mt-5 text-5xl leading-[0.95] text-slate-950 sm:text-6xl">
                 Tentang Daiku
             </h1>
-            <p class="about-display mt-7 text-2xl leading-snug text-slate-700 sm:text-3xl">
-                Studio desain dan pengerjaan ruang yang berbasis di Pekanbaru.
+            <p class="mt-7 text-base leading-8 text-slate-600">
+                Kami mengkhususkan diri dalam desain interior layanan penuh. Portofolio proyek kami mencakup konstruksi rumah baru dan renovasi interior residensial dari semua ukuran, kecil hingga besar.
             </p>
             <p class="mt-7 text-base leading-8 text-slate-600">
-                Sejak 2017, Daiku membantu pemilik hunian, kantor, dan ruang usaha merencanakan hingga mewujudkan ruang yang mempertemukan fungsi, karakter, dan detail.
+                Responsif terhadap visi klien kami, kami berkomitmen untuk mendesain yang mengekspresikan keterkaitan antara arsitektur dan tempat, ruang dan bentuk, warna dan material, ekonomi dan integritas.
             </p>
 
             <dl class="mt-9 grid grid-cols-2 gap-6 border-t border-stone-300 pt-6 sm:grid-cols-3">
@@ -46,10 +46,10 @@
             </dl>
         </div>
 
-        <figure class="overflow-hidden bg-stone-200">
-            <img src="{{ asset('images/katalog/rumah/rumah (660).jpg') }}"
-                 alt="Interior hunian karya Daiku"
-                 class="h-[400px] w-full object-cover object-center sm:h-[500px]"
+        <figure class="bg-stone-200">
+            <img src="{{ asset('images/founder-daiku.jpg') }}"
+                 alt="Dhede dan Fendra, founder Daiku Interior"
+                 class="h-auto w-full"
                  fetchpriority="high"
                  decoding="async">
         </figure>
@@ -59,7 +59,7 @@
 <section class="bg-white py-20 sm:py-28" aria-labelledby="story-title">
     <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:items-center lg:gap-20 lg:px-8">
         <figure class="overflow-hidden bg-stone-100">
-            <img src="{{ asset('images/katalog/rumah/rumah (541).jpg') }}"
+            <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_0.jpg') }}"
                  alt="Detail furniture hasil pengerjaan Daiku"
                  class="h-[480px] w-full object-cover sm:h-[650px]"
                  loading="lazy"
@@ -125,7 +125,7 @@
         <div class="mt-16 grid gap-8 lg:grid-cols-2 lg:gap-10">
             <article>
                 <figure class="overflow-hidden bg-stone-100">
-                    <img src="{{ asset('images/katalog/rumah/rumah (601).jpg') }}"
+                    <img src="{{ asset('images/katalog/curated/dapur/2022-02-15_CZ_Zp2opU9r/daikuinterior_CZ_Zp2opU9r_0.jpg') }}"
                          alt="Furniture custom pada area servis"
                          class="h-[430px] w-full object-cover sm:h-[560px]"
                          loading="lazy"
@@ -139,7 +139,7 @@
 
             <article class="lg:pt-20">
                 <figure class="overflow-hidden bg-stone-100">
-                    <img src="{{ asset('images/katalog/rumah/rumah (606).jpg') }}"
+                    <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_1.jpg') }}"
                          alt="Furniture kamar tidur hasil pengerjaan Daiku"
                          class="h-[430px] w-full object-cover sm:h-[560px]"
                          loading="lazy"
@@ -198,15 +198,15 @@
 
         <div class="mt-14 grid gap-5 sm:grid-cols-3">
             <figure class="overflow-hidden bg-stone-100">
-                <img src="{{ asset('images/katalog/rumah/rumah (556).jpg') }}" alt="Area dapur dan ruang makan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
+                <img src="{{ asset('images/katalog/curated/dapur/2022-02-19_CaJABsOpCeJ/daikuinterior_CaJABsOpCeJ_0.jpg') }}" alt="Area dapur dan ruang makan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
                 <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Dapur & ruang makan</figcaption>
             </figure>
             <figure class="overflow-hidden bg-stone-100 sm:mt-12">
-                <img src="{{ asset('images/katalog/rumah/rumah (580).jpg') }}" alt="Panel televisi dan penyimpanan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
+                <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_1.jpg') }}" alt="Panel televisi dan penyimpanan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
                 <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Panel TV & penyimpanan</figcaption>
             </figure>
             <figure class="overflow-hidden bg-stone-100">
-                <img src="{{ asset('images/katalog/rumah/rumah (550).jpg') }}" alt="Ruang keluarga hasil pengerjaan Daiku" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
+                <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_0.jpg') }}" alt="Ruang keluarga hasil pengerjaan Daiku" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
                 <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Ruang keluarga</figcaption>
             </figure>
         </div>

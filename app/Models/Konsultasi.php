@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -44,6 +45,7 @@ class Konsultasi extends Model
         'waktu_konsultasi',
         'status',
         'catatan_admin',
+        'active_slot',
     ];
 
     protected $casts = [
@@ -52,6 +54,35 @@ class Konsultasi extends Model
         'waktu_konsultasi' => 'datetime:H:i',
         'luas_ruangan' => 'decimal:2',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Konsultasi $consultation): void {
+            $consultation->active_slot = $consultation->reservesSlot()
+                ? $consultation->slotKey()
+                : null;
+        });
+    }
+
+    public function reservesSlot(): bool
+    {
+        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED], true);
+    }
+
+    public function slotKey(): string
+    {
+        $date = $this->tanggal_konsultasi;
+        $time = $this->waktu_konsultasi;
+
+        $datePart = $date instanceof CarbonInterface
+            ? $date->format('Y-m-d')
+            : substr((string) $date, 0, 10);
+        $timePart = $time instanceof CarbonInterface
+            ? $time->format('H:i')
+            : substr((string) $time, 0, 5);
+
+        return "{$datePart} {$timePart}";
+    }
 
     // Relationships
     public function user()

@@ -14,9 +14,17 @@ class PublicSeoTest extends TestCase
             ->assertOk()
             ->assertSee('name="description"', false)
             ->assertSee('rel="canonical"', false)
+            ->assertSee('favicon.svg', false)
             ->assertSee('property="og:title"', false)
             ->assertSee('Bawa ukuran, denah, atau foto ruang Anda.')
             ->assertSee('https://wa.me/6282186888824', false);
+    }
+
+    public function test_catalog_opens_selected_design_panel_from_query_parameter(): void
+    {
+        $this->get(route('katalog', ['design' => 18]))
+            ->assertOk()
+            ->assertSee('openSidebar(selectedDesign, false)', false);
     }
 
     public function test_sitemap_is_available_as_xml(): void

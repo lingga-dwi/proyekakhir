@@ -25,24 +25,6 @@ class DashboardController extends Controller
             'new_customers' => User::where('role', 'pelanggan')->where('created_at', '>=', Carbon::now()->subDays(30))->count(),
         ];
 
-        $attentionProjects = Pemesanan::with(['user', 'designer'])
-            ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
-            ->orderByRaw(
-                "CASE
-                    WHEN status_pemesanan = 'pending' THEN 0
-                    WHEN target_selesai IS NOT NULL AND target_selesai < ? THEN 1
-                    WHEN target_selesai IS NOT NULL AND target_selesai <= ? THEN 2
-                    WHEN designer_id IS NULL THEN 3
-                    ELSE 4
-                END",
-                [$today->toDateString(), $deadlineLimit->toDateString()]
-            )
-            ->orderByRaw('CASE WHEN target_selesai IS NULL THEN 1 ELSE 0 END')
-            ->orderBy('target_selesai')
-            ->latest('updated_at')
-            ->take(8)
-            ->get();
-
         $recentActivities = StatusTracking::with(['pemesanan.user'])
             ->whereHas('pemesanan')
             ->latest('created_at')
@@ -70,7 +52,7 @@ class DashboardController extends Controller
                 'url' => route('pemesanan.show', $tracking->pemesanan),
             ]);
 
-        return view('dashboard.admin', compact('stats', 'attentionProjects', 'recentActivities'));
+        return view('dashboard.admin', compact('stats', 'recentActivities'));
     }
 
     public function designer()

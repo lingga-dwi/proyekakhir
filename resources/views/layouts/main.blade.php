@@ -8,6 +8,7 @@
     @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @include('partials.favicon')
     <meta name="description" content="{{ $metaDescription }}">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="{{ url()->current() }}">
@@ -36,16 +37,16 @@
     <!-- Header Navigation -->
     <header x-data="{ mobileOpen: false }" @keydown.escape.window="mobileOpen = false" class="fixed top-0 inset-x-0 z-50 bg-white shadow-sm">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+            <div class="grid h-16 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center">
                 <!-- Logo -->
-                <div class="flex items-center">
+                <div class="col-start-1 row-start-1 flex items-center justify-self-start">
                     <a href="{{ route('home') }}" aria-label="Kembali ke beranda">
                         <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-5 w-auto">
                     </a>
                 </div>
                 
                 <!-- Navigation Menu -->
-                <div class="hidden md:flex space-x-8">
+                <div class="col-start-2 row-start-1 hidden items-center space-x-8 lg:flex">
                     <a href="{{ route('home') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('home') ? 'text-yellow-600' : '' }}">Beranda</a>
                     <a href="{{ route('about') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('about') ? 'text-yellow-600' : '' }}">Tentang Kami</a>
                     <a href="{{ route('katalog') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('katalog*') ? 'text-yellow-600' : '' }}">Katalog</a>
@@ -53,7 +54,7 @@
                 </div>
                 
                 <!-- User Menu -->
-                <div class="hidden md:flex items-center space-x-4">
+                <div class="col-start-3 row-start-1 hidden items-center justify-self-end space-x-4 lg:flex">
                     @auth
                         <div class="relative w-56" x-data="{ open: false }">
                             @php
@@ -110,7 +111,7 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <div class="md:hidden">
+                <div class="col-start-3 row-start-1 justify-self-end lg:hidden">
                     <button type="button"
                             @click="mobileOpen = !mobileOpen"
                             :aria-expanded="mobileOpen.toString()"
@@ -122,7 +123,7 @@
                 </div>
             </div>
 
-            <div id="mobile-navigation" x-cloak x-show="mobileOpen" x-transition class="md:hidden border-t border-gray-100 py-3">
+            <div id="mobile-navigation" x-cloak x-show="mobileOpen" x-transition class="border-t border-gray-100 py-3 lg:hidden">
                 <div class="space-y-1">
                     <a href="{{ route('home') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('home') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Beranda</a>
                     <a href="{{ route('about') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('about') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Tentang Kami</a>

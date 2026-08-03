@@ -32,4 +32,12 @@ class CustomerUploadService
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }
+
+    /** @param array<int, string> $paths */
+    public function deleteMany(array $paths): void
+    {
+        if ($paths !== []) {
+            Storage::disk('local')->delete($paths);
+        }
+    }
 }

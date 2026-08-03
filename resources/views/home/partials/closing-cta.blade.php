@@ -4,8 +4,8 @@
     $whatsappUrl = "https://wa.me/{$whatsappNumber}?text={$whatsappMessage}";
 @endphp
 
-<section class="relative isolate overflow-hidden bg-slate-950 text-white" aria-labelledby="closing-cta-title">
-    <div class="absolute -left-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-amber-400/10 blur-3xl" aria-hidden="true"></div>
+<section class="relative isolate overflow-hidden bg-[#fff8ed] text-slate-900" aria-labelledby="closing-cta-title">
+    <div class="absolute -left-32 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-amber-300/25 blur-3xl" aria-hidden="true"></div>
 
     <div class="grid lg:min-h-[560px] lg:grid-cols-2">
         <div class="relative z-10 flex items-center">
@@ -18,7 +18,7 @@
                 <h2 id="closing-cta-title" class="mt-7 max-w-xl text-4xl font-bold leading-tight sm:text-5xl">
                     Bawa ukuran, denah, atau foto ruang Anda.
                 </h2>
-                <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-300">
+                <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
                     Kirim informasi awal melalui formulir atau WhatsApp. Tim Daiku akan meninjau jenis ruang, fungsi, dan cakupan yang ingin dikerjakan.
                 </p>
 
@@ -27,13 +27,13 @@
                         Isi formulir konsultasi
                         <i class="fas fa-arrow-right text-sm transition-transform group-hover:translate-x-1" aria-hidden="true"></i>
                     </a>
-                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 rounded-lg border border-white/30 bg-white/5 px-6 py-3.5 font-semibold text-white backdrop-blur-sm transition hover:border-white hover:bg-white hover:text-slate-950">
+                    <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-6 py-3.5 font-semibold text-slate-800 transition hover:border-amber-400 hover:bg-amber-50">
                         <i class="fab fa-whatsapp text-lg" aria-hidden="true"></i>
                         WhatsApp Daiku
                     </a>
                 </div>
 
-                <div class="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-white/10 pt-6 text-sm text-slate-400">
+                <div class="mt-10 flex flex-wrap gap-x-7 gap-y-3 border-t border-amber-200 pt-6 text-sm text-slate-600">
                     <span class="inline-flex items-center gap-2">
                         <i class="fas fa-location-dot text-amber-400" aria-hidden="true"></i>
                         Pekanbaru, Riau
@@ -54,9 +54,9 @@
                  decoding="async"
                  width="1307"
                  height="1067">
-            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent lg:bg-gradient-to-r lg:from-slate-950/45 lg:via-transparent lg:to-transparent"></div>
-            <div class="absolute bottom-7 left-7 right-7 max-w-sm border-l-2 border-amber-400 bg-slate-950/75 px-5 py-4 backdrop-blur-md sm:bottom-10 sm:left-10">
-                <p class="text-sm leading-relaxed text-slate-200">
+            <div class="absolute inset-0 bg-gradient-to-t from-white/35 via-transparent to-transparent"></div>
+            <div class="absolute bottom-7 left-7 right-7 max-w-sm border-l-2 border-amber-400 bg-white/90 px-5 py-4 shadow-lg backdrop-blur-md sm:bottom-10 sm:left-10">
+                <p class="text-sm leading-relaxed text-slate-700">
                     Ukuran, kondisi eksisting, dan referensi visual membantu pembahasan desain menjadi lebih tepat.
                 </p>
             </div>

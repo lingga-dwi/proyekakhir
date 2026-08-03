@@ -1,0 +1,51 @@
+@props([
+    'katalog',
+    'sidebar' => false,
+])
+
+<article
+    @if($sidebar)
+        onclick="openSidebar({{ $katalog->id }})"
+        tabindex="0"
+        role="button"
+        aria-label="Lihat detail {{ $katalog->nama_desain }}"
+        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSidebar({{ $katalog->id }}); }"
+    @endif
+    class="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2 {{ $sidebar ? 'focus:ring-2 focus:ring-amber-500 focus:ring-offset-2' : '' }}"
+>
+    @unless($sidebar)
+        <a href="{{ route('katalog', ['design' => $katalog->id]) }}" class="absolute inset-0 z-10 rounded-2xl" aria-label="Lihat detail {{ $katalog->nama_desain }}"></a>
+    @endunless
+
+    <div class="relative h-56 shrink-0 overflow-hidden bg-gray-100">
+        @if($katalog->gambar_utama_url)
+            <img
+                src="{{ $katalog->gambar_utama_url }}"
+                alt="{{ $katalog->nama_desain }}"
+                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                loading="lazy"
+                decoding="async"
+                width="640"
+                height="448"
+            >
+        @else
+            <div class="flex h-full items-center justify-center text-gray-400">
+                <i class="fas fa-image text-4xl" aria-hidden="true"></i>
+            </div>
+        @endif
+        <div class="absolute inset-0 bg-black/0 transition group-hover:bg-black/10"></div>
+        @if($katalog->category)
+            <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-800 shadow-sm backdrop-blur">
+                {{ $katalog->category->name }}
+            </span>
+        @endif
+    </div>
+
+    <div class="flex flex-1 flex-col p-5">
+        <h3 class="text-lg font-bold text-slate-900">{{ $katalog->nama_desain }}</h3>
+        <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">{{ $katalog->deskripsi }}</p>
+        <span class="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold text-amber-700">
+            Lihat desain <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+        </span>
+    </div>
+</article>

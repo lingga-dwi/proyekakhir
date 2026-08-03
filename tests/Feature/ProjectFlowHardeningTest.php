@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Katalog;
+use App\Models\Konsultasi;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +16,19 @@ use Tests\TestCase;
 class ProjectFlowHardeningTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_admin_and_designer_cannot_use_customer_only_routes(): void
+    {
+        foreach (['admin', 'designer'] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+
+            $this->actingAs($user)->get(route('aktivitas.saya'))->assertForbidden();
+            $this->actingAs($user)->get(route('pemesanan.create'))->assertForbidden();
+            $this->actingAs($user)->get(route('konsultasi.create'))->assertForbidden();
+            $this->actingAs($user)->post(route('pemesanan.store'))->assertForbidden();
+            $this->actingAs($user)->post(route('konsultasi.store'))->assertForbidden();
+        }
+    }
 
     public function test_pemesanan_creation_does_not_mutate_authenticated_user_profile(): void
     {
@@ -106,6 +121,32 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
     }
 
+    public function test_database_prevents_two_active_consultations_from_reserving_the_same_slot(): void
+    {
+        $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $slot = now()->addWeek()->toDateString();
+
+        Konsultasi::create($this->consultationData($firstCustomer, $slot));
+
+        $this->expectException(QueryException::class);
+        Konsultasi::create($this->consultationData($secondCustomer, $slot));
+    }
+
+    public function test_cancelled_consultation_releases_its_reserved_slot(): void
+    {
+        $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $slot = now()->addWeek()->toDateString();
+
+        $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
+        $first->update(['status' => Konsultasi::STATUS_CANCELLED]);
+        $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
+
+        $this->assertNull($first->fresh()->active_slot);
+        $this->assertNotNull($second->active_slot);
+    }
+
     public function test_customer_attachments_are_private_and_owner_authorized(): void
     {
         Storage::fake('local');
@@ -136,5 +177,23 @@ class ProjectFlowHardeningTest extends TestCase
 
         $this->actingAs($owner)->get(route('pemesanan.attachment', [$project, 0]))->assertOk();
         $this->actingAs($otherCustomer)->get(route('pemesanan.attachment', [$project, 0]))->assertForbidden();
+    }
+
+    private function consultationData(User $user, string $date): array
+    {
+        return [
+            'user_id' => $user->id,
+            'nama' => $user->nama,
+            'email' => $user->email,
+            'no_telp' => '08123456789',
+            'jenis_konsultasi' => 'free_consultation',
+            'jenis_ruangan' => 'living_room',
+            'budget_range' => '10m_25m',
+            'timeline' => '1_month',
+            'deskripsi_kebutuhan' => 'Membutuhkan konsultasi desain.',
+            'tanggal_konsultasi' => $date,
+            'waktu_konsultasi' => '10:00',
+            'status' => Konsultasi::STATUS_PENDING,
+        ];
     }
 }

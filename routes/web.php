@@ -21,8 +21,8 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 // Konsultasi routes (public)
 Route::get('/konsultasi', [KonsultasiController::class, 'index'])->name('konsultasi.index');
-Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware('auth');
-Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'throttle:customer-forms']);
+Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware(['auth', 'role:pelanggan']);
+Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'role:pelanggan', 'throttle:customer-forms']);
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -41,19 +41,25 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin')->middleware('role:admin');
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
 
-    // Customer routes
-    Route::get('/aktivitas-saya', [CustomerActivityController::class, 'index'])->name('aktivitas.saya');
-    Route::redirect('/pesanan-saya', '/aktivitas-saya?tab=pesanan')->name('pesanan.saya');
-    Route::redirect('/konsultasi-saya', '/aktivitas-saya?tab=konsultasi')->name('konsultasi.saya');
+    // Customer-only routes
+    Route::middleware(['role:pelanggan'])->group(function () {
+        Route::get('/aktivitas-saya', [CustomerActivityController::class, 'index'])->name('aktivitas.saya');
+        Route::redirect('/pesanan-saya', '/aktivitas-saya?tab=pesanan')->name('pesanan.saya');
+        Route::redirect('/konsultasi-saya', '/aktivitas-saya?tab=konsultasi')->name('konsultasi.saya');
+        Route::get('/pemesanan/create', [PemesananController::class, 'create'])->name('pemesanan.create');
+        Route::post('/pemesanan', [PemesananController::class, 'store'])->name('pemesanan.store')->middleware('throttle:customer-forms');
+    });
+
+    // Detail routes authorize the owner, admin, or assigned designer in the controller.
     Route::get('/konsultasi/{id}', [KonsultasiController::class, 'show'])->name('konsultasi.show');
     Route::get('/konsultasi/{konsultasi}/lampiran/{index}', [KonsultasiController::class, 'attachment'])
         ->whereNumber('index')->name('konsultasi.attachment');
-
-    Route::get('/pemesanan/create', [PemesananController::class, 'create'])->name('pemesanan.create');
-    Route::post('/pemesanan', [PemesananController::class, 'store'])->name('pemesanan.store')->middleware('throttle:customer-forms');
     Route::get('/pemesanan/{id}', [PemesananController::class, 'show'])->name('pemesanan.show');
     Route::get('/pemesanan/{pemesanan}/lampiran/{index}', [PemesananController::class, 'attachment'])
         ->whereNumber('index')->name('pemesanan.attachment');
+
+    Route::put('/designer/proyek/{pemesanan}', [PemesananController::class, 'updateAssignedProject'])
+        ->name('designer.proyek.update')->middleware('role:designer');
 
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {

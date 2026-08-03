@@ -13,28 +13,22 @@ class HomeController extends Controller
     public function index()
     {
         if (Config::get('app.db_offline')) {
-            $featuredKatalogs = collect();
-            $caseStudy = null;
+            $portfolioKatalogs = collect();
         } else {
             try {
-                $caseStudy = Katalog::with('category')
+                $portfolioKatalogs = Katalog::with('category')
                     ->published()
-                    ->whereNotNull('inspiration_story')
-                    ->whereNotNull('room_size')
-                    ->whereNotNull('style_tags')
                     ->latest('id')
-                    ->first();
-
-                $featuredKatalogs = Katalog::with('category')->published()->latest()->take(3)->get();
+                    ->take(6)
+                    ->get();
             } catch (\Throwable $e) {
                 // Saat DB mati, tampilkan tanpa data agar halaman tetap hidup
-                $featuredKatalogs = collect();
-                $caseStudy = null;
-                logger()->warning('DB unavailable when loading home featured katalogs', ['error' => $e->getMessage()]);
+                $portfolioKatalogs = collect();
+                logger()->warning('DB unavailable when loading home portfolio', ['error' => $e->getMessage()]);
             }
         }
 
-        return view('home.index', compact('featuredKatalogs', 'caseStudy'));
+        return view('home.index', compact('portfolioKatalogs'));
     }
 
     public function about()

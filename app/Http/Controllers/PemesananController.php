@@ -5,12 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Katalog;
 use App\Models\Pemesanan;
 use App\Models\User;
+use App\Services\AccountActivationService;
 use App\Services\AdminWorkItemService;
 use App\Services\CustomerUploadService;
 use App\Services\ManualOrderService;
 use App\Services\ProjectWorkflowService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 
 class PemesananController extends Controller
@@ -19,7 +19,8 @@ class PemesananController extends Controller
         private readonly ProjectWorkflowService $workflow,
         private readonly CustomerUploadService $uploads,
         private readonly AdminWorkItemService $workItems,
-        private readonly ManualOrderService $manualOrders
+        private readonly ManualOrderService $manualOrders,
+        private readonly AccountActivationService $activation
     ) {}
 
     public function create(Request $request)
@@ -37,10 +38,8 @@ class PemesananController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required|string|max:255',
             'no_hp' => 'required|string|max:20',
             'alamat' => 'required|string',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore(auth()->id())],
             'jenis_proyek' => 'required|string',
             'jenis_bangunan' => 'required|string',
             'luas_area' => 'required|numeric|min:1',
@@ -173,10 +172,15 @@ class PemesananController extends Controller
         $message = 'Pesanan DI-'.str_pad((string) $pemesanan->id, 3, '0', STR_PAD_LEFT).' berhasil dicatat.';
 
         if ($data['customer_mode'] === 'new') {
-            $resetStatus = Password::sendResetLink(['email' => $data['email']]);
-            $message .= $resetStatus === Password::RESET_LINK_SENT
-                ? ' Tautan aktivasi akun telah dikirim ke email pelanggan.'
-                : ' Akun pelanggan dibuat, tetapi tautan aktivasi belum terkirim. Periksa konfigurasi email.';
+            $customer = $pemesanan->user()->firstOrFail();
+
+            if (! $this->activation->isDeliveryConfigured()) {
+                $message .= ' Akun pelanggan dibuat, tetapi email aktivasi belum dikirim karena layanan email belum dikonfigurasi.';
+            } else {
+                $message .= $this->activation->send($customer)
+                    ? ' Tautan aktivasi akun telah dikirim ke email pelanggan.'
+                    : ' Akun pelanggan dibuat, tetapi email aktivasi gagal dikirim. Periksa layanan email.';
+            }
         }
 
         return redirect()->route('admin.pemesanan.index')
@@ -215,6 +219,34 @@ class PemesananController extends Controller
         ]);
 
         $changed = $this->workflow->update($pemesanan, $data, $request->user());
+
+        return back()->with('success', $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.');
+    }
+
+    public function updateAssignedProject(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless($pemesanan->designer_id === $request->user()->id, 403);
+
+        $data = $request->validate([
+            'status_pemesanan' => [
+                'required',
+                Rule::in([
+                    Pemesanan::STATUS_CONFIRMED,
+                    Pemesanan::STATUS_IN_PROGRESS,
+                    Pemesanan::STATUS_COMPLETED,
+                ]),
+            ],
+            'progress' => ['required', 'integer', 'between:0,100'],
+            'target_selesai' => ['nullable', 'date'],
+            'catatan_progres' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $changed = $this->workflow->update(
+            $pemesanan,
+            $data,
+            $request->user(),
+            'Progres proyek diperbarui oleh desainer.'
+        );
 
         return back()->with('success', $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.');
     }

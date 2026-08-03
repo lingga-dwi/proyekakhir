@@ -51,16 +51,10 @@
                                 Nama Lengkap <span class="text-red-500">*</span>
                             </label>
                             <input type="text" 
-                                   name="nama" 
-                                   value="{{ old('nama', auth()->user()->nama ?? '') }}"
-                                   placeholder="Masukkan nama lengkap" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('nama') border-red-500 @enderror"
-                                   readonly
-                                   required>
+                                   value="{{ auth()->user()->nama }}"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                                   readonly>
                             <p class="text-xs text-gray-500 mt-1">Mengikuti data akun yang sedang login.</p>
-                            @error('nama')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                         
                         <div>
@@ -101,16 +95,10 @@
                                 Email <span class="text-red-500">*</span>
                             </label>
                             <input type="email" 
-                                   name="email" 
-                                   value="{{ old('email', auth()->user()->email ?? '') }}"
-                                   placeholder="nama@email.com" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('email') border-red-500 @enderror"
-                                   readonly
-                                   required>
+                                   value="{{ auth()->user()->email }}"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                                   readonly>
                             <p class="text-xs text-gray-500 mt-1">Email login tidak diubah saat membuat pesanan.</p>
-                            @error('email')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                     </div>
                 </div>
