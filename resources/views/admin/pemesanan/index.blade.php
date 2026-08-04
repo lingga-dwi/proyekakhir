@@ -173,7 +173,7 @@
                                 </div>
                             @else
                                 <div class="flex items-center gap-3">
-                                    <a href="{{ route('pemesanan.show', $item->id) }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</a>
+                                    <a href="{{ route('admin.pemesanan.show', $item->id) }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</a>
                                     <button
                                         type="button"
                                         class="text-sm font-semibold text-blue-700 hover:text-blue-800"

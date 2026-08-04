@@ -67,6 +67,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/admin/katalog/bulk-action', [KatalogController::class, 'bulkAction'])->name('admin.katalog.bulk-action');
         Route::resource('admin/katalog', KatalogController::class, ['as' => 'admin']);
         Route::get('/admin/pemesanan', [PemesananController::class, 'index'])->name('admin.pemesanan.index');
+        Route::get('/admin/pemesanan/{id}', [PemesananController::class, 'show'])->name('admin.pemesanan.show');
         Route::post('/admin/pemesanan', [PemesananController::class, 'storeAdmin'])->name('admin.pemesanan.store');
         Route::put('/admin/pemesanan/{id}/status', [PemesananController::class, 'updateStatus'])->name('admin.pemesanan.updateStatus');
         Route::post('/admin/pemesanan/{pemesanan}/verifikasi-pembayaran', [PemesananController::class, 'verifyPaymentEvidence'])

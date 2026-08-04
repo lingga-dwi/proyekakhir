@@ -103,8 +103,9 @@ class PemesananController extends Controller
         $this->authorizeOrderAccess($request, $pemesanan);
 
         $paymentSummary = $this->paymentEvidence->summary($pemesanan);
+        $adminView = $request->routeIs('admin.pemesanan.show');
 
-        return view('pemesanan.show', compact('pemesanan', 'paymentSummary'));
+        return view('pemesanan.show', compact('pemesanan', 'paymentSummary', 'adminView'));
     }
 
     public function uploadPaymentEvidence(Request $request, Pemesanan $pemesanan)
