@@ -17,7 +17,8 @@ envsubst '$PORT' < /etc/nginx/http.d/default.conf.template > /etc/nginx/http.d/d
 php artisan storage:link --force || true
 php artisan package:discover --ansi
 php artisan migrate --force
-php artisan db:seed --force
+echo "Menyiapkan katalog kurasi..."
+php artisan db:seed --class=Database\\Seeders\\DatabaseSeeder --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

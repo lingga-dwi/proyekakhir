@@ -29,6 +29,22 @@ class CuratedKatalogSeeder extends Seeder
         }
 
         $manifest = json_decode(file_get_contents($manifestPath), true, flags: JSON_THROW_ON_ERROR);
+
+        // Database produksi bisa sudah memiliki sebagian kategori dari proses
+        // sebelumnya. Pastikan setiap kategori yang digunakan manifest tersedia
+        // agar katalog kurasi tidak terlewati secara diam-diam.
+        foreach (self::CATEGORY_NAMES as $slug => $name) {
+            Category::query()->firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $name,
+                    'description' => 'Referensi desain '.Str::lower($name).' dari portofolio Daiku.',
+                    'sort_order' => 100 + count(self::CATEGORY_NAMES),
+                    'is_active' => true,
+                ],
+            );
+        }
+
         $categories = Category::query()
             ->whereIn('slug', array_keys(self::CATEGORY_NAMES))
             ->get()
@@ -73,6 +89,6 @@ class CuratedKatalogSeeder extends Seeder
             $processed++;
         }
 
-        $this->command?->info("Katalog kurasi siap. Data diproses: {$processed}.");
+        $this->command?->info("Katalog kurasi siap. Data diproses: {$processed}. Total katalog: ".Katalog::query()->count().'.');
     }
 }
