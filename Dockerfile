@@ -10,7 +10,12 @@ COPY public ./public
 COPY vite.config.js ./
 RUN npm run build
 
-FROM composer:2 AS dependencies
+FROM php:8.2-cli-alpine AS dependencies
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+RUN apk add --no-cache libpq-dev libzip-dev oniguruma-dev libxml2-dev \
+    && docker-php-ext-install pdo_pgsql mbstring zip bcmath dom simplexml
 
 WORKDIR /app
 
@@ -19,8 +24,8 @@ RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoload
 
 FROM php:8.2-fpm-alpine
 
-RUN apk add --no-cache nginx supervisor gettext libpq-dev libzip-dev oniguruma-dev \
-    && docker-php-ext-install pdo_pgsql mbstring zip bcmath opcache
+RUN apk add --no-cache nginx supervisor gettext libpq-dev libzip-dev oniguruma-dev libxml2-dev \
+    && docker-php-ext-install pdo_pgsql mbstring zip bcmath dom simplexml opcache
 
 WORKDIR /var/www/html
 
@@ -38,4 +43,3 @@ RUN chmod +x /usr/local/bin/start-container \
 EXPOSE 10000
 
 CMD ["/usr/local/bin/start-container"]
-
