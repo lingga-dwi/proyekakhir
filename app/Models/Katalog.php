@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use App\Services\CatalogImageService;
 
 class Katalog extends Model
 {
@@ -126,6 +127,10 @@ class Katalog extends Model
         if ($normalizedPath) {
             if (str_starts_with($normalizedPath, 'http://') || str_starts_with($normalizedPath, 'https://')) {
                 return $normalizedPath;
+            }
+
+            if (str_starts_with($normalizedPath, 'katalog/')) {
+                return app(CatalogImageService::class)->url($normalizedPath);
             }
 
             $candidates = [$normalizedPath];

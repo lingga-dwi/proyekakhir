@@ -124,9 +124,7 @@ class KatalogController extends Controller
         // Handle main image upload
         if ($request->hasFile('gambar_utama')) {
             // Delete old image
-            if ($katalog->gambar_utama) {
-                Storage::disk('public')->delete($katalog->gambar_utama);
-            }
+            $this->images->delete($katalog->gambar_utama);
             $data['gambar_utama'] = $this->images->store($request->file('gambar_utama'), 'katalog/main');
         }
 
@@ -144,7 +142,7 @@ class KatalogController extends Controller
         }
 
         foreach ($requestedRemovals as $path) {
-            Storage::disk('public')->delete($path);
+            $this->images->delete($path);
         }
 
         $gallery = array_values(array_diff($existingGallery, $requestedRemovals));
