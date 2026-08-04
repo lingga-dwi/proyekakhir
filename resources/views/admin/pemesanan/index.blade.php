@@ -123,6 +123,26 @@
                             default => $isConsultation ? 'Form konsultasi' : 'Website',
                         };
                         $itemDate = \Illuminate\Support\Carbon::parse($item->scheduled_date);
+                        $detailPayload = [
+                            'reference' => $reference,
+                            'type' => $isConsultation ? 'Permintaan konsultasi' : 'Pesanan desain',
+                            'status' => $statusLabel,
+                            'statusClass' => $statusClass,
+                            'date' => $itemDate->translatedFormat('d M Y').($item->scheduled_time ? ' · '.substr($item->scheduled_time, 0, 5).' WIB' : ''),
+                            'customer' => $item->customer_name,
+                            'email' => $item->customer_email,
+                            'phone' => $item->customer_phone,
+                            'title' => $title,
+                            'space' => $item->space,
+                            'source' => $sourceLabel,
+                            'description' => $item->detail,
+                            'isProject' => ! $isConsultation,
+                            'progress' => (int) $item->progress,
+                            'designer' => $item->designer_name,
+                            'target' => $item->target_selesai ? \Illuminate\Support\Carbon::parse($item->target_selesai)->translatedFormat('d M Y') : null,
+                            'budget' => (float) $item->total_harga,
+                            'note' => $item->note,
+                        ];
                     @endphp
                     <tr class="align-top hover:bg-slate-50">
                         <td class="px-5 py-4">
@@ -159,7 +179,7 @@
                         <td class="px-5 py-4">
                             @if($isConsultation)
                                 <div class="flex max-w-[230px] flex-wrap items-center gap-3">
-                                    <a href="{{ route('konsultasi.show', $item->id) }}" class="text-sm font-semibold text-slate-700 hover:text-slate-950">Detail</a>
+                                    <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-slate-700 hover:text-slate-950">Detail</button>
                                     @if($item->status === 'pending')
                                         <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}">
                                             @csrf @method('PUT')<input type="hidden" name="status" value="confirmed">
@@ -173,7 +193,7 @@
                                 </div>
                             @else
                                 <div class="flex items-center gap-3">
-                                    <a href="{{ route('admin.pemesanan.show', $item->id) }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</a>
+                                    <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</button>
                                     <button
                                         type="button"
                                         class="text-sm font-semibold text-blue-700 hover:text-blue-800"
@@ -203,6 +223,7 @@
 
 @include('admin.pemesanan._manual_order_modal')
 @include('admin.pemesanan._project_modal')
+@include('admin.pemesanan._detail_modal')
 @endsection
 
 @push('scripts')
@@ -294,12 +315,51 @@ function closeProjectModal() {
     modal.classList.remove('flex');
 }
 
+function openDetailModal(button) {
+    const detail = JSON.parse(button.dataset.detail);
+    const contact = [detail.email, detail.phone].filter(Boolean).join(' · ') || 'Belum ada kontak';
+    const need = [detail.title, detail.space].filter(Boolean).join(' · ') || 'Belum ditentukan';
+    const formatRupiah = value => value > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value) : 'Belum ditentukan';
+
+    document.getElementById('detailModalType').textContent = `${detail.type} · ${detail.reference}`;
+    document.getElementById('detail-modal-title').textContent = detail.title || 'Permintaan desain';
+    document.getElementById('detailModalDate').textContent = detail.date;
+    document.getElementById('detailModalStatus').textContent = detail.status;
+    document.getElementById('detailModalStatus').className = `rounded-full px-3 py-1 text-xs font-semibold ${detail.statusClass}`;
+    document.getElementById('detailModalCustomer').textContent = detail.customer || 'Belum diisi';
+    document.getElementById('detailModalContact').textContent = contact;
+    document.getElementById('detailModalNeed').textContent = need;
+    document.getElementById('detailModalSource').textContent = detail.source || 'Website';
+    document.getElementById('detailModalDescription').textContent = detail.description || 'Belum ada catatan kebutuhan.';
+    document.getElementById('detailModalProject').classList.toggle('hidden', !detail.isProject);
+    document.getElementById('detailModalProgress').textContent = `${detail.progress}%`;
+    document.getElementById('detailModalDesigner').textContent = detail.designer || 'Belum ditetapkan';
+    document.getElementById('detailModalTarget').textContent = detail.target || 'Belum ditentukan';
+    document.getElementById('detailModalBudget').textContent = formatRupiah(detail.budget);
+    document.getElementById('detailModalNoteSection').classList.toggle('hidden', !detail.note);
+    document.getElementById('detailModalNote').textContent = detail.note || '';
+
+    const modal = document.getElementById('detailModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeDetailModal() {
+    const modal = document.getElementById('detailModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
 document.getElementById('projectModal').addEventListener('click', event => {
     if (event.target.id === 'projectModal') closeProjectModal();
 });
 
 document.getElementById('orderModal').addEventListener('click', event => {
     if (event.target.id === 'orderModal') closeOrderModal();
+});
+
+document.getElementById('detailModal').addEventListener('click', event => {
+    if (event.target.id === 'detailModal') closeDetailModal();
 });
 
 document.getElementById('projectStatus').addEventListener('change', event => {
