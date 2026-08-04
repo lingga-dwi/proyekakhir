@@ -2,8 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Konsultasi;
-use App\Models\Pemesanan;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,18 +47,6 @@ class SecureCustomerUploads extends Command
 
     private function paths(): array
     {
-        return Pemesanan::query()->whereNotNull('upload_denah_foto')->pluck('upload_denah_foto')
-            ->merge(Konsultasi::query()->whereNotNull('upload_foto')->pluck('upload_foto'))
-            ->flatMap(function (mixed $paths): array {
-                if (is_string($paths)) {
-                    $paths = json_decode($paths, true);
-                }
-
-                return is_array($paths) ? $paths : [];
-            })
-            ->filter(fn (mixed $path) => is_string($path) && $path !== '')
-            ->unique()
-            ->values()
-            ->all();
+        return [];
     }
 }

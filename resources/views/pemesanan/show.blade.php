@@ -147,6 +147,37 @@
 
             <!-- Sidebar -->
             <div class="space-y-6">
+                <!-- Payment Evidence -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-gray-800">Pembayaran</h2>
+                    <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $paymentSummary['state'] === 'verified' ? 'bg-green-100 text-green-800' : ($paymentSummary['state'] === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">{{ $paymentSummary['label'] }}</span>
+
+                    @if($paymentSummary['proof_path'])
+                        <a href="{{ route('pemesanan.payment-evidence.download', $pemesanan) }}" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
+                            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
+                            Lihat bukti pembayaran
+                        </a>
+                    @endif
+
+                    @if(auth()->id() === $pemesanan->id_user && $paymentSummary['state'] !== 'verified')
+                        <form action="{{ route('pemesanan.payment-evidence.upload', $pemesanan) }}" method="POST" enctype="multipart/form-data" class="mt-5 border-t border-gray-100 pt-5">
+                            @csrf
+                            <label class="block text-sm font-medium text-gray-700" for="bukti_pembayaran">Unggah bukti pembayaran</label>
+                            <input id="bukti_pembayaran" name="bukti_pembayaran" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-amber-800 hover:file:bg-amber-200">
+                            @error('bukti_pembayaran')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
+                            <p class="mt-2 text-xs leading-relaxed text-gray-500">JPG, PNG, WEBP, atau PDF. Maksimal 5 MB.</p>
+                            <button type="submit" class="mt-4 w-full rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Kirim bukti pembayaran</button>
+                        </form>
+                    @endif
+
+                    @if(auth()->user()->isAdmin() && $paymentSummary['state'] === 'pending')
+                        <form action="{{ route('admin.pemesanan.payment-evidence.verify', $pemesanan) }}" method="POST" class="mt-5 border-t border-gray-100 pt-5">
+                            @csrf
+                            <button type="submit" class="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">Verifikasi pembayaran</button>
+                        </form>
+                    @endif
+                </div>
+
                 <!-- Progress Timeline -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Progress Proyek</h2>

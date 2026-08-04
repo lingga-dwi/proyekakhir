@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -38,51 +37,18 @@ class Konsultasi extends Model
         'budget_range',
         'timeline',
         'luas_ruangan',
-        'gaya_preferensi',
         'deskripsi_kebutuhan',
-        'upload_foto',
         'tanggal_konsultasi',
         'waktu_konsultasi',
         'status',
         'catatan_admin',
-        'active_slot',
     ];
 
     protected $casts = [
-        'upload_foto' => 'array',
         'tanggal_konsultasi' => 'date',
         'waktu_konsultasi' => 'datetime:H:i',
         'luas_ruangan' => 'decimal:2',
     ];
-
-    protected static function booted(): void
-    {
-        static::saving(function (Konsultasi $consultation): void {
-            $consultation->active_slot = $consultation->reservesSlot()
-                ? $consultation->slotKey()
-                : null;
-        });
-    }
-
-    public function reservesSlot(): bool
-    {
-        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_CONFIRMED], true);
-    }
-
-    public function slotKey(): string
-    {
-        $date = $this->tanggal_konsultasi;
-        $time = $this->waktu_konsultasi;
-
-        $datePart = $date instanceof CarbonInterface
-            ? $date->format('Y-m-d')
-            : substr((string) $date, 0, 10);
-        $timePart = $time instanceof CarbonInterface
-            ? $time->format('H:i')
-            : substr((string) $time, 0, 5);
-
-        return "{$datePart} {$timePart}";
-    }
 
     // Relationships
     public function user()
@@ -99,10 +65,10 @@ class Konsultasi extends Model
     public function getJenisKonsultasiLabel()
     {
         return match ($this->jenis_konsultasi) {
-            'free_consultation' => 'Konsultasi Gratis (30 menit)',
-            'virtual_design' => 'Virtual Design + 3D Mockup',
-            'in_home_visit' => 'Kunjungan Designer ke Rumah',
-            'chat_support' => 'Chat Support Real-time',
+            'free_consultation' => 'Desain Interior Baru',
+            'virtual_design' => 'Renovasi Interior',
+            'in_home_visit' => 'Custom Furniture',
+            'chat_support' => 'Konsultasi Desain',
             default => $this->jenis_konsultasi
         };
     }
@@ -134,12 +100,12 @@ class Konsultasi extends Model
     public function getJenisRuanganLabel(): string
     {
         return match ($this->jenis_ruangan) {
-            'living_room' => 'Ruang Tamu',
-            'bedroom' => 'Kamar Tidur',
-            'kitchen' => 'Dapur',
-            'bathroom' => 'Kamar Mandi',
-            'office' => 'Ruang Kerja',
-            'whole_house' => 'Seluruh Hunian',
+            'living_room' => 'Rumah Tinggal',
+            'bedroom' => 'Apartemen',
+            'kitchen' => 'Ruko',
+            'bathroom' => 'Kantor',
+            'office' => 'Kafe / Restoran',
+            'whole_house' => 'Lainnya',
             default => (string) $this->jenis_ruangan,
         };
     }

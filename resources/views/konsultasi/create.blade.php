@@ -1,264 +1,105 @@
 @extends('layouts.main')
 
-@section('title', 'Book Konsultasi')
+@section('title', 'Buat Permintaan Konsultasi')
 
 @section('content')
-<div class="bg-gray-50 min-h-screen py-8">
-    <div class="container mx-auto px-4">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Book Konsultasi Interior</h1>
-            <p class="text-gray-600">Isi form di bawah untuk menjadwalkan konsultasi dengan designer kami</p>
-        </div>
+<div class="min-h-screen bg-[#fff9f0] py-8 sm:py-12">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <form action="{{ route('konsultasi.store') }}" method="POST" class="space-y-7">
+            @csrf
 
-        <!-- Form -->
-        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
-            <form action="{{ route('konsultasi.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                @csrf
-
-                <!-- Personal Info -->
-                <div class="border-b pb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Informasi Personal</h3>
-                    <div class="grid md:grid-cols-3 gap-6">
-                        <div>
-                            <label for="nama" class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label>
-                            <input type="text" id="nama" value="{{ auth()->user()->nama }}" readonly
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <p class="mt-1 text-xs text-gray-500">Mengikuti data akun yang sedang login.</p>
-                        </div>
-
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                            <input type="email" id="email" value="{{ auth()->user()->email }}" readonly
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <p class="mt-1 text-xs text-gray-500">Email konsultasi selalu mengikuti identitas akun.</p>
-                        </div>
-
-                        <div>
-                            <label for="no_telp" class="block text-sm font-medium text-gray-700 mb-2">No. Telepon</label>
-                            <input type="tel" id="no_telp" name="no_telp" value="{{ old('no_telp', auth()->user()->no_telp) }}" required
-                                @readonly(filled(auth()->user()->no_telp))
-                                placeholder="08xxxxxxxxxx"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg {{ filled(auth()->user()->no_telp) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <p class="mt-1 text-xs text-gray-500">
-                                {{ filled(auth()->user()->no_telp) ? 'Mengikuti nomor telepon pada profil akun.' : 'Isi sekali agar tim Daiku dapat menghubungi Anda.' }}
-                            </p>
-                            @error('no_telp')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Consultation Type -->
-                <div class="border-b pb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Jenis Konsultasi</h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
-                            <input type="radio" name="jenis_konsultasi" value="free_consultation" class="text-blue-600" required>
-                            <div class="ml-3">
-                                <div class="font-medium text-gray-800">Konsultasi Awal</div>
-                                <div class="text-sm text-gray-600">Pembahasan kebutuhan dan arah proyek</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
-                            <input type="radio" name="jenis_konsultasi" value="virtual_design" class="text-blue-600">
-                            <div class="ml-3">
-                                <div class="font-medium text-gray-800">Diskusi Desain Daring</div>
-                                <div class="text-sm text-gray-600">Pembahasan desain dilakukan secara daring</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
-                            <input type="radio" name="jenis_konsultasi" value="in_home_visit" class="text-blue-600">
-                            <div class="ml-3">
-                                <div class="font-medium text-gray-800">Survei Lokasi</div>
-                                <div class="text-sm text-gray-600">Jadwal kunjungan dikonfirmasi setelah peninjauan awal</div>
-                            </div>
-                        </label>
-
-                        <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-300 transition duration-200">
-                            <input type="radio" name="jenis_konsultasi" value="chat_support" class="text-blue-600">
-                            <div class="ml-3">
-                                <div class="font-medium text-gray-800">Konsultasi Tertulis</div>
-                                <div class="text-sm text-gray-600">Sampaikan kebutuhan proyek secara terstruktur</div>
-                            </div>
-                        </label>
-                    </div>
-                    @error('jenis_konsultasi')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <!-- Project Details -->
-                <div class="border-b pb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Detail Proyek</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="jenis_ruangan" class="block text-sm font-medium text-gray-700 mb-2">Jenis Ruangan</label>
-                            <select id="jenis_ruangan" name="jenis_ruangan" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Pilih Ruangan</option>
-                                <option value="living_room" {{ old('jenis_ruangan') == 'living_room' ? 'selected' : '' }}>Living Room</option>
-                                <option value="bedroom" {{ old('jenis_ruangan') == 'bedroom' ? 'selected' : '' }}>Bedroom</option>
-                                <option value="kitchen" {{ old('jenis_ruangan') == 'kitchen' ? 'selected' : '' }}>Kitchen</option>
-                                <option value="bathroom" {{ old('jenis_ruangan') == 'bathroom' ? 'selected' : '' }}>Bathroom</option>
-                                <option value="office" {{ old('jenis_ruangan') == 'office' ? 'selected' : '' }}>Home Office</option>
-                                <option value="whole_house" {{ old('jenis_ruangan') == 'whole_house' ? 'selected' : '' }}>Seluruh Rumah</option>
-                            </select>
-                            @error('jenis_ruangan')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="luas_ruangan" class="block text-sm font-medium text-gray-700 mb-2">Luas Ruangan (m2)</label>
-                            <input type="number" id="luas_ruangan" name="luas_ruangan" value="{{ old('luas_ruangan') }}" step="0.1" min="1"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            @error('luas_ruangan')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="budget_range" class="block text-sm font-medium text-gray-700 mb-2">Budget Range</label>
-                            <select id="budget_range" name="budget_range" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Pilih Budget</option>
-                                <option value="under_10m" {{ old('budget_range') == 'under_10m' ? 'selected' : '' }}>Di bawah Rp 10 Juta</option>
-                                <option value="10m_25m" {{ old('budget_range') == '10m_25m' ? 'selected' : '' }}>Rp 10 - 25 Juta</option>
-                                <option value="25m_50m" {{ old('budget_range') == '25m_50m' ? 'selected' : '' }}>Rp 25 - 50 Juta</option>
-                                <option value="50m_100m" {{ old('budget_range') == '50m_100m' ? 'selected' : '' }}>Rp 50 - 100 Juta</option>
-                                <option value="above_100m" {{ old('budget_range') == 'above_100m' ? 'selected' : '' }}>Di atas Rp 100 Juta</option>
-                            </select>
-                            @error('budget_range')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="timeline" class="block text-sm font-medium text-gray-700 mb-2">Timeline Proyek</label>
-                            <select id="timeline" name="timeline" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Pilih Timeline</option>
-                                <option value="immediate" {{ old('timeline') == 'immediate' ? 'selected' : '' }}>Segera (1-2 minggu)</option>
-                                <option value="1_month" {{ old('timeline') == '1_month' ? 'selected' : '' }}>1 Bulan</option>
-                                <option value="3_months" {{ old('timeline') == '3_months' ? 'selected' : '' }}>3 Bulan</option>
-                                <option value="6_months" {{ old('timeline') == '6_months' ? 'selected' : '' }}>6 Bulan</option>
-                                <option value="flexible" {{ old('timeline') == 'flexible' ? 'selected' : '' }}>Fleksibel</option>
-                            </select>
-                            @error('timeline')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="mt-6">
-                        <label for="gaya_preferensi" class="block text-sm font-medium text-gray-700 mb-2">Gaya Preferensi (Opsional)</label>
-                        <input type="text" id="gaya_preferensi" name="gaya_preferensi" value="{{ old('gaya_preferensi') }}"
-                            placeholder="Contoh: Modern minimalis, Industrial, Skandinavia, dll."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        @error('gaya_preferensi')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                <!-- Description & Photos -->
-                <div class="border-b pb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Deskripsi Kebutuhan</h3>
-                    
-                    <div class="mb-6">
-                        <label for="deskripsi_kebutuhan" class="block text-sm font-medium text-gray-700 mb-2">Ceritakan kebutuhan dan keinginan Anda</label>
-                        <textarea id="deskripsi_kebutuhan" name="deskripsi_kebutuhan" rows="5" required
-                            placeholder="Jelaskan secara detail tentang keinginan desain, masalah yang ingin diselesaikan, inspirasi, atau hal khusus lainnya..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">{{ old('deskripsi_kebutuhan') }}</textarea>
-                        @error('deskripsi_kebutuhan')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
+            <section class="rounded-xl bg-white p-5 shadow-sm sm:p-8">
+                <div class="mb-7 flex items-start justify-between gap-4">
                     <div>
-                        <label for="upload_foto" class="block text-sm font-medium text-gray-700 mb-2">Upload Foto Ruangan (Opsional)</label>
-                        <input type="file" id="upload_foto" name="upload_foto[]" multiple accept="image/*"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="mt-1 text-sm text-gray-500">Upload foto kondisi existing atau foto inspirasi (maksimal 2MB per file)</p>
-                        @error('upload_foto.*')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
+                        <h1 class="text-xl font-bold text-slate-800">Informasi Pelanggan</h1>
+                        <p class="mt-1 text-sm text-slate-400">Masukan Data anda.</p>
+                    </div>
+                    <span class="text-sm text-slate-400">Step 1 of 3</span>
+                </div>
+
+                <div class="grid gap-x-7 gap-y-5 md:grid-cols-2">
+                    @include('konsultasi.partials.request-input', ['name' => 'nama', 'label' => 'Nama', 'value' => old('nama', auth()->user()->nama), 'required' => true, 'placeholder' => 'Nama'])
+                    @include('konsultasi.partials.request-input', ['name' => 'no_telp', 'label' => 'No. Whatsapp', 'value' => old('no_telp', auth()->user()->no_telp), 'required' => true, 'placeholder' => 'No. HP', 'type' => 'tel'])
+                    @include('konsultasi.partials.request-input', ['name' => 'alamat', 'label' => 'Alamat', 'value' => old('alamat', auth()->user()->alamat), 'required' => true, 'placeholder' => 'Alamat'])
+                    @include('konsultasi.partials.request-input', ['name' => 'email', 'label' => 'Email (opsional)', 'value' => old('email', auth()->user()->email), 'placeholder' => 'Email', 'type' => 'email'])
+                </div>
+            </section>
+
+            <section class="rounded-xl bg-white p-5 shadow-sm sm:p-8">
+                <div class="mb-7 flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Detail Proyek</h2>
+                        <p class="mt-1 text-sm text-slate-400">Masukkan informasi Proyek</p>
+                    </div>
+                    <span class="text-sm text-slate-400">Step 2 of 3</span>
+                </div>
+
+                <div class="grid gap-x-7 gap-y-5 md:grid-cols-2">
+                    <div>
+                        <label for="jenis_konsultasi" class="mb-2 block text-sm font-semibold text-slate-800">Jenis Proyek</label>
+                        <select id="jenis_konsultasi" name="jenis_konsultasi" required class="request-control">
+                            <option value="">Pilih Jenis Proyek</option>
+                            <option value="free_consultation" @selected(old('jenis_konsultasi') === 'free_consultation')>Desain Interior Baru</option>
+                            <option value="virtual_design" @selected(old('jenis_konsultasi') === 'virtual_design')>Renovasi Interior</option>
+                            <option value="in_home_visit" @selected(old('jenis_konsultasi') === 'in_home_visit')>Custom Furniture</option>
+                            <option value="chat_support" @selected(old('jenis_konsultasi') === 'chat_support')>Konsultasi Desain</option>
+                        </select>
+                        @error('jenis_konsultasi') <p class="request-error">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="jenis_ruangan" class="mb-2 block text-sm font-semibold text-slate-800">Jenis Bangunan</label>
+                        <select id="jenis_ruangan" name="jenis_ruangan" required class="request-control">
+                            <option value="">Pilih Jenis Bangunan</option>
+                            <option value="living_room" @selected(old('jenis_ruangan') === 'living_room')>Rumah Tinggal</option>
+                            <option value="bedroom" @selected(old('jenis_ruangan') === 'bedroom')>Apartemen</option>
+                            <option value="kitchen" @selected(old('jenis_ruangan') === 'kitchen')>Ruko</option>
+                            <option value="bathroom" @selected(old('jenis_ruangan') === 'bathroom')>Kantor</option>
+                            <option value="office" @selected(old('jenis_ruangan') === 'office')>Kafe / Restoran</option>
+                            <option value="whole_house" @selected(old('jenis_ruangan') === 'whole_house')>Lainnya</option>
+                        </select>
+                        @error('jenis_ruangan') <p class="request-error">{{ $message }}</p> @enderror
+                    </div>
+                    @include('konsultasi.partials.request-input', ['name' => 'luas_ruangan', 'label' => 'Luas Area (m2)', 'value' => old('luas_ruangan', 0), 'required' => true, 'placeholder' => '0', 'type' => 'number', 'min' => '0', 'step' => '0.01'])
+                    <div>
+                        <label for="budget_range" class="mb-2 block text-sm font-semibold text-slate-800">Anggaran</label>
+                        <select id="budget_range" name="budget_range" required class="request-control">
+                            <option value="">Pilih Anggaran</option>
+                            <option value="under_10m" @selected(old('budget_range') === 'under_10m')>Di bawah Rp10 Juta</option>
+                            <option value="10m_25m" @selected(old('budget_range') === '10m_25m')>Rp10 – 25 Juta</option>
+                            <option value="25m_50m" @selected(old('budget_range') === '25m_50m')>Rp25 – 50 Juta</option>
+                            <option value="50m_100m" @selected(old('budget_range') === '50m_100m')>Rp50 – 100 Juta</option>
+                            <option value="above_100m" @selected(old('budget_range') === 'above_100m')>Di atas Rp100 Juta</option>
+                        </select>
+                        @error('budget_range') <p class="request-error">{{ $message }}</p> @enderror
                     </div>
                 </div>
+            </section>
 
-                <!-- Schedule -->
-                <div class="border-b pb-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Jadwal Konsultasi</h3>
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="tanggal_konsultasi" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Konsultasi</label>
-                            <input type="date" id="tanggal_konsultasi" name="tanggal_konsultasi" value="{{ old('tanggal_konsultasi') }}" 
-                                min="{{ date('Y-m-d', strtotime('+1 day')) }}" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            @error('tanggal_konsultasi')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="waktu_konsultasi" class="block text-sm font-medium text-gray-700 mb-2">Waktu Konsultasi</label>
-                            <select id="waktu_konsultasi" name="waktu_konsultasi" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                <option value="">Pilih Waktu</option>
-                                <option value="09:00" {{ old('waktu_konsultasi') == '09:00' ? 'selected' : '' }}>09:00</option>
-                                <option value="10:00" {{ old('waktu_konsultasi') == '10:00' ? 'selected' : '' }}>10:00</option>
-                                <option value="11:00" {{ old('waktu_konsultasi') == '11:00' ? 'selected' : '' }}>11:00</option>
-                                <option value="13:00" {{ old('waktu_konsultasi') == '13:00' ? 'selected' : '' }}>13:00</option>
-                                <option value="14:00" {{ old('waktu_konsultasi') == '14:00' ? 'selected' : '' }}>14:00</option>
-                                <option value="15:00" {{ old('waktu_konsultasi') == '15:00' ? 'selected' : '' }}>15:00</option>
-                                <option value="16:00" {{ old('waktu_konsultasi') == '16:00' ? 'selected' : '' }}>16:00</option>
-                                <option value="19:00" {{ old('waktu_konsultasi') == '19:00' ? 'selected' : '' }}>19:00</option>
-                                <option value="20:00" {{ old('waktu_konsultasi') == '20:00' ? 'selected' : '' }}>20:00</option>
-                            </select>
-                            @error('waktu_konsultasi')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
+            <section class="rounded-xl bg-white p-5 shadow-sm sm:p-8">
+                <div class="mb-7 flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Catatan Konsultasi</h2>
+                        <p class="mt-1 text-sm text-slate-400">Ceritakan kebutuhan anda disini jika diperlukan</p>
                     </div>
+                    <span class="text-sm text-slate-400">Step 3 of 3</span>
                 </div>
+                <textarea id="deskripsi_kebutuhan" name="deskripsi_kebutuhan" rows="7" class="request-control resize-y" placeholder="Ceritakan detail keinginan Anda untuk desain ruangan...">{{ old('deskripsi_kebutuhan') }}</textarea>
+                @error('deskripsi_kebutuhan') <p class="request-error">{{ $message }}</p> @enderror
 
-                <!-- Submit -->
-                <div class="text-center pt-6">
-                    <button type="submit" 
-                        class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-blue-700 transition duration-300">
-                        Book Konsultasi Sekarang
-                    </button>
-                </div>
-            </form>
-        </div>
+                <button type="submit" class="mt-4 rounded-lg bg-[#edb925] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#d9a810] focus:outline-none focus:ring-4 focus:ring-amber-200">
+                    Kirim Permintaan Pemesanan
+                </button>
+            </section>
+        </form>
     </div>
 </div>
 
-<script>
-// Auto-fill user data if logged in
-document.addEventListener('DOMContentLoaded', function() {
-    // Update border color when radio is selected
-    const radioInputs = document.querySelectorAll('input[type="radio"][name="jenis_konsultasi"]');
-    radioInputs.forEach(radio => {
-        radio.addEventListener('change', function() {
-            // Reset all borders
-            radioInputs.forEach(r => {
-                r.closest('label').classList.remove('border-blue-500', 'bg-blue-50');
-                r.closest('label').classList.add('border-gray-200');
-            });
-            
-            // Highlight selected
-            if (this.checked) {
-                this.closest('label').classList.remove('border-gray-200');
-                this.closest('label').classList.add('border-blue-500', 'bg-blue-50');
-            }
-        });
-    });
-});
-</script>
+@push('styles')
+<style>
+    .request-control { width: 100%; border: 1px solid transparent; border-radius: .6rem; background: #ffedc9; padding: .85rem 1rem; color: #334155; outline: none; }
+    .request-control::placeholder { color: #94a3b8; }
+    .request-control:focus { border-color: #edb925; box-shadow: 0 0 0 3px rgb(237 185 37 / .18); }
+    .request-error { margin-top: .4rem; font-size: .875rem; color: #dc2626; }
+</style>
+@endpush
 @endsection
-

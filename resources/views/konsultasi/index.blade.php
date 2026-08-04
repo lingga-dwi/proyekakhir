@@ -107,21 +107,4 @@
 </section>
 @endif
 
-<section class="bg-slate-900 py-16 text-white">
-    <div class="mx-auto max-w-3xl px-4 text-center sm:px-6">
-        <h2 class="text-3xl font-bold">Siap membahas ruang Anda?</h2>
-        <p class="mt-4 text-lg text-slate-300">Mulai dari informasi dasar. Tim Daiku akan membantu mengarahkan langkah berikutnya.</p>
-        <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            @auth
-                <a href="{{ route('konsultasi.create') }}" class="inline-flex rounded-lg bg-amber-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-amber-300">Mulai Konsultasi</a>
-            @else
-                <a href="{{ route('register') }}" class="inline-flex rounded-lg bg-amber-400 px-7 py-3.5 font-semibold text-slate-950 hover:bg-amber-300">Buat Akun</a>
-            @endauth
-            <a href="https://wa.me/6285805908809?text=Halo%20Daiku%2C%20saya%20ingin%20berkonsultasi%20tentang%20desain%20interior." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-lg border border-white/50 px-7 py-3.5 font-semibold text-white transition hover:bg-white/10">
-                <i class="fab fa-whatsapp text-lg" aria-hidden="true"></i>
-                WhatsApp Daiku
-            </a>
-        </div>
-    </div>
-</section>
 @endsection

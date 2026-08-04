@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pemesanan;
+use App\Models\Konsultasi;
 use App\Models\StatusTracking;
 use App\Models\User;
 use Carbon\Carbon;
@@ -17,7 +18,10 @@ class DashboardController extends Controller
 
         $stats = [
             'active_projects' => Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'sedang_dikerjakan'])->count(),
-            'pending_orders' => Pemesanan::where('status_pemesanan', 'pending')->count(),
+            // Permintaan pelanggan dimulai sebagai konsultasi dan baru menjadi
+            // pesanan setelah ditinjau admin. Keduanya perlu terlihat di dashboard.
+            'new_requests' => Konsultasi::where('status', Konsultasi::STATUS_PENDING)->count()
+                + Pemesanan::where('status_pemesanan', Pemesanan::STATUS_PENDING)->count(),
             'deadlines_soon' => Pemesanan::whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
                 ->whereNotNull('target_selesai')
                 ->whereDate('target_selesai', '<=', $deadlineLimit)
@@ -25,7 +29,7 @@ class DashboardController extends Controller
             'new_customers' => User::where('role', 'pelanggan')->where('created_at', '>=', Carbon::now()->subDays(30))->count(),
         ];
 
-        $recentActivities = StatusTracking::with(['pemesanan.user'])
+        $orderActivities = StatusTracking::with(['pemesanan.user'])
             ->whereHas('pemesanan')
             ->latest('created_at')
             ->take(6)
@@ -39,7 +43,9 @@ class DashboardController extends Controller
                     'dibatalkan' => 'fa-ban',
                     default => 'fa-clock-rotate-left',
                 },
-                'title' => match ($tracking->status) {
+                'title' => $tracking->catatan === 'Proyek dibuat dari permintaan konsultasi.'
+                    ? 'Proyek baru dibuat'
+                    : match ($tracking->status) {
                     'pending' => 'Pesanan baru diterima',
                     'dikonfirmasi' => 'Pesanan dikonfirmasi',
                     'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
@@ -49,8 +55,40 @@ class DashboardController extends Controller
                 },
                 'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
                 'occurred_at' => $tracking->created_at,
-                'url' => route('pemesanan.show', $tracking->pemesanan),
+                'url' => route('admin.pemesanan.index', [
+                    'search' => 'DI-'.$tracking->pemesanan->id,
+                ]),
             ]);
+
+        $consultationActivities = Konsultasi::with('user')
+            ->whereNull('pemesanan_id')
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (Konsultasi $konsultasi) => [
+                'icon' => match ($konsultasi->status) {
+                    Konsultasi::STATUS_PENDING => 'fa-comments',
+                    Konsultasi::STATUS_CONFIRMED => 'fa-circle-check',
+                    Konsultasi::STATUS_COMPLETED => 'fa-check-double',
+                    default => 'fa-ban',
+                },
+                'title' => match ($konsultasi->status) {
+                    Konsultasi::STATUS_PENDING => 'Permintaan desain baru',
+                    Konsultasi::STATUS_CONFIRMED => 'Permintaan desain dikonfirmasi',
+                    Konsultasi::STATUS_COMPLETED => 'Permintaan desain selesai ditinjau',
+                    default => 'Permintaan desain dibatalkan',
+                },
+                'description' => ($konsultasi->nama ?: ($konsultasi->user?->nama ?? 'Pelanggan')).' · '.$konsultasi->getJenisKonsultasiLabel(),
+                'occurred_at' => $konsultasi->updated_at,
+                'url' => route('admin.pemesanan.index', [
+                    'search' => 'KS-'.$konsultasi->id,
+                ]),
+            ]);
+
+        $recentActivities = $orderActivities
+            ->sortByDesc('occurred_at')
+            ->take(6)
+            ->values();
 
         return view('dashboard.admin', compact('stats', 'recentActivities'));
     }

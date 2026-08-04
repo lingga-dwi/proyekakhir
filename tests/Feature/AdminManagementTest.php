@@ -211,7 +211,7 @@ class AdminManagementTest extends TestCase
             ->assertRedirect(route('admin.pemesanan.index'));
     }
 
-    public function test_consultation_is_managed_inside_existing_order_page_and_can_become_project(): void
+    public function test_confirming_a_consultation_automatically_creates_a_project(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
         $customer = $this->user('customer@example.com', 'pelanggan');
@@ -243,11 +243,9 @@ class AdminManagementTest extends TestCase
             'status' => 'confirmed',
         ])->assertRedirect();
 
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.convert', $consultation))
-            ->assertRedirect();
-
         $consultation->refresh();
         $this->assertNotNull($consultation->pemesanan_id);
+        $this->assertSame(Konsultasi::STATUS_COMPLETED, $consultation->status);
         $this->assertDatabaseHas('pemesanan', [
             'id' => $consultation->pemesanan_id,
             'id_user' => $customer->id,
@@ -309,7 +307,7 @@ class AdminManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Deadline ≤ 7 Hari')
             ->assertSee('Pelanggan Baru')
-            ->assertSee('Perlu Ditindaklanjuti')
+            ->assertSee('Permintaan Baru')
             ->assertSee('Kitchen Set Prioritas')
             ->assertSee('Pesanan baru diterima')
             ->assertDontSee('Pendapatan Terbayar');

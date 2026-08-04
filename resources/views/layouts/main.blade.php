@@ -92,8 +92,8 @@
                                         <i class="fas fa-drafting-compass mr-2"></i>Dashboard Designer
                                     </a>
                                 @else
-                                    <a href="{{ route('aktivitas.saya') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
-                                        <i class="fas fa-folder-open mr-2"></i>Aktivitas Saya
+                                    <a href="{{ route('pesanan.saya') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
+                                        <i class="fas fa-folder-open mr-2"></i>Pesanan Saya
                                     </a>
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-gray-100 pt-1">
@@ -139,7 +139,7 @@
                         @elseif(auth()->user()->isDesigner())
                             <a href="{{ route('dashboard.designer') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Dashboard Designer</a>
                         @else
-                            <a href="{{ route('aktivitas.saya') }}" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('aktivitas.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Aktivitas Saya</a>
+                            <a href="{{ route('pesanan.saya') }}" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Pesanan Saya</a>
                         @endif
                         <form method="POST" action="{{ route('logout') }}" class="mt-1">
                             @csrf
@@ -162,71 +162,70 @@
     </main>
     
     <!-- Footer -->
-    <footer class="bg-white text-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <!-- Brand -->
-                <div class="lg:col-span-5">
-                    <a href="{{ route('home') }}" aria-label="Kembali ke beranda" class="inline-block mb-5">
-                        <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-6 w-auto">
+    @php
+        $footerWhatsapp = preg_replace('/\D+/', '', config('services.daiku.whatsapp_number'));
+        $footerWhatsappUrl = 'https://wa.me/'.$footerWhatsapp.'?text='.rawurlencode('Halo Daiku, saya ingin berkonsultasi mengenai kebutuhan interior saya.');
+    @endphp
+    <footer class="relative mt-32 bg-slate-900 text-white">
+        <div class="absolute inset-x-0 -top-24 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <section class="relative overflow-hidden rounded-md bg-[#fff8ef] px-7 py-10 text-black shadow-lg sm:px-12 lg:flex lg:items-center lg:justify-between lg:gap-10 lg:py-14" aria-labelledby="footer-cta-title">
+                <div class="absolute -right-16 -top-24 h-80 w-80 rounded-full border border-amber-300/40" aria-hidden="true"></div>
+                <div class="absolute right-10 top-12 h-64 w-64 rounded-full border border-amber-300/40" aria-hidden="true"></div>
+                <div class="relative">
+                    <h2 id="footer-cta-title" class="text-3xl font-bold tracking-tight sm:text-4xl">Butuh bantuan atau konsultasi gratis?</h2>
+                    <p class="mt-4 text-base text-slate-700">Mari wujudkan interior yang fungsional dan sesuai kebutuhan ruang Anda.</p>
+                </div>
+                <a href="{{ route('konsultasi.index') }}" class="relative mt-7 inline-flex shrink-0 items-center justify-center rounded bg-slate-900 px-8 py-4 font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-amber-300 lg:mt-0">
+                    Hubungi Kami
+                </a>
+            </section>
+        </div>
+
+        <div class="mx-auto max-w-7xl px-4 pb-8 pt-40 sm:px-6 lg:px-8 lg:pt-44">
+            <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <a href="{{ route('home') }}" aria-label="Kembali ke beranda" class="inline-block">
+                        <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-8 w-auto brightness-0 invert">
                     </a>
-                    <p class="text-gray-600 leading-relaxed max-w-md mb-6">
-                        Jasa desain interior dan furnitur custom untuk hunian, kantor, dan ruang usaha di Pekanbaru.
-                    </p>
-                    <div class="flex flex-wrap gap-3">
-                        <a href="{{ route('konsultasi.index') }}" class="inline-flex items-center rounded-lg bg-amber-400 px-5 py-2.5 text-slate-900 font-semibold hover:bg-amber-300 transition duration-200">
-                            Konsultasi Sekarang
-                        </a>
-                        <a href="{{ route('katalog') }}" class="inline-flex items-center rounded-lg border border-gray-300 px-5 py-2.5 text-gray-700 hover:border-amber-400 hover:text-amber-600 transition duration-200">
-                            Lihat Katalog
-                        </a>
+                    <p class="mt-6 max-w-xs text-sm leading-relaxed text-white/75">One stop solution untuk desain interior dan furnitur custom.</p>
+                    <div class="mt-7 flex gap-3">
+                        <a href="https://www.instagram.com/daiku.portfolio/" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 w-9 items-center justify-center rounded bg-white text-slate-900 transition hover:bg-amber-400" aria-label="Instagram Daiku"><i class="fab fa-instagram"></i></a>
+                        <a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 w-9 items-center justify-center rounded bg-white text-slate-900 transition hover:bg-amber-400" aria-label="WhatsApp Daiku"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
 
-                <!-- Links -->
-                <div class="lg:col-span-3">
-                    <h3 class="text-base font-semibold tracking-wide text-gray-900 mb-4">Navigasi</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('home') }}" class="text-gray-600 hover:text-amber-600 transition duration-150">Beranda</a></li>
-                        <li><a href="{{ route('about') }}" class="text-gray-600 hover:text-amber-600 transition duration-150">Tentang Kami</a></li>
-                        <li><a href="{{ route('katalog') }}" class="text-gray-600 hover:text-amber-600 transition duration-150">Katalog</a></li>
-                        <li><a href="{{ route('konsultasi.index') }}" class="text-gray-600 hover:text-amber-600 transition duration-150">Konsultasi</a></li>
-                        <li><a href="{{ route('register') }}" class="text-gray-600 hover:text-amber-600 transition duration-150">Daftar Akun</a></li>
+                <div>
+                    <h3 class="text-xl font-bold">Layanan</h3>
+                    <ul class="mt-6 space-y-4 text-sm text-white/80">
+                        <li><a href="{{ route('konsultasi.index') }}" class="transition hover:text-amber-400">Konsultasi desain interior</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Furnitur custom</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Renovasi ruang</a></li>
                     </ul>
                 </div>
 
-                <!-- Studio -->
-                <div class="lg:col-span-4">
-                    <h3 class="text-base font-semibold tracking-wide text-gray-900 mb-4">Studio Pekanbaru</h3>
-                    <p class="text-gray-600 leading-relaxed max-w-sm">
-                        Lihat dokumentasi dan inspirasi terbaru Daiku melalui kanal resmi kami.
-                    </p>
-                    <div class="flex items-center gap-3 mt-5">
-                        <a href="https://www.instagram.com/daikuinterior/" target="_blank" rel="noopener noreferrer" class="inline-flex h-10 items-center gap-2 rounded-full border border-gray-300 px-4 text-gray-700 hover:border-amber-400 hover:text-amber-600 transition duration-150" aria-label="Instagram Daiku Interior">
-                            <i class="fab fa-instagram"></i>
-                            <span class="text-sm font-medium">@daikuinterior</span>
-                        </a>
-                    </div>
+                <div>
+                    <h3 class="text-xl font-bold">Navigasi</h3>
+                    <ul class="mt-6 space-y-4 text-sm text-white/80">
+                        <li><a href="{{ route('home') }}" class="transition hover:text-amber-400">Beranda</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Portofolio</a></li>
+                        <li><a href="{{ route('about') }}" class="transition hover:text-amber-400">Tentang Kami</a></li>
+                        <li><a href="{{ route('konsultasi.index') }}" class="transition hover:text-amber-400">Konsultasi</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-bold">Kontak</h3>
+                    <ul class="mt-6 space-y-4 text-sm leading-relaxed text-white/80">
+                        <li class="flex gap-3"><i class="fas fa-location-dot mt-1 text-amber-400" aria-hidden="true"></i><span>Pekanbaru, Riau, Indonesia</span></li>
+                        <li><a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fab fa-whatsapp text-amber-400" aria-hidden="true"></i><span>+{{ $footerWhatsapp }}</span></a></li>
+                        <li><a href="https://www.instagram.com/daiku.portfolio/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fab fa-instagram text-amber-400" aria-hidden="true"></i><span>@daiku.portfolio</span></a></li>
+                    </ul>
                 </div>
             </div>
 
-        </div>
-
-        <div class="relative mt-2 overflow-hidden bg-gradient-to-r from-amber-300 via-yellow-400 to-yellow-300 text-white">
-            <svg class="absolute left-0 top-0 h-16 w-full text-white" viewBox="0 0 1440 96" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 24 C140 -8 260 -8 390 24 C520 56 620 56 745 26 C870 -4 980 -10 1110 20 C1240 50 1330 18 1440 8 L1440 0 L0 0 Z" fill="currentColor" opacity="0.9"/>
-            </svg>
-            <svg class="absolute left-0 top-1 h-20 w-full text-amber-500" viewBox="0 0 1440 110" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 52 C150 12 250 4 380 42 C520 84 610 34 740 34 C860 34 930 74 1050 44 C1160 16 1280 20 1440 34 L1440 110 L0 110 Z" fill="currentColor" opacity="0.55"/>
-            </svg>
-            <svg class="absolute left-0 top-6 h-16 w-full text-yellow-300" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true">
-                <path d="M0 34 C130 60 245 42 365 24 C500 2 570 30 700 22 C845 12 910 56 1045 34 C1190 10 1298 8 1440 30 L1440 100 L0 100 Z" fill="currentColor" opacity="0.85"/>
-            </svg>
-            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-8 flex items-end justify-between">
-                <p class="text-sm text-white/90">&copy; {{ now()->year }} All Rights Reserved</p>
-                <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="h-9 w-9 rounded-full border border-white/90 flex items-center justify-center text-white hover:bg-white hover:text-amber-500 transition duration-200" aria-label="Kembali ke atas">
-                    <i class="fas fa-chevron-up text-sm"></i>
-                </button>
+            <div class="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-sm text-white/55 sm:flex-row sm:items-center sm:justify-between">
+                <p>&copy; {{ now()->year }} Daiku Interior. Hak cipta dilindungi.</p>
+                <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="self-start transition hover:text-amber-400 sm:self-auto">Kembali ke atas <i class="fas fa-arrow-up ml-1" aria-hidden="true"></i></button>
             </div>
         </div>
     </footer>

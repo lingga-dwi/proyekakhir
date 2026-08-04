@@ -213,36 +213,4 @@
     </div>
 </section>
 
-<section class="bg-slate-950 py-20 text-white sm:py-24" aria-labelledby="today-title">
-    <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[1fr_1fr] lg:gap-20 lg:px-8">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-400">Daiku Hari Ini</p>
-            <h2 id="today-title" class="about-display mt-5 max-w-xl text-4xl leading-tight sm:text-5xl">
-                Berkarya dari Pekanbaru untuk berbagai kebutuhan ruang.
-            </h2>
-            <p class="mt-6 max-w-xl leading-8 text-slate-400">
-                Daiku terus mengembangkan layanan interior dan eksterior dengan menjaga komunikasi, ketelitian, dan solusi yang menyesuaikan kebutuhan setiap proyek.
-            </p>
-        </div>
-
-        <address class="grid gap-8 border-t border-white/20 pt-8 not-italic sm:grid-cols-2">
-            <div>
-                <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Studio</p>
-                <p class="mt-3 leading-7 text-slate-200">Jl. Yos Sudarso, Pekanbaru 28154</p>
-            </div>
-            <div>
-                <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Telepon</p>
-                <a href="tel:+628117597766" class="mt-3 block text-slate-200 transition hover:text-amber-300">0811-7597-766</a>
-            </div>
-            <div>
-                <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Email</p>
-                <a href="mailto:fendrabudiono@gmail.com" class="mt-3 block break-all text-slate-200 transition hover:text-amber-300">fendrabudiono@gmail.com</a>
-            </div>
-            <div>
-                <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Instagram</p>
-                <a href="https://www.instagram.com/daikuinterior/" target="_blank" rel="noopener noreferrer" class="mt-3 block text-slate-200 transition hover:text-amber-300">@daikuinterior</a>
-            </div>
-        </address>
-    </div>
-</section>
 @endsection

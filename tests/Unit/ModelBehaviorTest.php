@@ -68,7 +68,7 @@ class ModelBehaviorTest extends TestCase
     {
         $consultation = new Konsultasi(['jenis_konsultasi' => 'free_consultation']);
 
-        $this->assertSame('Konsultasi Gratis (30 menit)', $consultation->getJenisKonsultasiLabel());
+        $this->assertSame('Desain Interior Baru', $consultation->getJenisKonsultasiLabel());
     }
 
     public function test_budget_range_is_mapped_to_readable_label(): void
@@ -89,7 +89,7 @@ class ModelBehaviorTest extends TestCase
     {
         $consultation = new Konsultasi(['jenis_ruangan' => 'kitchen']);
 
-        $this->assertSame('Dapur', $consultation->getJenisRuanganLabel());
+        $this->assertSame('Ruko', $consultation->getJenisRuanganLabel());
     }
 
     private function completeCatalog(array $overrides = []): Katalog

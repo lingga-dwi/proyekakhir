@@ -95,13 +95,13 @@
                         $isConsultation = $item->item_type === 'consultation';
                         $reference = ($isConsultation ? 'KS-' : 'DI-').str_pad((string) $item->id, 3, '0', STR_PAD_LEFT);
                         $title = $isConsultation ? match($item->title) {
-                            'living_room' => 'Ruang Tamu',
-                            'bedroom' => 'Kamar Tidur',
-                            'kitchen' => 'Dapur',
-                            'bathroom' => 'Kamar Mandi',
-                            'office' => 'Ruang Kerja',
-                            'whole_house' => 'Seluruh Hunian',
-                            default => 'Konsultasi Interior',
+                            'living_room' => 'Rumah Tinggal',
+                            'bedroom' => 'Apartemen',
+                            'kitchen' => 'Ruko',
+                            'bathroom' => 'Kantor',
+                            'office' => 'Kafe / Restoran',
+                            'whole_house' => 'Lainnya',
+                            default => 'Permintaan Konsultasi',
                         } : ($item->title ?: 'Interior');
                         [$statusLabel, $statusClass] = match($item->item_type.':'.$item->status) {
                             'consultation:pending' => ['Konsultasi masuk', 'bg-violet-100 text-violet-700'],
@@ -163,20 +163,11 @@
                                     @if($item->status === 'pending')
                                         <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}">
                                             @csrf @method('PUT')<input type="hidden" name="status" value="confirmed">
-                                            <button class="text-sm font-semibold text-blue-700 hover:text-blue-800">Konfirmasi</button>
+                                            <button class="text-sm font-semibold text-blue-700 hover:text-blue-800">Konfirmasi &amp; buat proyek</button>
                                         </form>
                                         <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}" onsubmit="return confirm('Tolak permintaan konsultasi ini?')">
                                             @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
                                             <button class="text-sm font-semibold text-red-600 hover:text-red-700">Tolak</button>
-                                        </form>
-                                    @elseif($item->status === 'confirmed')
-                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.convert', $item->id) }}">
-                                            @csrf
-                                            <button class="rounded-lg bg-amber-400 px-3 py-2 text-xs font-semibold text-slate-950 hover:bg-amber-300">Jadikan proyek</button>
-                                        </form>
-                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}">
-                                            @csrf @method('PUT')<input type="hidden" name="status" value="completed">
-                                            <button class="text-xs font-semibold text-green-700 hover:text-green-800">Selesai tanpa proyek</button>
                                         </form>
                                     @endif
                                 </div>

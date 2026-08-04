@@ -85,7 +85,7 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
     }
 
-    public function test_konsultasi_uses_authenticated_identity_instead_of_spoofed_form_values(): void
+    public function test_konsultasi_stores_request_details_and_updates_contact_profile(): void
     {
         $user = User::create([
             'nama' => 'Konsultan Asli',
@@ -97,27 +97,32 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
 
         $response = $this->actingAs($user)->post(route('konsultasi.store'), [
-            'nama' => 'Nama Palsu',
-            'email' => 'palsu@example.com',
+            'nama' => 'Nama Pemohon',
+            'email' => 'pemohon@example.com',
             'no_telp' => '088888888888',
+            'alamat' => 'Pekanbaru',
             'jenis_konsultasi' => 'virtual_design',
             'jenis_ruangan' => 'living_room',
             'budget_range' => '10m_25m',
-            'timeline' => '1_month',
             'luas_ruangan' => 24,
-            'gaya_preferensi' => 'Minimalis',
             'deskripsi_kebutuhan' => 'Butuh masukan desain.',
-            'tanggal_konsultasi' => now()->addDay()->toDateString(),
-            'waktu_konsultasi' => '10:00',
         ]);
 
         $response->assertRedirect();
 
         $this->assertDatabaseHas('konsultasi', [
             'user_id' => $user->id,
-            'nama' => 'Konsultan Asli',
+            'nama' => 'Nama Pemohon',
+            'email' => 'pemohon@example.com',
+            'no_telp' => '088888888888',
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'nama' => 'Nama Pemohon',
             'email' => 'konsultan@example.com',
-            'no_telp' => '081200000000',
+            'no_telp' => '088888888888',
+            'alamat' => 'Pekanbaru',
         ]);
     }
 

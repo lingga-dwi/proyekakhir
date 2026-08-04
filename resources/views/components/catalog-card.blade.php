@@ -11,11 +11,8 @@
         aria-label="Lihat detail {{ $katalog->nama_desain }}"
         onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSidebar({{ $katalog->id }}); }"
     @endif
-    class="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2 {{ $sidebar ? 'focus:ring-2 focus:ring-amber-500 focus:ring-offset-2' : '' }}"
+    class="group relative flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-within:ring-2 focus-within:ring-amber-500 focus-within:ring-offset-2 {{ $sidebar ? 'cursor-pointer focus:ring-2 focus:ring-amber-500 focus:ring-offset-2' : '' }}"
 >
-    @unless($sidebar)
-        <a href="{{ route('katalog', ['design' => $katalog->id]) }}" class="absolute inset-0 z-10 rounded-2xl" aria-label="Lihat detail {{ $katalog->nama_desain }}"></a>
-    @endunless
 
     <div class="relative h-56 shrink-0 overflow-hidden bg-gray-100">
         @if($katalog->gambar_utama_url)
@@ -44,8 +41,14 @@
     <div class="flex flex-1 flex-col p-5">
         <h3 class="text-lg font-bold text-slate-900">{{ $katalog->nama_desain }}</h3>
         <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">{{ $katalog->deskripsi }}</p>
-        <span class="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold text-amber-700">
-            Lihat desain <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-        </span>
+        @if($sidebar)
+            <span class="mt-auto inline-flex items-center gap-2 self-start pt-4 text-sm font-semibold text-amber-700 transition group-hover:gap-3">
+                Lihat desain <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+            </span>
+        @else
+            <a href="{{ route('katalog', ['design' => $katalog->id]) }}" class="mt-auto inline-flex items-center gap-2 self-start pt-4 text-sm font-semibold text-amber-700 transition hover:gap-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                Lihat desain <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+            </a>
+        @endif
     </div>
 </article>

@@ -7,20 +7,21 @@ use App\Models\Pemesanan;
 use App\Models\User;
 use App\Services\AccountActivationService;
 use App\Services\AdminWorkItemService;
-use App\Services\CustomerUploadService;
 use App\Services\ManualOrderService;
+use App\Services\PaymentEvidenceService;
 use App\Services\ProjectWorkflowService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class PemesananController extends Controller
 {
     public function __construct(
         private readonly ProjectWorkflowService $workflow,
-        private readonly CustomerUploadService $uploads,
         private readonly AdminWorkItemService $workItems,
         private readonly ManualOrderService $manualOrders,
-        private readonly AccountActivationService $activation
+        private readonly AccountActivationService $activation,
+        private readonly PaymentEvidenceService $paymentEvidence
     ) {}
 
     public function create(Request $request)
@@ -43,11 +44,7 @@ class PemesananController extends Controller
             'jenis_proyek' => 'required|string',
             'jenis_bangunan' => 'required|string',
             'luas_area' => 'required|numeric|min:1',
-            'jumlah_ruangan' => 'required|integer|min:1',
-            'gaya_desain_preferensi' => 'required|string',
-            'warna_dominan' => 'required|string',
             'deskripsi_keinginan_desain' => 'required|string',
-            'upload_denah_foto.*' => 'nullable|file|mimes:jpeg,jpg,png,pdf|max:5120',
             'katalog_id' => 'nullable|exists:katalog,id',
             'terms' => 'accepted',
         ]);
@@ -72,12 +69,6 @@ class PemesananController extends Controller
             $user->update($missingProfileData);
         }
 
-        // Handle file uploads
-        $uploadedFiles = $this->uploads->storeMany(
-            $request->file('upload_denah_foto', []),
-            "customer-uploads/orders/{$user->id}"
-        );
-
         // Create Pemesanan
         $pemesanan = Pemesanan::create([
             'id_user' => auth()->id(),
@@ -90,11 +81,7 @@ class PemesananController extends Controller
             'jenis_proyek' => $request->jenis_proyek,
             'jenis_bangunan' => $request->jenis_bangunan,
             'luas_area' => $request->luas_area,
-            'jumlah_ruangan' => $request->jumlah_ruangan,
-            'gaya_desain_preferensi' => $request->gaya_desain_preferensi,
-            'warna_dominan' => $request->warna_dominan,
             'deskripsi_keinginan_desain' => $request->deskripsi_keinginan_desain,
-            'upload_denah_foto' => $uploadedFiles,
         ]);
 
         $pemesanan->statusTrackings()->create([
@@ -110,30 +97,44 @@ class PemesananController extends Controller
             ->with('success', 'Pesanan berhasil dibuat! Tim kami akan segera menghubungi Anda.');
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $pemesanan = Pemesanan::with(['user', 'katalog'])->findOrFail($id);
+        $this->authorizeOrderAccess($request, $pemesanan);
 
-        $user = auth()->user();
-        $canAccess = $user->isAdmin()
-            || $pemesanan->id_user === $user->id
-            || ($user->isDesigner() && $pemesanan->designer_id === $user->id);
+        $paymentSummary = $this->paymentEvidence->summary($pemesanan);
 
-        abort_unless($canAccess, 403);
-
-        return view('pemesanan.show', compact('pemesanan'));
+        return view('pemesanan.show', compact('pemesanan', 'paymentSummary'));
     }
 
-    public function attachment(Pemesanan $pemesanan, int $index)
+    public function uploadPaymentEvidence(Request $request, Pemesanan $pemesanan)
     {
-        $user = auth()->user();
-        $canAccess = $user->isAdmin()
-            || $pemesanan->id_user === $user->id
-            || ($user->isDesigner() && $pemesanan->designer_id === $user->id);
+        abort_unless($pemesanan->id_user === $request->user()->id, 403);
 
-        abort_unless($canAccess, 403);
+        $data = $request->validate([
+            'bukti_pembayaran' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+        ]);
 
-        return $this->uploads->response($pemesanan->upload_denah_foto ?? [], $index);
+        $this->paymentEvidence->upload($pemesanan, $data['bukti_pembayaran'], $request->user());
+
+        return back()->with('success', 'Bukti pembayaran berhasil diunggah dan menunggu verifikasi admin.');
+    }
+
+    public function downloadPaymentEvidence(Request $request, Pemesanan $pemesanan)
+    {
+        $this->authorizeOrderAccess($request, $pemesanan);
+        $summary = $this->paymentEvidence->summary($pemesanan);
+
+        abort_unless($summary['proof_path'], 404);
+
+        return Storage::disk('payment_evidence')->download($summary['proof_path']);
+    }
+
+    public function verifyPaymentEvidence(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless($this->paymentEvidence->verify($pemesanan, $request->user()), 422, 'Tidak ada bukti pembayaran yang menunggu verifikasi.');
+
+        return back()->with('success', 'Pembayaran berhasil diverifikasi.');
     }
 
     public function index(Request $request)
@@ -249,5 +250,15 @@ class PemesananController extends Controller
         );
 
         return back()->with('success', $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.');
+    }
+
+    private function authorizeOrderAccess(Request $request, Pemesanan $pemesanan): void
+    {
+        $user = $request->user();
+        $canAccess = $user->isAdmin()
+            || $pemesanan->id_user === $user->id
+            || ($user->isDesigner() && $pemesanan->designer_id === $user->id);
+
+        abort_unless($canAccess, 403);
     }
 }

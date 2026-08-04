@@ -43,18 +43,13 @@ class Pemesanan extends Model
         'jenis_proyek',
         'jenis_bangunan',
         'luas_area',
-        'jumlah_ruangan',
-        'gaya_desain_preferensi',
-        'warna_dominan',
         'deskripsi_keinginan_desain',
-        'upload_denah_foto',
     ];
 
     protected $casts = [
         'tanggal_pesan' => 'date',
         'target_selesai' => 'date',
         'progress' => 'integer',
-        'upload_denah_foto' => 'array',
         'luas_area' => 'decimal:2',
         'total_harga' => 'decimal:2',
     ];

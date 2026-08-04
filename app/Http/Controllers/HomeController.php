@@ -16,11 +16,18 @@ class HomeController extends Controller
             $portfolioKatalogs = collect();
         } else {
             try {
+                // Kurasi manual agar sorotan beranda menampilkan ruang yang
+                // utuh dan representatif, bukan unggahan terbaru semata.
+                // Satu contoh hunian, ruang kerja, dan kamar agar sorotan
+                // beranda tidak didominasi oleh satu jenis ruang saja.
+                $featuredIds = [23, 14, 88];
+
                 $portfolioKatalogs = Katalog::with('category')
                     ->published()
-                    ->latest('id')
-                    ->take(6)
-                    ->get();
+                    ->whereIn('id', $featuredIds)
+                    ->get()
+                    ->sortBy(fn (Katalog $katalog) => array_search($katalog->id, $featuredIds, true))
+                    ->values();
             } catch (\Throwable $e) {
                 // Saat DB mati, tampilkan tanpa data agar halaman tetap hidup
                 $portfolioKatalogs = collect();

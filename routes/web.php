@@ -43,20 +43,21 @@ Route::middleware(['auth'])->group(function () {
 
     // Customer-only routes
     Route::middleware(['role:pelanggan'])->group(function () {
-        Route::get('/aktivitas-saya', [CustomerActivityController::class, 'index'])->name('aktivitas.saya');
-        Route::redirect('/pesanan-saya', '/aktivitas-saya?tab=pesanan')->name('pesanan.saya');
-        Route::redirect('/konsultasi-saya', '/aktivitas-saya?tab=konsultasi')->name('konsultasi.saya');
-        Route::get('/pemesanan/create', [PemesananController::class, 'create'])->name('pemesanan.create');
-        Route::post('/pemesanan', [PemesananController::class, 'store'])->name('pemesanan.store')->middleware('throttle:customer-forms');
+        Route::get('/pesanan-saya', [CustomerActivityController::class, 'index'])->name('pesanan.saya');
+        Route::get('/aktivitas-saya', fn (\Illuminate\Http\Request $request) => redirect()->route('pesanan.saya', $request->only('tab')))
+            ->name('aktivitas.saya');
+        Route::redirect('/konsultasi-saya', '/pesanan-saya?tab=konsultasi')->name('konsultasi.saya');
+    Route::get('/pemesanan/create', [PemesananController::class, 'create'])->name('pemesanan.create');
+    Route::post('/pemesanan', [PemesananController::class, 'store'])->name('pemesanan.store')->middleware('throttle:customer-forms');
+    Route::post('/pemesanan/{pemesanan}/bukti-pembayaran', [PemesananController::class, 'uploadPaymentEvidence'])
+        ->name('pemesanan.payment-evidence.upload')->middleware('throttle:customer-forms');
     });
 
     // Detail routes authorize the owner, admin, or assigned designer in the controller.
     Route::get('/konsultasi/{id}', [KonsultasiController::class, 'show'])->name('konsultasi.show');
-    Route::get('/konsultasi/{konsultasi}/lampiran/{index}', [KonsultasiController::class, 'attachment'])
-        ->whereNumber('index')->name('konsultasi.attachment');
     Route::get('/pemesanan/{id}', [PemesananController::class, 'show'])->name('pemesanan.show');
-    Route::get('/pemesanan/{pemesanan}/lampiran/{index}', [PemesananController::class, 'attachment'])
-        ->whereNumber('index')->name('pemesanan.attachment');
+    Route::get('/pemesanan/{pemesanan}/bukti-pembayaran', [PemesananController::class, 'downloadPaymentEvidence'])
+        ->name('pemesanan.payment-evidence.download');
 
     Route::put('/designer/proyek/{pemesanan}', [PemesananController::class, 'updateAssignedProject'])
         ->name('designer.proyek.update')->middleware('role:designer');
@@ -68,6 +69,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/admin/pemesanan', [PemesananController::class, 'index'])->name('admin.pemesanan.index');
         Route::post('/admin/pemesanan', [PemesananController::class, 'storeAdmin'])->name('admin.pemesanan.store');
         Route::put('/admin/pemesanan/{id}/status', [PemesananController::class, 'updateStatus'])->name('admin.pemesanan.updateStatus');
+        Route::post('/admin/pemesanan/{pemesanan}/verifikasi-pembayaran', [PemesananController::class, 'verifyPaymentEvidence'])
+            ->name('admin.pemesanan.payment-evidence.verify');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/status', [KonsultasiController::class, 'updateStatus'])
             ->name('admin.pemesanan.konsultasi.update');
         Route::post('/admin/pemesanan/konsultasi/{konsultasi}/proyek', [KonsultasiController::class, 'convertToProject'])

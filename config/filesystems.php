@@ -38,6 +38,22 @@ return [
             'report' => false,
         ],
 
+        // Produksi gratis memakai bucket Supabase S3 privat. Secara lokal tetap
+        // memakai lokasi private Laravel agar pengembangan tidak memerlukan cloud.
+        'payment_evidence' => [
+            'driver' => env('PAYMENT_EVIDENCE_DRIVER', 'local'),
+            'root' => env('PAYMENT_EVIDENCE_PATH', storage_path('app/private')),
+            'key' => env('PAYMENT_EVIDENCE_KEY'),
+            'secret' => env('PAYMENT_EVIDENCE_SECRET'),
+            'region' => env('PAYMENT_EVIDENCE_REGION', 'ap-southeast-1'),
+            'bucket' => env('PAYMENT_EVIDENCE_BUCKET'),
+            'endpoint' => env('PAYMENT_EVIDENCE_ENDPOINT'),
+            'use_path_style_endpoint' => env('PAYMENT_EVIDENCE_USE_PATH_STYLE', true),
+            'serve' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
