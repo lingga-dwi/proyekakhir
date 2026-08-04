@@ -249,6 +249,30 @@
                 </summary>
                 <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Daiku melayani kebutuhan interior untuk hunian, ruang kerja, serta ruang usaha. Ceritakan fungsi ruang Anda pada formulir agar peninjauan awal lebih tepat.</p>
             </details>
+
+            <details class="group py-5">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
+                    Apakah Daiku melayani renovasi interior?
+                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
+                </summary>
+                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Ya. Daiku dapat membantu penataan dan renovasi interior sesuai kondisi ruang yang ada, mulai dari pembahasan kebutuhan hingga pengerjaan yang disepakati.</p>
+            </details>
+
+            <details class="group py-5">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
+                    Bagaimana perkiraan biaya proyek ditentukan?
+                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
+                </summary>
+                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Perkiraan biaya disusun berdasarkan ukuran ruang, lingkup pekerjaan, material, furnitur, dan detail desain. Tim Daiku akan menyampaikan penawaran setelah kebutuhan proyek ditinjau.</p>
+            </details>
+
+            <details class="group py-5">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
+                    Berapa lama proses desain dan pengerjaan berlangsung?
+                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
+                </summary>
+                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Durasi menyesuaikan skala proyek, kondisi lokasi, serta tingkat detail pekerjaan. Estimasi jadwal akan dibahas bersama setelah konsultasi dan ruang lingkup proyek disepakati.</p>
+            </details>
         </div>
     </div>
 </section>
