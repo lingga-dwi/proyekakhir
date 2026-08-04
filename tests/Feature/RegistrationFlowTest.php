@@ -18,7 +18,7 @@ class RegistrationFlowTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('verification.notice'));
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'pelanggan@example.com',

@@ -9,6 +9,7 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\KonsultasiController;
 use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\SitemapController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -21,8 +22,8 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 // Konsultasi routes (public)
 Route::get('/konsultasi', [KonsultasiController::class, 'index'])->name('konsultasi.index');
-Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware(['auth', 'role:pelanggan']);
-Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'role:pelanggan', 'throttle:customer-forms']);
+Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware(['auth', 'verified', 'role:pelanggan']);
+Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'verified', 'role:pelanggan', 'throttle:customer-forms']);
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -30,6 +31,25 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post')->mid
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:login');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::get('/email/verify', fn () => view('auth.verify-email'))
+    ->middleware('auth')
+    ->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+
+    return redirect()->route('home')->with('success', 'Email berhasil diverifikasi. Selamat datang di Daiku!');
+})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
+Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
+    if ($request->user()->hasVerifiedEmail()) {
+        return redirect()->route('home');
+    }
+
+    $request->user()->sendEmailVerificationNotification();
+
+    return back()->with('status', 'Link verifikasi baru telah dikirim.');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:password');
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
@@ -42,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
 
     // Customer-only routes
-    Route::middleware(['role:pelanggan'])->group(function () {
+    Route::middleware(['verified', 'role:pelanggan'])->group(function () {
         Route::get('/pesanan-saya', [CustomerActivityController::class, 'index'])->name('pesanan.saya');
         Route::get('/aktivitas-saya', fn (\Illuminate\Http\Request $request) => redirect()->route('pesanan.saya', $request->only('tab')))
             ->name('aktivitas.saya');
