@@ -20,7 +20,7 @@ RUN apk add --no-cache libpq-dev libzip-dev oniguruma-dev libxml2-dev \
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 
 FROM php:8.2-fpm-alpine
 
