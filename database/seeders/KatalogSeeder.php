@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\File;
 
 class KatalogSeeder extends Seeder
 {
@@ -23,6 +24,10 @@ class KatalogSeeder extends Seeder
         }
 
         $categoryMap = Category::pluck('id', 'name')->toArray();
+        $availableImages = collect(File::allFiles(public_path('images/katalog/curated')))
+            ->filter(fn ($file) => in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'webp'], true))
+            ->map(fn ($file) => str_replace('\\', '/', str_replace(public_path().DIRECTORY_SEPARATOR, '', $file->getPathname())))
+            ->values();
 
         $katalogs = [
             // KAMAR TIDUR
@@ -187,7 +192,20 @@ class KatalogSeeder extends Seeder
             ],
         ];
 
-        foreach ($katalogs as $katalog) {
+        foreach ($katalogs as $index => $katalog) {
+            // Aset katalog lama sudah tidak disertakan dalam proyek. Gunakan
+            // foto kurasi yang benar-benar tersedia agar data contoh tidak
+            // menghasilkan tautan gambar rusak.
+            if (! is_file(public_path($katalog['gambar_utama'])) && $availableImages->isNotEmpty()) {
+                $katalog['gambar_utama'] = $availableImages[$index % $availableImages->count()];
+                $katalog['galeri_gambar'] = [];
+            } else {
+                $katalog['galeri_gambar'] = array_values(array_filter(
+                    $katalog['galeri_gambar'],
+                    fn (string $image) => is_file(public_path($image))
+                ));
+            }
+
             $lookupName = $katalog['lookup_name'] ?? $katalog['nama_desain'];
             unset($katalog['lookup_name']);
             $katalog['category_id'] = $categoryMap[$katalog['kategori']] ?? null;

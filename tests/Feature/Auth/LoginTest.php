@@ -23,10 +23,11 @@ class LoginTest extends TestCase
             ->assertSee('Lupa password?');
     }
 
-    public function test_verified_user_login_redirects_home_without_welcome_notification(): void
+    public function test_user_without_verified_email_can_login_and_is_redirected_home(): void
     {
         $user = User::factory()->create([
             'password' => bcrypt('password'),
+            'email_verified_at' => null,
         ]);
 
         $response = $this->post(route('login'), [

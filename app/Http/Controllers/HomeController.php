@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Faq;
 use App\Models\Katalog;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -35,7 +36,17 @@ class HomeController extends Controller
             }
         }
 
-        return view('home.index', compact('portfolioKatalogs'));
+        $faqs = collect();
+
+        if (! Config::get('app.db_offline')) {
+            try {
+                $faqs = Faq::active()->orderBy('sort_order')->orderBy('id')->get();
+            } catch (\Throwable $e) {
+                logger()->warning('DB unavailable when loading homepage FAQs', ['error' => $e->getMessage()]);
+            }
+        }
+
+        return view('home.index', compact('portfolioKatalogs', 'faqs'));
     }
 
     public function about()

@@ -41,6 +41,9 @@
                     <a href="{{ route('admin.katalog.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.katalog.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-images w-5 text-center"></i><span>Kelola Katalog</span>
                     </a>
+                    <a href="{{ route('admin.faq.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.faq.*') ? $activeNav : $inactiveNav }}">
+                        <i class="fas fa-circle-question w-5 text-center"></i><span>Kelola FAQ</span>
+                    </a>
                     <a href="{{ route('admin.pelanggan.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.pelanggan.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-address-book w-5 text-center"></i><span>Kelola Pelanggan</span>
                     </a>

@@ -2,11 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
-use App\Models\Katalog;
 use App\Models\Konsultasi;
 use App\Models\User;
-use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
@@ -30,7 +27,7 @@ class ProjectFlowHardeningTest extends TestCase
         }
     }
 
-    public function test_pemesanan_creation_does_not_mutate_authenticated_user_profile(): void
+    public function test_direct_pemesanan_redirects_to_consultation_without_mutating_profile(): void
     {
         $user = User::create([
             'nama' => 'Akun Asli',
@@ -39,18 +36,6 @@ class ProjectFlowHardeningTest extends TestCase
             'role' => 'pelanggan',
             'alamat' => 'Alamat Asli',
             'no_telp' => '081234567890',
-        ]);
-
-        $category = Category::create([
-            'name' => 'Ruang Tamu',
-            'slug' => 'ruang-tamu',
-        ]);
-
-        $katalog = Katalog::create([
-            'category_id' => $category->id,
-            'nama_desain' => 'Desain Aman',
-            'deskripsi' => 'Deskripsi',
-            'status' => 'published',
         ]);
 
         $response = $this->actingAs($user)->post(route('pemesanan.store'), [
@@ -65,16 +50,11 @@ class ProjectFlowHardeningTest extends TestCase
             'gaya_desain_preferensi' => 'modern_minimalis',
             'warna_dominan' => 'putih',
             'deskripsi_keinginan_desain' => 'Butuh desain yang bersih.',
-            'katalog_id' => $katalog->id,
             'terms' => 'on',
         ]);
 
-        $response->assertRedirect();
-
-        $this->assertDatabaseHas('pemesanan', [
-            'id_user' => $user->id,
-            'katalog_id' => $katalog->id,
-        ]);
+        $response->assertRedirect(route('konsultasi.create'));
+        $this->assertDatabaseCount('pemesanan', 0);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -126,62 +106,74 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
     }
 
-    public function test_database_prevents_two_active_consultations_from_reserving_the_same_slot(): void
+    public function test_admin_cannot_schedule_two_consultations_on_the_same_slot(): void
     {
-        $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
-        $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
-        $slot = now()->addWeek()->toDateString();
-
-        Konsultasi::create($this->consultationData($firstCustomer, $slot));
-
-        $this->expectException(QueryException::class);
-        Konsultasi::create($this->consultationData($secondCustomer, $slot));
-    }
-
-    public function test_cancelled_consultation_releases_its_reserved_slot(): void
-    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
         $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
         $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
         $slot = now()->addWeek()->toDateString();
 
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
-        $first->update(['status' => Konsultasi::STATUS_CANCELLED]);
         $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
 
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
+            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        ])->assertRedirect();
+
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $second), [
+            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        ])->assertSessionHasErrors('waktu_konsultasi');
+    }
+
+    public function test_cancelled_consultation_releases_its_reserved_slot(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
+        $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $slot = now()->addWeek()->toDateString();
+
+        $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
+        $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
+
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
+            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        ])->assertRedirect();
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $first), ['status' => Konsultasi::STATUS_CANCELLED])->assertRedirect();
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $second), [
+            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        ])->assertRedirect();
+
         $this->assertNull($first->fresh()->active_slot);
-        $this->assertNotNull($second->active_slot);
+        $this->assertNotNull($second->fresh()->active_slot);
     }
 
     public function test_customer_attachments_are_private_and_owner_authorized(): void
     {
         Storage::fake('local');
-        Storage::fake('public');
         $owner = User::factory()->create(['role' => 'pelanggan']);
         $otherCustomer = User::factory()->create(['role' => 'pelanggan']);
 
-        $this->actingAs($owner)->post(route('pemesanan.store'), [
+        $this->actingAs($owner)->post(route('konsultasi.store'), [
             'nama' => $owner->nama,
             'email' => $owner->email,
-            'no_hp' => '081234567890',
+            'no_telp' => '081234567890',
             'alamat' => 'Pekanbaru',
-            'jenis_proyek' => 'desain_baru',
-            'jenis_bangunan' => 'rumah_tinggal',
-            'luas_area' => 42,
-            'jumlah_ruangan' => 2,
-            'gaya_desain_preferensi' => 'minimalis',
-            'warna_dominan' => 'putih',
-            'deskripsi_keinginan_desain' => 'Lampiran privat.',
-            'upload_denah_foto' => [UploadedFile::fake()->image('denah.jpg')],
-            'terms' => 'on',
+            'jenis_konsultasi' => 'virtual_design',
+            'jenis_ruangan' => 'living_room',
+            'budget_range' => '10m_25m',
+            'luas_ruangan' => 42,
+            'deskripsi_kebutuhan' => 'Lampiran privat.',
+            'attachments' => [UploadedFile::fake()->image('denah.jpg')],
         ])->assertRedirect();
 
-        $project = \App\Models\Pemesanan::latest('id')->firstOrFail();
-        $path = $project->upload_denah_foto[0];
+        $consultation = Konsultasi::latest('id')->firstOrFail();
+        $path = $consultation->attachments[0];
         Storage::disk('local')->assertExists($path);
-        Storage::disk('public')->assertMissing($path);
 
-        $this->actingAs($owner)->get(route('pemesanan.attachment', [$project, 0]))->assertOk();
-        $this->actingAs($otherCustomer)->get(route('pemesanan.attachment', [$project, 0]))->assertForbidden();
+        $this->actingAs($owner)->get(route('konsultasi.attachment.download', [$consultation, 0]))->assertOk();
+        $this->actingAs($otherCustomer)->get(route('konsultasi.attachment.download', [$consultation, 0]))->assertForbidden();
     }
 
     private function consultationData(User $user, string $date): array

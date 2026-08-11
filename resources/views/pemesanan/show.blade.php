@@ -45,6 +45,97 @@
             </div>
         </div>
 
+        @php
+            $workflowLabels = [
+                'draft_design' => 'Desainer menyiapkan desain awal & RAB',
+                'awaiting_draft_approval' => 'Menunggu review desain awal pelanggan',
+                'revision_requested' => 'Pelanggan meminta revisi desain awal',
+                'awaiting_dp' => 'Menunggu pembayaran DP 20%',
+                'dp_verification' => 'Bukti DP menunggu verifikasi admin',
+                'survey_scheduled' => 'Menunggu penjadwalan survei lokasi',
+                'final_design' => 'Desainer menyiapkan desain & RAB final',
+                'awaiting_final_approval' => 'Menunggu persetujuan desain final pelanggan',
+                'approved' => 'Desain final disetujui, pengerjaan berjalan',
+            ];
+            $draftDocuments = $pemesanan->documents->where('stage', 'draft');
+            $finalDocuments = $pemesanan->documents->where('stage', 'final');
+            $dpInvoice = $pemesanan->dpInvoice;
+        @endphp
+
+        <section class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">Tahap proses saat ini</p>
+            <h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $workflowLabels[$pemesanan->workflow_stage] ?? 'Proses proyek' }}</h2>
+            @if($pemesanan->catatan_progres)<p class="mt-2 text-sm leading-6 text-slate-700">{{ $pemesanan->catatan_progres }}</p>@endif
+        </section>
+
+        @if($pemesanan->designer_id === auth()->id() && in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true))
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Kirim dokumen ke pelanggan</h2>
+                <p class="mt-1 text-sm text-slate-500">Unggah desain, RAB, atau hasil survei. Dokumen akan menunggu keputusan pelanggan.</p>
+                <form method="POST" action="{{ route('designer.proyek.document.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
+                    @csrf
+                    <select name="document_type" class="rounded-lg border-slate-300" required><option value="design">Desain</option><option value="rab">RAB</option><option value="survey">Hasil survei</option></select>
+                    <input type="file" name="document" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="rounded-lg border border-slate-300 p-2 text-sm">
+                    <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Kirim dokumen</button>
+                </form>
+            </section>
+        @endif
+
+        @foreach(['draft' => ['Dokumen desain awal & RAB', $draftDocuments], 'final' => ['Dokumen desain & RAB final', $finalDocuments]] as $stage => [$title, $documents])
+            @if($documents->isNotEmpty())
+                <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="font-semibold text-slate-950">{{ $title }}</h2>
+                    <div class="mt-4 space-y-2">
+                        @foreach($documents as $document)
+                            <a href="{{ route('pemesanan.document.download', [$pemesanan, $document]) }}" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm transition hover:border-amber-300 hover:bg-amber-50">
+                                <span><i class="fas fa-file-arrow-down mr-2 text-amber-600" aria-hidden="true"></i>{{ $document->original_name }}</span>
+                                <span class="text-xs text-slate-400">v{{ $document->version }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                    @if(auth()->id() === $pemesanan->id_user && (($stage === 'draft' && $pemesanan->workflow_stage === 'awaiting_draft_approval') || ($stage === 'final' && $pemesanan->workflow_stage === 'awaiting_final_approval')))
+                        <form method="POST" action="{{ route('pemesanan.document.decision', $pemesanan) }}" class="mt-5 grid gap-3 rounded-xl bg-slate-50 p-4">
+                            @csrf
+                            <input type="hidden" name="stage" value="{{ $stage }}">
+                            <textarea name="feedback" rows="3" maxlength="2000" class="rounded-lg border-slate-300" placeholder="Catatan revisi (isi bila meminta revisi)"></textarea>
+                            <div class="flex flex-wrap gap-3">
+                                <button name="decision" value="approved" class="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">{{ $stage === 'draft' ? 'Setujui & lanjut ke DP' : 'Setujui desain final' }}</button>
+                                <button name="decision" value="revision_requested" class="rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50">Minta revisi</button>
+                            </div>
+                        </form>
+                    @endif
+                </section>
+            @endif
+        @endforeach
+
+        @if($dpInvoice)
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Invoice DP 20%</h2>
+                <p class="mt-1 text-sm text-slate-600">{{ $dpInvoice->number }} · Rp {{ number_format($dpInvoice->amount, 0, ',', '.') }} · {{ strtoupper($dpInvoice->status) }}</p>
+                @if($dpInvoice->due_date)<p class="mt-1 text-xs text-slate-500">Jatuh tempo: {{ $dpInvoice->due_date->format('d M Y') }}</p>@endif
+                @if(auth()->id() === $pemesanan->id_user && $pemesanan->workflow_stage === 'awaiting_dp')
+                    <form method="POST" action="{{ route('pemesanan.dp-evidence.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 flex flex-col gap-3 sm:flex-row">
+                        @csrf <input type="file" name="bukti_pembayaran" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="min-w-0 flex-1 rounded-lg border border-slate-300 p-2 text-sm"><button class="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950">Kirim bukti DP</button>
+                    </form>
+                @endif
+                @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'dp_verification')
+                    <form method="POST" action="{{ route('admin.pemesanan.dp.verify', $pemesanan) }}" class="mt-4">@csrf <button class="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white">Verifikasi DP</button></form>
+                @endif
+            </section>
+        @endif
+
+        @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'survey_scheduled')
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Jadwalkan survei lokasi</h2>
+                <form method="POST" action="{{ route('admin.pemesanan.survey.schedule', $pemesanan) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                    @csrf @method('PUT')
+                    <input type="datetime-local" name="survey_scheduled_at" min="{{ now()->format('Y-m-d\\TH:i') }}" required class="rounded-lg border-slate-300">
+                    <input type="text" name="survey_notes" maxlength="2000" placeholder="Catatan survei" class="rounded-lg border-slate-300">
+                    <button class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Simpan jadwal</button>
+                </form>
+            </section>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
             <div class="lg:col-span-2 space-y-6">
@@ -149,37 +240,6 @@
 
             <!-- Sidebar -->
             <div class="space-y-6">
-                <!-- Payment Evidence -->
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h2 class="text-lg font-semibold text-gray-800">Pembayaran</h2>
-                    <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $paymentSummary['state'] === 'verified' ? 'bg-green-100 text-green-800' : ($paymentSummary['state'] === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700') }}">{{ $paymentSummary['label'] }}</span>
-
-                    @if($paymentSummary['proof_path'])
-                        <a href="{{ route('pemesanan.payment-evidence.download', $pemesanan) }}" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
-                            <i class="fas fa-file-arrow-down" aria-hidden="true"></i>
-                            Lihat bukti pembayaran
-                        </a>
-                    @endif
-
-                    @if(auth()->id() === $pemesanan->id_user && $paymentSummary['state'] !== 'verified')
-                        <form action="{{ route('pemesanan.payment-evidence.upload', $pemesanan) }}" method="POST" enctype="multipart/form-data" class="mt-5 border-t border-gray-100 pt-5">
-                            @csrf
-                            <label class="block text-sm font-medium text-gray-700" for="bukti_pembayaran">Unggah bukti pembayaran</label>
-                            <input id="bukti_pembayaran" name="bukti_pembayaran" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="mt-2 block w-full text-sm text-gray-600 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-amber-800 hover:file:bg-amber-200">
-                            @error('bukti_pembayaran')<p class="mt-2 text-sm text-red-600">{{ $message }}</p>@enderror
-                            <p class="mt-2 text-xs leading-relaxed text-gray-500">JPG, PNG, WEBP, atau PDF. Maksimal 5 MB.</p>
-                            <button type="submit" class="mt-4 w-full rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Kirim bukti pembayaran</button>
-                        </form>
-                    @endif
-
-                    @if(auth()->user()->isAdmin() && $paymentSummary['state'] === 'pending')
-                        <form action="{{ route('admin.pemesanan.payment-evidence.verify', $pemesanan) }}" method="POST" class="mt-5 border-t border-gray-100 pt-5">
-                            @csrf
-                            <button type="submit" class="w-full rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">Verifikasi pembayaran</button>
-                        </form>
-                    @endif
-                </div>
-
                 <!-- Progress Timeline -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Progress Proyek</h2>

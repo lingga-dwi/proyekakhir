@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -29,10 +28,6 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->has('remember'))) {
             $request->session()->regenerate();
-
-            if (! $request->user()->hasVerifiedEmail()) {
-                return redirect()->route('verification.notice');
-            }
 
             return redirect()->route('home');
         }
@@ -63,9 +58,8 @@ class AuthController extends Controller
         ]);
 
         Auth::login($user);
-        event(new Registered($user));
 
-        return redirect()->route('verification.notice')->with('status', 'Link verifikasi telah dikirim ke email Anda.');
+        return redirect()->route('home')->with('success', 'Akun berhasil dibuat. Selamat datang di Daiku Interior!');
     }
 
     public function logout(Request $request)

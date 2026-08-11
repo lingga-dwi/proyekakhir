@@ -181,13 +181,29 @@
                                 <div class="flex max-w-[230px] flex-wrap items-center gap-3">
                                     <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-slate-700 hover:text-slate-950">Detail</button>
                                     @if($item->status === 'pending')
-                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}">
-                                            @csrf @method('PUT')<input type="hidden" name="status" value="confirmed">
-                                            <button class="text-sm font-semibold text-blue-700 hover:text-blue-800">Konfirmasi &amp; buat proyek</button>
-                                        </form>
+                                        <details class="w-full">
+                                            <summary class="cursor-pointer text-sm font-semibold text-blue-700 hover:text-blue-800">Jadwalkan konsultasi</summary>
+                                            <form method="POST" action="{{ route('admin.pemesanan.konsultasi.schedule', $item->id) }}" class="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3">
+                                                @csrf @method('PUT')
+                                                <input type="date" name="tanggal_konsultasi" min="{{ now()->format('Y-m-d') }}" required class="rounded-lg border-slate-300 text-sm">
+                                                <input type="time" name="waktu_konsultasi" required class="rounded-lg border-slate-300 text-sm">
+                                                <select name="designer_id" required class="rounded-lg border-slate-300 text-sm">
+                                                    <option value="">Pilih desainer</option>
+                                                    @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
+                                                </select>
+                                                <textarea name="catatan_admin" rows="2" maxlength="2000" placeholder="Catatan jadwal (opsional)" class="rounded-lg border-slate-300 text-sm"></textarea>
+                                                <button class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Simpan jadwal</button>
+                                            </form>
+                                        </details>
                                         <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}" onsubmit="return confirm('Tolak permintaan konsultasi ini?')">
                                             @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
                                             <button class="text-sm font-semibold text-red-600 hover:text-red-700">Tolak</button>
+                                        </form>
+                                    @endif
+                                    @if($item->status === 'confirmed')
+                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}" onsubmit="return confirm('Konsultasi telah selesai dan siap masuk ke tahap desain awal?')">
+                                            @csrf @method('PUT')<input type="hidden" name="status" value="completed">
+                                            <button class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Selesai &amp; mulai desain</button>
                                         </form>
                                     @endif
                                 </div>

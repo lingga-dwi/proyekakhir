@@ -36,8 +36,11 @@ class Pemesanan extends Model
         'tanggal_pesan',
         'sumber_masuk',
         'status_pemesanan',
+        'workflow_stage',
         'progress',
         'target_selesai',
+        'survey_scheduled_at',
+        'survey_notes',
         'catatan_progres',
         'total_harga',
         'jenis_proyek',
@@ -49,6 +52,7 @@ class Pemesanan extends Model
     protected $casts = [
         'tanggal_pesan' => 'date',
         'target_selesai' => 'date',
+        'survey_scheduled_at' => 'datetime',
         'progress' => 'integer',
         'luas_area' => 'decimal:2',
         'total_harga' => 'decimal:2',
@@ -78,5 +82,20 @@ class Pemesanan extends Model
     public function konsultasi()
     {
         return $this->hasOne(Konsultasi::class, 'pemesanan_id');
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(ProjectDocument::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(ProjectInvoice::class);
+    }
+
+    public function dpInvoice()
+    {
+        return $this->hasOne(ProjectInvoice::class)->where('type', 'dp_20');
     }
 }

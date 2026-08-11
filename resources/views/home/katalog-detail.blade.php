@@ -93,7 +93,7 @@
                 <div class="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5">
                     <h2 class="font-bold text-slate-900">Gunakan sebagai referensi awal</h2>
                     <p class="mt-2 text-sm leading-relaxed text-gray-600">Setiap ruang memiliki ukuran dan kebutuhan berbeda. Detail pekerjaan dibahas setelah informasi proyek ditinjau.</p>
-                    <a href="{{ route('pemesanan.create', ['katalog_id' => $katalog->id]) }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                    <a href="{{ route('konsultasi.create', ['katalog_id' => $katalog->id]) }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
                         Konsultasikan Desain Ini
                     </a>
                 </div>

@@ -29,6 +29,8 @@ class Konsultasi extends Model
     protected $fillable = [
         'user_id',
         'pemesanan_id',
+        'designer_id',
+        'scheduled_by',
         'nama',
         'email',
         'no_telp',
@@ -42,12 +44,15 @@ class Konsultasi extends Model
         'waktu_konsultasi',
         'status',
         'catatan_admin',
+        'active_slot',
+        'attachments',
     ];
 
     protected $casts = [
         'tanggal_konsultasi' => 'date',
         'waktu_konsultasi' => 'datetime:H:i',
         'luas_ruangan' => 'decimal:2',
+        'attachments' => 'array',
     ];
 
     // Relationships
@@ -59,6 +64,11 @@ class Konsultasi extends Model
     public function pemesanan()
     {
         return $this->belongsTo(Pemesanan::class);
+    }
+
+    public function designer()
+    {
+        return $this->belongsTo(User::class, 'designer_id');
     }
 
     // Helper methods

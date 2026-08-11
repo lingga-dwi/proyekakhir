@@ -70,6 +70,21 @@
                     <p class="mt-3 rounded-xl bg-slate-50 p-5 leading-relaxed text-slate-700">{{ $requestNote }}</p>
                 </section>
 
+                @if(!empty($konsultasi->attachments))
+                    <section class="lg:col-span-2" aria-labelledby="attachment-title">
+                        <h2 id="attachment-title" class="text-lg font-bold text-slate-900">Lampiran referensi</h2>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            @foreach($konsultasi->attachments as $index => $attachment)
+                                <a href="{{ route('konsultasi.attachment.download', [$konsultasi, $index]) }}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50">
+                                    <i class="fas fa-paperclip text-amber-600" aria-hidden="true"></i>
+                                    <span class="truncate">{{ basename($attachment) }}</span>
+                                    <i class="fas fa-download ml-auto text-slate-400" aria-hidden="true"></i>
+                                </a>
+                            @endforeach
+                        </div>
+                    </section>
+                @endif
+
                 @if($konsultasi->catatan_admin)
                     <section class="lg:col-span-2" aria-labelledby="team-note-title">
                         <h2 id="team-note-title" class="text-lg font-bold text-slate-900">Catatan dari tim Daiku</h2>

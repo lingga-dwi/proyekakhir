@@ -5,7 +5,7 @@
 @section('content')
 <div class="min-h-screen bg-[#fff9f0] py-8 sm:py-12">
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-        <form action="{{ route('konsultasi.store') }}" method="POST" class="space-y-7">
+        <form action="{{ route('konsultasi.store') }}" method="POST" enctype="multipart/form-data" class="space-y-7">
             @csrf
 
             <section class="rounded-xl bg-white p-5 shadow-sm sm:p-8">
@@ -85,6 +85,11 @@
                 </div>
                 <textarea id="deskripsi_kebutuhan" name="deskripsi_kebutuhan" rows="7" class="request-control resize-y" placeholder="Ceritakan detail keinginan Anda untuk desain ruangan...">{{ old('deskripsi_kebutuhan') }}</textarea>
                 @error('deskripsi_kebutuhan') <p class="request-error">{{ $message }}</p> @enderror
+
+                <label for="attachments" class="mt-5 block text-sm font-semibold text-slate-800">Denah, foto ruang, atau referensi (opsional)</label>
+                <input id="attachments" name="attachments[]" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" class="mt-2 block w-full rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-slate-700">
+                <p class="mt-2 text-xs text-slate-500">Maksimal 5 file, masing-masing 5 MB. JPG, PNG, WEBP, atau PDF.</p>
+                @error('attachments') <p class="request-error">{{ $message }}</p> @enderror
 
                 <button type="submit" class="mt-4 rounded-lg bg-[#edb925] px-6 py-3 text-sm font-bold text-white transition hover:bg-[#d9a810] focus:outline-none focus:ring-4 focus:ring-amber-200">
                     Kirim Permintaan Pemesanan

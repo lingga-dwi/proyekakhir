@@ -19,7 +19,10 @@
             <img
                 src="{{ $katalog->gambar_utama_url }}"
                 alt="{{ $katalog->nama_desain }}"
-                class="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                class="h-full w-full cursor-zoom-in object-cover transition duration-500 group-hover:scale-105"
+                onclick="event.stopPropagation(); openImageLightbox(@js($katalog->gambar_utama_url), @js($katalog->nama_desain))"
+                tabindex="0"
+                onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); openImageLightbox(@js($katalog->gambar_utama_url), @js($katalog->nama_desain)); }"
                 loading="lazy"
                 decoding="async"
                 width="640"
@@ -30,7 +33,7 @@
                 <i class="fas fa-image text-4xl" aria-hidden="true"></i>
             </div>
         @endif
-        <div class="absolute inset-0 bg-black/0 transition group-hover:bg-black/10"></div>
+        <div class="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/10"></div>
         @if($katalog->category)
             <span class="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-800 shadow-sm backdrop-blur">
                 {{ $katalog->category->name }}

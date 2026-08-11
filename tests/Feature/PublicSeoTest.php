@@ -16,7 +16,7 @@ class PublicSeoTest extends TestCase
             ->assertSee('rel="canonical"', false)
             ->assertSee('favicon.svg', false)
             ->assertSee('property="og:title"', false)
-            ->assertSee('Bawa ukuran, denah, atau foto ruang Anda.')
+            ->assertSee('kirim permintaan desain agar tim Daiku dapat membantu')
             ->assertSee('https://wa.me/6282186888824', false);
     }
 
@@ -50,7 +50,7 @@ class PublicSeoTest extends TestCase
     {
         $this->get(route('konsultasi.index'))
             ->assertOk()
-            ->assertSee('Daftar untuk Konsultasi')
+            ->assertSee('Buat Permintaan')
             ->assertSee('https://wa.me/6285805908809', false)
             ->assertSee('Chat WhatsApp');
     }

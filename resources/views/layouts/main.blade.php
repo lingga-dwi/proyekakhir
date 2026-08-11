@@ -56,7 +56,13 @@
                 <!-- User Menu -->
                 <div class="col-start-3 row-start-1 hidden items-center justify-self-end space-x-4 lg:flex">
                     @auth
-                        <div class="relative w-56" x-data="{ open: false }">
+                        @if(auth()->user()->isPelanggan())
+                            <a href="{{ route('pesanan.saya') }}" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50 hover:text-amber-700' }}">
+                                <i class="fas fa-folder-open text-xs" aria-hidden="true"></i>
+                                Pesanan Saya
+                            </a>
+                        @endif
+                        <div class="relative w-48" x-data="{ open: false }">
                             @php
                                 $roleLabel = match (auth()->user()->role) {
                                     'admin' => 'Admin',
@@ -90,10 +96,6 @@
                                 @elseif(auth()->user()->isDesigner())
                                     <a href="{{ route('dashboard.designer') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
                                         <i class="fas fa-drafting-compass mr-2"></i>Dashboard Designer
-                                    </a>
-                                @else
-                                    <a href="{{ route('pesanan.saya') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
-                                        <i class="fas fa-folder-open mr-2"></i>Pesanan Saya
                                     </a>
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-gray-100 pt-1">
@@ -166,7 +168,9 @@
         $footerWhatsapp = preg_replace('/\D+/', '', config('services.daiku.whatsapp_number'));
         $footerWhatsappUrl = 'https://wa.me/'.$footerWhatsapp.'?text='.rawurlencode('Halo Daiku, saya ingin berkonsultasi mengenai kebutuhan interior saya.');
     @endphp
+    @if(!request()->routeIs('pesanan.saya'))
     <footer class="relative mt-32 bg-slate-900 text-white">
+        @if(!request()->routeIs('konsultasi*'))
         <div class="absolute inset-x-0 -top-24 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <section class="relative overflow-hidden rounded-md bg-[#fff8ef] px-7 py-10 text-black shadow-lg sm:px-12 lg:flex lg:items-center lg:justify-between lg:gap-10 lg:py-14" aria-labelledby="footer-cta-title">
                 <div class="absolute -right-16 -top-24 h-80 w-80 rounded-full border border-amber-300/40" aria-hidden="true"></div>
@@ -180,8 +184,9 @@
                 </a>
             </section>
         </div>
+        @endif
 
-        <div class="mx-auto max-w-7xl px-4 pb-8 pt-40 sm:px-6 lg:px-8 lg:pt-44">
+        <div class="mx-auto max-w-7xl px-4 pb-8 {{ request()->routeIs('konsultasi*') ? 'pt-16 lg:pt-20' : 'pt-40 lg:pt-44' }} sm:px-6 lg:px-8">
             <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                     <a href="{{ route('home') }}" aria-label="Kembali ke beranda" class="inline-block">
@@ -229,6 +234,51 @@
             </div>
         </div>
     </footer>
+    @endif
+
+    <div id="imageLightbox" onclick="if (event.target === this) closeImageLightbox()" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/95 p-4 sm:p-8" style="z-index: 1000" role="dialog" aria-modal="true" aria-labelledby="imageLightboxCaption">
+        <button type="button" onclick="closeImageLightbox()" class="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-amber-400" aria-label="Tutup gambar besar">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+        <figure onclick="event.stopPropagation()" class="flex max-h-full max-w-7xl flex-col items-center gap-4">
+            <img id="imageLightboxImage" src="" alt="" class="max-h-[calc(100vh-7rem)] max-w-full object-contain" decoding="async">
+            <figcaption id="imageLightboxCaption" class="text-center text-sm text-white/80"></figcaption>
+        </figure>
+    </div>
+
+    <script>
+        function openImageLightbox(source, alt = '') {
+            const lightbox = document.getElementById('imageLightbox');
+            const image = document.getElementById('imageLightboxImage');
+            const caption = document.getElementById('imageLightboxCaption');
+            if (!lightbox || !image || !source) return;
+
+            image.src = source;
+            image.alt = alt;
+            caption.textContent = alt;
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeImageLightbox() {
+            const lightbox = document.getElementById('imageLightbox');
+            const image = document.getElementById('imageLightboxImage');
+            const sidebar = document.getElementById('detailSidebar');
+            if (!lightbox) return;
+
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            if (image) image.src = '';
+            if (!sidebar || sidebar.classList.contains('translate-x-full')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeImageLightbox();
+        });
+    </script>
     
     @stack('scripts')
 </body>

@@ -84,7 +84,7 @@ async function loadSidebarContent(katalogId) {
         const galleryHtml = gallery.length
             ? `<div class="grid grid-cols-3 gap-2 px-6 pt-4">
                 ${gallery.map((image, index) => `
-                    <img src="${image}" alt="Galeri ${escapeHtml(data.nama_desain)} ${index + 1}" class="h-24 w-full rounded-lg object-cover" loading="lazy" decoding="async">
+                    <img src="${image}" alt="Galeri ${escapeHtml(data.nama_desain)} ${index + 1}" class="h-24 w-full cursor-zoom-in rounded-lg object-cover" onclick="event.stopPropagation(); openImageLightbox('${image}', 'Galeri ${escapeHtml(data.nama_desain)} ${index + 1}')" loading="lazy" decoding="async">
                 `).join('')}
                </div>`
             : '';
@@ -104,7 +104,7 @@ async function loadSidebarContent(katalogId) {
             </div>
 
             ${imageUrl
-                ? `<img src="${imageUrl}" alt="${escapeHtml(data.nama_desain)}" class="h-72 w-full object-cover" decoding="async">`
+                ? `<img src="${imageUrl}" alt="${escapeHtml(data.nama_desain)}" class="h-72 w-full cursor-zoom-in object-cover" onclick="event.stopPropagation(); openImageLightbox('${imageUrl}', '${escapeHtml(data.nama_desain)}')" decoding="async">`
                 : `<div class="flex h-72 items-center justify-center bg-gray-100 text-gray-400"><i class="fas fa-image text-4xl" aria-hidden="true"></i></div>`}
             ${galleryHtml}
 
@@ -126,7 +126,7 @@ async function loadSidebarContent(katalogId) {
                 <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
                     <h3 class="font-bold text-slate-900">Tertarik dengan arah desain ini?</h3>
                     <p class="mt-2 text-sm leading-relaxed text-gray-600">Gunakan desain ini sebagai referensi awal. Ruang lingkup dan kebutuhan akhir dibahas bersama tim Daiku.</p>
-                    <a href="{{ url('/pemesanan/create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
+                    <a href="{{ route('konsultasi.create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
                         Konsultasikan Desain Ini
                     </a>
                 </div>

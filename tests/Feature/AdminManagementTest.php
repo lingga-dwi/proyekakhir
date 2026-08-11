@@ -25,6 +25,7 @@ class AdminManagementTest extends TestCase
             'id_user' => $customer->id,
             'tanggal_pesan' => now()->toDateString(),
             'status_pemesanan' => 'dikonfirmasi',
+            'workflow_stage' => 'approved',
             'jenis_proyek' => 'Kitchen Set',
         ]);
 
@@ -77,6 +78,7 @@ class AdminManagementTest extends TestCase
             'designer_id' => $designer->id,
             'tanggal_pesan' => now()->toDateString(),
             'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'approved',
             'progress' => 10,
         ]);
 
@@ -211,10 +213,11 @@ class AdminManagementTest extends TestCase
             ->assertRedirect(route('admin.pemesanan.index'));
     }
 
-    public function test_confirming_a_consultation_automatically_creates_a_project(): void
+    public function test_scheduled_consultation_creates_a_project_after_it_is_completed(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
         $customer = $this->user('customer@example.com', 'pelanggan');
+        $designer = $this->user('designer@example.com', 'designer');
         $consultation = Konsultasi::create([
             'user_id' => $customer->id,
             'nama' => $customer->nama,
@@ -239,8 +242,14 @@ class AdminManagementTest extends TestCase
             ->assertDontSee('Permintaan Konsultasi')
             ->assertSee('Membutuhkan desain ruang tamu.');
 
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $consultation), [
+            'tanggal_konsultasi' => now()->addWeek()->toDateString(),
+            'waktu_konsultasi' => '10:00',
+            'designer_id' => $designer->id,
+        ])->assertRedirect();
+
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $consultation), [
-            'status' => 'confirmed',
+            'status' => 'completed',
         ])->assertRedirect();
 
         $consultation->refresh();

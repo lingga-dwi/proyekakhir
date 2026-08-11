@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminFaqController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerActivityController;
 use App\Http\Controllers\DashboardController;
@@ -9,7 +10,6 @@ use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\KonsultasiController;
 use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\SitemapController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -22,8 +22,8 @@ Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 
 // Konsultasi routes (public)
 Route::get('/konsultasi', [KonsultasiController::class, 'index'])->name('konsultasi.index');
-Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware(['auth', 'verified', 'role:pelanggan']);
-Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'verified', 'role:pelanggan', 'throttle:customer-forms']);
+Route::get('/konsultasi/book', [KonsultasiController::class, 'create'])->name('konsultasi.create')->middleware(['auth', 'role:pelanggan']);
+Route::post('/konsultasi', [KonsultasiController::class, 'store'])->name('konsultasi.store')->middleware(['auth', 'role:pelanggan', 'throttle:customer-forms']);
 
 // Authentication routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -31,24 +31,6 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.post')->mid
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register'])->name('register.post')->middleware('throttle:login');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-Route::get('/email/verify', fn () => view('auth.verify-email'))
-    ->middleware('auth')
-    ->name('verification.notice');
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-
-    return redirect()->route('home')->with('success', 'Email berhasil diverifikasi. Selamat datang di Daiku!');
-})->middleware(['auth', 'signed', 'throttle:6,1'])->name('verification.verify');
-Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
-    if ($request->user()->hasVerifiedEmail()) {
-        return redirect()->route('home');
-    }
-
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('status', 'Link verifikasi baru telah dikirim.');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email')->middleware('throttle:password');
@@ -62,7 +44,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
 
     // Customer-only routes
-    Route::middleware(['verified', 'role:pelanggan'])->group(function () {
+    Route::middleware(['role:pelanggan'])->group(function () {
         Route::get('/pesanan-saya', [CustomerActivityController::class, 'index'])->name('pesanan.saya');
         Route::get('/aktivitas-saya', fn (\Illuminate\Http\Request $request) => redirect()->route('pesanan.saya', $request->only('tab')))
             ->name('aktivitas.saya');
@@ -71,27 +53,46 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pemesanan', [PemesananController::class, 'store'])->name('pemesanan.store')->middleware('throttle:customer-forms');
     Route::post('/pemesanan/{pemesanan}/bukti-pembayaran', [PemesananController::class, 'uploadPaymentEvidence'])
         ->name('pemesanan.payment-evidence.upload')->middleware('throttle:customer-forms');
+    Route::post('/pemesanan/{pemesanan}/dp/bukti-pembayaran', [PemesananController::class, 'uploadDpEvidence'])
+        ->name('pemesanan.dp-evidence.upload')->middleware('throttle:customer-forms');
+    Route::post('/pemesanan/{pemesanan}/dokumen/keputusan', [PemesananController::class, 'decideDocument'])
+        ->name('pemesanan.document.decision')->middleware('throttle:customer-forms');
     });
 
     // Detail routes authorize the owner, admin, or assigned designer in the controller.
     Route::get('/konsultasi/{id}', [KonsultasiController::class, 'show'])->name('konsultasi.show');
+    Route::get('/konsultasi/{konsultasi}/lampiran/{index}', [KonsultasiController::class, 'downloadAttachment'])
+        ->whereNumber('index')->name('konsultasi.attachment.download');
     Route::get('/pemesanan/{id}', [PemesananController::class, 'show'])->name('pemesanan.show');
     Route::get('/pemesanan/{pemesanan}/bukti-pembayaran', [PemesananController::class, 'downloadPaymentEvidence'])
         ->name('pemesanan.payment-evidence.download');
+    Route::get('/pemesanan/{pemesanan}/dokumen/{document}', [PemesananController::class, 'downloadDocument'])
+        ->name('pemesanan.document.download');
 
     Route::put('/designer/proyek/{pemesanan}', [PemesananController::class, 'updateAssignedProject'])
         ->name('designer.proyek.update')->middleware('role:designer');
+    Route::post('/designer/proyek/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
+        ->name('designer.proyek.document.upload')->middleware('role:designer');
 
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {
         Route::post('/admin/katalog/bulk-action', [KatalogController::class, 'bulkAction'])->name('admin.katalog.bulk-action');
         Route::resource('admin/katalog', KatalogController::class, ['as' => 'admin']);
+        Route::resource('admin/faq', AdminFaqController::class, ['as' => 'admin'])->except('show');
+        Route::post('/admin/faq/{faq}/toggle', [AdminFaqController::class, 'toggle'])->name('admin.faq.toggle');
+        Route::post('/admin/faq/{faq}/move', [AdminFaqController::class, 'move'])->name('admin.faq.move');
         Route::get('/admin/pemesanan', [PemesananController::class, 'index'])->name('admin.pemesanan.index');
         Route::get('/admin/pemesanan/{id}', [PemesananController::class, 'show'])->name('admin.pemesanan.show');
         Route::post('/admin/pemesanan', [PemesananController::class, 'storeAdmin'])->name('admin.pemesanan.store');
         Route::put('/admin/pemesanan/{id}/status', [PemesananController::class, 'updateStatus'])->name('admin.pemesanan.updateStatus');
         Route::post('/admin/pemesanan/{pemesanan}/verifikasi-pembayaran', [PemesananController::class, 'verifyPaymentEvidence'])
             ->name('admin.pemesanan.payment-evidence.verify');
+        Route::post('/admin/pemesanan/{pemesanan}/verifikasi-dp', [PemesananController::class, 'verifyDp'])
+            ->name('admin.pemesanan.dp.verify');
+        Route::put('/admin/pemesanan/{pemesanan}/survei', [PemesananController::class, 'scheduleSurvey'])
+            ->name('admin.pemesanan.survey.schedule');
+        Route::put('/admin/pemesanan/konsultasi/{konsultasi}/jadwal', [KonsultasiController::class, 'schedule'])
+            ->name('admin.pemesanan.konsultasi.schedule');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/status', [KonsultasiController::class, 'updateStatus'])
             ->name('admin.pemesanan.konsultasi.update');
         Route::post('/admin/pemesanan/konsultasi/{konsultasi}/proyek', [KonsultasiController::class, 'convertToProject'])

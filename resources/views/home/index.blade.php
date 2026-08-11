@@ -151,14 +151,17 @@
                                     <img
                                         src="{{ $slideImages[0] }}"
                                         alt="{{ $katalog->nama_desain }}"
-                                        class="h-full w-full object-cover"
+                                        class="h-full w-full cursor-zoom-in object-cover"
+                                        onclick="openImageLightbox(@js($slideImages[0]), @js($katalog->nama_desain))"
+                                        tabindex="0"
+                                        onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openImageLightbox(@js($slideImages[0]), @js($katalog->nama_desain)); }"
                                         @if($loop->first) fetchpriority="high" @else loading="lazy" @endif
                                         decoding="async"
                                         width="1440"
                                         height="800"
                                     >
                                 @endif
-                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent"></div>
+                                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent"></div>
 
                                 <div class="absolute inset-x-0 bottom-0 p-7 text-white sm:p-10 lg:p-12">
                                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">{{ $katalog->category?->name ?? 'Portofolio Daiku' }}</p>
@@ -172,7 +175,7 @@
 
                                 <div class="hidden grid-rows-2 gap-3 bg-slate-950 p-3 lg:grid">
                                     @foreach(array_slice($slideImages, 1, 2) as $galleryImage)
-                                        <img src="{{ $galleryImage }}" alt="Detail {{ $katalog->nama_desain }}" class="h-full w-full rounded-xl object-cover" loading="lazy" decoding="async">
+                                        <img src="{{ $galleryImage }}" alt="Detail {{ $katalog->nama_desain }}" class="h-full w-full cursor-zoom-in rounded-xl object-cover" onclick="openImageLightbox(@js($galleryImage), @js($katalog->nama_desain . ' - detail'))" tabindex="0" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openImageLightbox(@js($galleryImage), @js($katalog->nama_desain . ' - detail')); }" loading="lazy" decoding="async">
                                     @endforeach
                                 </div>
                             </div>
@@ -217,63 +220,19 @@
             <p class="mt-4 text-gray-600">Jika masih ada yang ingin dibahas, kirim permintaan desain agar tim Daiku dapat membantu sesuai kebutuhan ruang Anda.</p>
         </div>
 
-        <div class="mt-10 divide-y divide-slate-200 rounded-2xl bg-white px-6 shadow-sm ring-1 ring-slate-200 sm:px-8">
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Bagaimana proses konsultasi dengan Daiku?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Mulailah dengan mengirim informasi proyek. Tim Daiku meninjau kebutuhan ruang Anda, lalu menghubungi untuk membahas langkah dan cakupan pekerjaan berikutnya.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Informasi apa yang perlu disiapkan?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Siapkan jenis proyek, jenis bangunan, perkiraan luas area, anggaran, serta catatan kebutuhan. Foto atau referensi desain dapat dibahas saat tindak lanjut.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Apakah Daiku menerima furnitur custom?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Ya. Kebutuhan furnitur seperti kitchen set, kabinet built-in, meja kerja, dan penyimpanan dapat disesuaikan dengan fungsi serta ukuran ruang.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Apakah melayani rumah, kantor, dan ruang usaha?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Daiku melayani kebutuhan interior untuk hunian, ruang kerja, serta ruang usaha. Ceritakan fungsi ruang Anda pada formulir agar peninjauan awal lebih tepat.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Apakah Daiku melayani renovasi interior?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Ya. Daiku dapat membantu penataan dan renovasi interior sesuai kondisi ruang yang ada, mulai dari pembahasan kebutuhan hingga pengerjaan yang disepakati.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Bagaimana perkiraan biaya proyek ditentukan?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Perkiraan biaya disusun berdasarkan ukuran ruang, lingkup pekerjaan, material, furnitur, dan detail desain. Tim Daiku akan menyampaikan penawaran setelah kebutuhan proyek ditinjau.</p>
-            </details>
-
-            <details class="group py-5">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
-                    Berapa lama proses desain dan pengerjaan berlangsung?
-                    <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
-                </summary>
-                <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">Durasi menyesuaikan skala proyek, kondisi lokasi, serta tingkat detail pekerjaan. Estimasi jadwal akan dibahas bersama setelah konsultasi dan ruang lingkup proyek disepakati.</p>
-            </details>
-        </div>
+        @if($faqs->isNotEmpty())
+            <div class="mt-10 divide-y divide-slate-200 rounded-2xl bg-white px-6 shadow-sm ring-1 ring-slate-200 sm:px-8">
+                @foreach($faqs as $faq)
+                    <details class="group py-5">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
+                            {{ $faq->question }}
+                            <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
+                        </summary>
+                        <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">{{ $faq->answer }}</p>
+                    </details>
+                @endforeach
+            </div>
+        @endif
     </div>
 </section>
 
