@@ -56,6 +56,7 @@
                 <!-- User Menu -->
                 <div class="col-start-3 row-start-1 hidden items-center justify-self-end space-x-4 lg:flex">
                     @auth
+                        @include('partials.notifications')
                         @if(auth()->user()->isPelanggan())
                             <a href="{{ route('pesanan.saya') }}" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50 hover:text-amber-700' }}">
                                 <i class="fas fa-folder-open text-xs" aria-hidden="true"></i>
@@ -113,7 +114,10 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <div class="col-start-3 row-start-1 justify-self-end lg:hidden">
+                <div class="col-start-3 row-start-1 flex items-center gap-2 justify-self-end lg:hidden">
+                    @auth
+                        @include('partials.notifications')
+                    @endauth
                     <button type="button"
                             @click="mobileOpen = !mobileOpen"
                             :aria-expanded="mobileOpen.toString()"

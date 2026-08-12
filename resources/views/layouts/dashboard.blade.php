@@ -88,9 +88,12 @@
                             <p class="hidden truncate text-sm text-slate-500 sm:block">@yield('page-description')</p>
                         </div>
                     </div>
-                    <a href="{{ route('home') }}" class="hidden items-center gap-2 text-sm font-medium text-slate-600 hover:text-amber-700 sm:inline-flex">
-                        Lihat website <i class="fas fa-arrow-up-right-from-square text-xs"></i>
-                    </a>
+                    <div class="flex items-center gap-3">
+                        @include('partials.notifications')
+                        <a href="{{ route('home') }}" class="hidden items-center gap-2 text-sm font-medium text-slate-600 hover:text-amber-700 sm:inline-flex">
+                            Lihat website <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                    </div>
                 </div>
             </header>
 

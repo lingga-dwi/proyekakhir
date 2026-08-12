@@ -51,3 +51,5 @@ services:
         sync: false
       - key: DAIKU_WHATSAPP_NUMBER
         sync: false
+      - key: DAIKU_EMAIL_NOTIFICATIONS
+        value: "false"

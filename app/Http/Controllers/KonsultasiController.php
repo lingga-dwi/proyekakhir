@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Katalog;
 use App\Models\Konsultasi;
 use App\Models\Pemesanan;
+use App\Models\User;
+use App\Services\DaikuNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +16,8 @@ use Illuminate\Validation\ValidationException;
 
 class KonsultasiController extends Controller
 {
+    public function __construct(private readonly DaikuNotificationService $notifications) {}
+
     private const STATUS_TRANSITIONS = [
         Konsultasi::STATUS_PENDING => [Konsultasi::STATUS_PENDING, Konsultasi::STATUS_CONFIRMED, Konsultasi::STATUS_CANCELLED],
         Konsultasi::STATUS_CONFIRMED => [Konsultasi::STATUS_CONFIRMED, Konsultasi::STATUS_COMPLETED, Konsultasi::STATUS_CANCELLED],
@@ -90,6 +94,13 @@ class KonsultasiController extends Controller
             }
             $konsultasi->update(['attachments' => $attachments]);
         }
+
+        $this->notifications->admins(
+            'Permintaan konsultasi baru',
+            $user->nama.' mengirim kebutuhan desain '.$konsultasi->getJenisRuanganLabel().'.',
+            route('admin.pemesanan.index', ['search' => $user->email], false),
+            'Tinjau permintaan'
+        );
 
         return redirect()->route('konsultasi.show', $konsultasi->id)
             ->with('success', 'Permintaan berhasil dikirim. Tim Daiku akan menghubungi Anda segera.');
@@ -196,6 +207,25 @@ class KonsultasiController extends Controller
             ]);
         }
 
+        $scheduledAt = $konsultasi->fresh()->tanggal_konsultasi->format('d M Y').' pukul '.substr($data['waktu_konsultasi'], 0, 5);
+        $this->notifications->send(
+            $konsultasi->user,
+            'Konsultasi telah dijadwalkan',
+            'Konsultasi Anda dijadwalkan pada '.$scheduledAt.'.',
+            route('konsultasi.show', $konsultasi, false),
+            'Lihat konsultasi'
+        );
+        $designer = User::find($data['designer_id']);
+        if ($designer) {
+            $this->notifications->send(
+                $designer,
+                'Jadwal konsultasi baru',
+                'Anda ditugaskan untuk konsultasi '.$konsultasi->nama.' pada '.$scheduledAt.'.',
+                route('dashboard.designer', [], false),
+                'Buka dashboard'
+            );
+        }
+
         return back()->with('success', 'Konsultasi dijadwalkan dan desainer telah ditugaskan.');
     }
 
@@ -249,6 +279,23 @@ class KonsultasiController extends Controller
                 'active_slot' => null,
                 'catatan_admin' => $adminNote ?: 'Permintaan diteruskan menjadi proyek DI-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT).'.',
             ]);
+
+            $this->notifications->send(
+                $project->user,
+                'Proyek desain dimulai',
+                'Konsultasi selesai dan proyek DI-'.$project->id.' masuk ke tahap desain awal.',
+                route('pemesanan.show', $project, false),
+                'Lihat proyek'
+            );
+            if ($project->designer) {
+                $this->notifications->send(
+                    $project->designer,
+                    'Proyek baru ditugaskan',
+                    'Proyek DI-'.$project->id.' siap dikerjakan pada tahap desain awal dan RAB.',
+                    route('pemesanan.show', $project, false),
+                    'Buka proyek'
+                );
+            }
 
             return $project;
         });

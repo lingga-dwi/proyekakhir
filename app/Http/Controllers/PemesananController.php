@@ -9,6 +9,7 @@ use App\Models\ProjectInvoice;
 use App\Models\User;
 use App\Services\AccountActivationService;
 use App\Services\AdminWorkItemService;
+use App\Services\DaikuNotificationService;
 use App\Services\ManualOrderService;
 use App\Services\PaymentEvidenceService;
 use App\Services\ProjectWorkflowService;
@@ -23,7 +24,8 @@ class PemesananController extends Controller
         private readonly AdminWorkItemService $workItems,
         private readonly ManualOrderService $manualOrders,
         private readonly AccountActivationService $activation,
-        private readonly PaymentEvidenceService $paymentEvidence
+        private readonly PaymentEvidenceService $paymentEvidence,
+        private readonly DaikuNotificationService $notifications,
     ) {}
 
     public function create(Request $request)
@@ -81,6 +83,14 @@ class PemesananController extends Controller
             'catatan_progres' => $isDraft ? 'Desain awal/RAB dikirim untuk ditinjau pelanggan.' : 'Desain dan RAB final dikirim untuk persetujuan pelanggan.',
         ]);
 
+        $this->notifications->send(
+            $pemesanan->user,
+            $isDraft ? 'Desain awal dan RAB tersedia' : 'Desain final dan RAB tersedia',
+            'Dokumen proyek DI-'.$pemesanan->id.' telah dikirim dan menunggu keputusan Anda.',
+            route('pemesanan.show', $pemesanan, false),
+            'Tinjau dokumen'
+        );
+
         return back()->with('success', 'Dokumen berhasil dikirim ke pelanggan untuk ditinjau.');
     }
 
@@ -111,6 +121,16 @@ class PemesananController extends Controller
                 'catatan_progres' => 'Pelanggan meminta revisi: '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
             ]);
 
+            if ($pemesanan->designer) {
+                $this->notifications->send(
+                    $pemesanan->designer,
+                    'Pelanggan meminta revisi',
+                    'Pelanggan meminta revisi proyek DI-'.$pemesanan->id.'. '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
+                    route('pemesanan.show', $pemesanan, false),
+                    'Lihat catatan revisi'
+                );
+            }
+
             return back()->with('success', 'Permintaan revisi telah dikirim kepada desainer.');
         }
 
@@ -135,6 +155,14 @@ class PemesananController extends Controller
                 'catatan_progres' => 'Desain awal disetujui. Invoice DP 20% '.$invoice->number.' telah dibuat.',
             ]);
 
+            $this->notifications->send(
+                $pemesanan->user,
+                'Invoice DP 20% tersedia',
+                'Desain awal disetujui. Invoice '.$invoice->number.' sebesar Rp '.number_format((float) $invoice->amount, 0, ',', '.').' telah dibuat.',
+                route('pemesanan.show', $pemesanan, false),
+                'Lihat invoice'
+            );
+
             return back()->with('success', 'Desain awal disetujui. Invoice DP 20% telah dibuat.');
         }
 
@@ -144,6 +172,22 @@ class PemesananController extends Controller
             'progress' => max(50, (int) $pemesanan->progress),
             'catatan_progres' => 'Desain dan RAB final disetujui pelanggan. Pengerjaan dapat dimulai.',
         ]);
+
+        if ($pemesanan->designer) {
+            $this->notifications->send(
+                $pemesanan->designer,
+                'Desain final disetujui',
+                'Pelanggan menyetujui desain dan RAB final proyek DI-'.$pemesanan->id.'. Pengerjaan dapat dimulai.',
+                route('pemesanan.show', $pemesanan, false),
+                'Buka proyek'
+            );
+        }
+        $this->notifications->admins(
+            'Desain final disetujui pelanggan',
+            'Proyek DI-'.$pemesanan->id.' telah disetujui dan masuk tahap pengerjaan.',
+            route('admin.pemesanan.show', $pemesanan, false),
+            'Kelola proyek'
+        );
 
         return back()->with('success', 'Desain final disetujui. Proyek masuk ke tahap pengerjaan.');
     }
@@ -160,6 +204,13 @@ class PemesananController extends Controller
         $invoice->update(['proof_path' => $path, 'status' => 'submitted']);
         $pemesanan->update(['workflow_stage' => 'dp_verification', 'catatan_progres' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.']);
 
+        $this->notifications->admins(
+            'Bukti pembayaran DP masuk',
+            'Pelanggan mengunggah bukti DP untuk proyek DI-'.$pemesanan->id.'.',
+            route('admin.pemesanan.show', $pemesanan, false),
+            'Verifikasi pembayaran'
+        );
+
         return back()->with('success', 'Bukti pembayaran DP berhasil dikirim.');
     }
 
@@ -170,6 +221,14 @@ class PemesananController extends Controller
 
         $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
         $pemesanan->update(['workflow_stage' => 'survey_scheduled', 'progress' => 30, 'catatan_progres' => 'DP telah diverifikasi. Jadwalkan survei lokasi.']);
+
+        $this->notifications->send(
+            $pemesanan->user,
+            'Pembayaran DP terverifikasi',
+            'Pembayaran DP proyek DI-'.$pemesanan->id.' telah diverifikasi. Tim Daiku akan menjadwalkan survei lokasi.',
+            route('pemesanan.show', $pemesanan, false),
+            'Lihat proyek'
+        );
 
         return back()->with('success', 'DP berhasil diverifikasi. Proyek siap dijadwalkan untuk survei.');
     }
@@ -188,6 +247,13 @@ class PemesananController extends Controller
             'progress' => 35,
             'catatan_progres' => 'Survei lokasi dijadwalkan. Desainer dapat menyiapkan desain dan RAB final.',
         ]);
+
+        $surveyDate = $pemesanan->fresh()->survey_scheduled_at->format('d M Y, H:i');
+        $surveyMessage = 'Survei proyek DI-'.$pemesanan->id.' dijadwalkan pada '.$surveyDate.'.';
+        $this->notifications->send($pemesanan->user, 'Survei lokasi dijadwalkan', $surveyMessage, route('pemesanan.show', $pemesanan, false), 'Lihat jadwal');
+        if ($pemesanan->designer) {
+            $this->notifications->send($pemesanan->designer, 'Survei lokasi dijadwalkan', $surveyMessage, route('pemesanan.show', $pemesanan, false), 'Lihat jadwal');
+        }
 
         return back()->with('success', 'Survei lokasi dijadwalkan dan tahap desain final dimulai.');
     }

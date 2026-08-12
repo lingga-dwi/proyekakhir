@@ -23,6 +23,7 @@ Konfigurasi ini menjalankan Laravel melalui Docker pada Render Free, serta Postg
    - `APP_KEY`: hasil langkah sebelumnya.
    - `APP_URL`: URL layanan yang dipilih, misalnya `https://daiku-interior.onrender.com`.
    - `DAIKU_WHATSAPP_NUMBER`: nomor WhatsApp Daiku.
+   - Untuk email notifikasi, tambahkan `DAIKU_EMAIL_NOTIFICATIONS=true`, `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, dan `MAIL_FROM_NAME=Daiku Interior` dari penyedia email SMTP Anda.
    - `DB_URL`: Database URL Supabase (gunakan koneksi PostgreSQL dengan `sslmode=require`).
    - `PAYMENT_EVIDENCE_KEY`, `PAYMENT_EVIDENCE_SECRET`, `PAYMENT_EVIDENCE_REGION`, `PAYMENT_EVIDENCE_ENDPOINT`: detail S3 dari Supabase Storage. Endpoint berbentuk `https://<project-ref>.storage.supabase.co/storage/v1/s3`.
 4. Tinjau rencana layanan. Web service memakai paket **Free** dan tidak memasang Persistent Disk.

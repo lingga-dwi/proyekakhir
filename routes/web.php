@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\KatalogController;
 use App\Http\Controllers\KonsultasiController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PemesananController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
+    Route::get('/notifikasi/{notification}', [NotificationController::class, 'open'])->name('notifications.open');
+    Route::post('/notifikasi/tandai-semua-dibaca', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
     // Dashboard routes (Admin & Designer only)
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin')->middleware('role:admin');
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
