@@ -96,7 +96,7 @@
             <footer class="flex flex-col gap-4 border-t border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-semibold text-green-700 hover:text-green-800"><i class="fab fa-whatsapp text-base" aria-hidden="true"></i> Tanya melalui WhatsApp Daiku</a>
                 @if(in_array($konsultasi->status, ['completed', 'cancelled'], true))
-                    <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Buat Permintaan Baru <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i></a>
+                    <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Buat Pesanan Baru <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i></a>
                 @endif
             </footer>
         </section>

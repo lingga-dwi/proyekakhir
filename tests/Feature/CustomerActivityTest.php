@@ -20,7 +20,7 @@ class CustomerActivityTest extends TestCase
             ->assertOk()
             ->assertSee('Pesanan Saya')
             ->assertSee('Riwayat permintaan dan pesanan')
-            ->assertSee('Buat Permintaan')
+            ->assertSee('Buat Pesanan')
             ->assertDontSee('aria-label="Jenis aktivitas"', false);
     }
 

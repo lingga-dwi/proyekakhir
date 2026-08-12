@@ -50,7 +50,7 @@ class PublicSeoTest extends TestCase
     {
         $this->get(route('konsultasi.index'))
             ->assertOk()
-            ->assertSee('Buat Permintaan')
+            ->assertSee('Buat Pesanan')
             ->assertSee('https://wa.me/6285805908809', false)
             ->assertSee('Chat WhatsApp');
     }

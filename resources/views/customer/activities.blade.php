@@ -21,7 +21,7 @@
                     <p class="mt-1 text-sm text-slate-500">Status konsultasi dan perkembangan proyek ditampilkan dalam urutan terbaru.</p>
                 </div>
                 <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800">
-                    <i class="fas fa-plus" aria-hidden="true"></i> Buat Permintaan
+                    <i class="fas fa-plus" aria-hidden="true"></i> Buat Pesanan
                 </a>
             </div>
 
@@ -99,7 +99,7 @@
                     <i class="fas fa-clipboard-list text-4xl text-slate-300" aria-hidden="true"></i>
                     <h3 class="mt-5 text-lg font-bold text-slate-800">Belum ada permintaan atau pesanan</h3>
                     <p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Mulailah dengan mengirim permintaan desain. Tim Daiku akan meninjau kebutuhan ruang Anda.</p>
-                    <a href="{{ route('konsultasi.create') }}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-300">Buat Permintaan</a>
+                    <a href="{{ route('konsultasi.create') }}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-300">Buat Pesanan</a>
                 </div>
             @endforelse
 
