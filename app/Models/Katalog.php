@@ -100,7 +100,16 @@ class Katalog extends Model
 
     public function getGambarUtamaUrlAttribute()
     {
-        return $this->resolveImageUrl($this->gambar_utama);
+        try {
+            return $this->resolveImageUrl($this->gambar_utama);
+        } catch (\Throwable $exception) {
+            logger()->warning('Invalid catalog main image path', [
+                'catalog_id' => $this->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     public function getGaleriGambarUrlsAttribute(): array
@@ -110,9 +119,18 @@ class Katalog extends Model
         }
 
         return array_values(array_filter(array_map(function ($path) {
-            // Do not force fallback image for gallery entries.
-            return $this->resolveImageUrl($path, false);
-        }, $this->galeri_gambar)));
+            try {
+                // Do not force fallback image for gallery entries.
+                return $this->resolveImageUrl($path, false);
+            } catch (\Throwable $exception) {
+                logger()->warning('Invalid catalog gallery image path', [
+                    'catalog_id' => $this->id,
+                    'error' => $exception->getMessage(),
+                ]);
+
+                return null;
+            }
+        }, is_array($this->galeri_gambar) ? $this->galeri_gambar : [])));
     }
 
     public function galleryImageUrl(mixed $path): ?string
