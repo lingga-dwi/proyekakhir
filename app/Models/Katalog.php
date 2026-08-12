@@ -115,12 +115,12 @@ class Katalog extends Model
         }, $this->galeri_gambar)));
     }
 
-    public function galleryImageUrl(?string $path): ?string
+    public function galleryImageUrl(mixed $path): ?string
     {
         return $this->resolveImageUrl($path, false);
     }
 
-    private function resolveImageUrl(?string $path, bool $allowFallback = true): ?string
+    private function resolveImageUrl(mixed $path, bool $allowFallback = true): ?string
     {
         $normalizedPath = $this->normalizePath($path);
 
@@ -164,13 +164,16 @@ class Katalog extends Model
         return $this->categoryFallbackImageUrl();
     }
 
-    private function normalizePath(?string $path): ?string
+    private function normalizePath(mixed $path): ?string
     {
-        if (! $path) {
+        // Data katalog lama dapat berisi nilai JSON/array yang tidak valid
+        // untuk URL. Jangan biarkan satu record rusak menjatuhkan seluruh
+        // halaman katalog dengan TypeError.
+        if (! is_string($path) && ! is_numeric($path)) {
             return null;
         }
 
-        $normalized = trim(str_replace('\\', '/', $path));
+        $normalized = trim(str_replace('\\', '/', (string) $path));
 
         return $normalized !== '' ? $normalized : null;
     }
