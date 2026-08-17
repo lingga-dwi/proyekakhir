@@ -17,11 +17,9 @@ class HomeController extends Controller
             $portfolioKatalogs = collect();
         } else {
             try {
-                // Kurasi manual agar sorotan beranda menampilkan ruang yang
-                // utuh dan representatif, bukan unggahan terbaru semata.
-                // Satu contoh hunian, ruang kerja, dan kamar agar sorotan
-                // beranda tidak didominasi oleh satu jenis ruang saja.
-                $featuredIds = [23, 14, 88];
+                // Kurasi lintas kategori agar portofolio beranda tidak
+                // didominasi oleh satu jenis ruang saja.
+                $featuredIds = [23, 14, 88, 126, 16, 54];
 
                 $portfolioKatalogs = Katalog::with('category')
                     ->published()

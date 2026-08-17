@@ -110,8 +110,10 @@ class KonsultasiController extends Controller
     {
         $konsultasi = Konsultasi::with('user')->findOrFail($id);
 
-        // Ensure user can only see their own consultation
-        if (! auth()->user()->isAdmin() && $konsultasi->user_id !== auth()->id()) {
+        $canAccess = auth()->user()->isAdmin()
+            || $konsultasi->user_id === auth()->id()
+            || $konsultasi->designer_id === auth()->id();
+        if (! $canAccess) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -143,6 +145,7 @@ class KonsultasiController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(Konsultasi::STATUSES)],
             'catatan_admin' => ['nullable', 'string', 'max:2000'],
+            'consultation_result' => ['nullable', 'string', 'max:5000'],
         ]);
 
         if ($konsultasi->pemesanan_id && $data['status'] === Konsultasi::STATUS_CANCELLED) {
@@ -164,6 +167,18 @@ class KonsultasiController extends Controller
                 ]);
             }
 
+            $result = trim((string) ($data['consultation_result'] ?? $konsultasi->consultation_result));
+            if ($result === '') {
+                throw ValidationException::withMessages([
+                    'consultation_result' => 'Catatan hasil konsultasi wajib diisi sebelum masuk ke desain awal.',
+                ]);
+            }
+
+            $konsultasi->update([
+                'consultation_result' => $result,
+                'consulted_at' => $konsultasi->consulted_at ?: now(),
+            ]);
+
             $project = $this->createProjectFromConsultation($request, $konsultasi, $data['catatan_admin'] ?? null);
 
             return redirect()->route('admin.pemesanan.index', ['search' => 'DI-'.$project->id])
@@ -181,7 +196,7 @@ class KonsultasiController extends Controller
 
     public function schedule(Request $request, Konsultasi $konsultasi)
     {
-        if ($konsultasi->pemesanan_id || $konsultasi->status !== Konsultasi::STATUS_PENDING) {
+        if ($konsultasi->pemesanan_id || $konsultasi->status !== Konsultasi::STATUS_PENDING || ! $konsultasi->accepted_at) {
             abort(422, 'Konsultasi ini tidak dapat dijadwalkan.');
         }
 
@@ -227,6 +242,63 @@ class KonsultasiController extends Controller
         }
 
         return back()->with('success', 'Konsultasi dijadwalkan dan desainer telah ditugaskan.');
+    }
+
+    public function accept(Request $request, Konsultasi $konsultasi)
+    {
+        abort_unless(
+            ! $konsultasi->pemesanan_id
+                && $konsultasi->status === Konsultasi::STATUS_PENDING
+                && ! $konsultasi->accepted_at,
+            422,
+            'Permintaan konsultasi ini tidak dapat diterima.'
+        );
+
+        $konsultasi->update([
+            'accepted_by' => $request->user()->id,
+            'accepted_at' => now(),
+        ]);
+
+        $this->notifications->send(
+            $konsultasi->user,
+            'Permintaan konsultasi diterima',
+            'Permintaan desain Anda telah diterima. Tim Daiku akan menentukan jadwal konsultasi dan desainer.',
+            route('konsultasi.show', $konsultasi, false),
+            'Lihat permintaan'
+        );
+
+        return back()->with('success', 'Permintaan diterima. Silakan atur jadwal konsultasi dan pilih desainer.');
+    }
+
+    public function completeByDesigner(Request $request, Konsultasi $konsultasi)
+    {
+        abort_unless($konsultasi->designer_id === $request->user()->id, 403);
+        abort_unless(
+            $konsultasi->status === Konsultasi::STATUS_CONFIRMED && ! $konsultasi->pemesanan_id,
+            422,
+            'Konsultasi ini tidak dapat diselesaikan pada tahap sekarang.'
+        );
+
+        $data = $request->validate([
+            'consultation_result' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $konsultasi->update([
+            'consultation_result' => $data['consultation_result'],
+            'consulted_at' => now(),
+        ]);
+
+        $project = $this->createProjectFromConsultation($request, $konsultasi);
+
+        $this->notifications->admins(
+            'Konsultasi selesai',
+            'Desainer menyelesaikan konsultasi '.$konsultasi->nama.' dan proyek DI-'.$project->id.' telah dibuat.',
+            route('admin.pemesanan.show', $project, false),
+            'Tinjau proyek'
+        );
+
+        return redirect()->route('pemesanan.show', $project)
+            ->with('success', 'Hasil konsultasi tersimpan dan proyek masuk ke tahap desain awal.');
     }
 
     public function convertToProject(Request $request, Konsultasi $konsultasi)

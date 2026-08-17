@@ -97,6 +97,13 @@ class DashboardController extends Controller
     {
         $designer = auth()->user();
         $assignedProjects = Pemesanan::where('designer_id', $designer->id);
+        $assignedConsultations = Konsultasi::with('user')
+            ->where('designer_id', $designer->id)
+            ->where('status', Konsultasi::STATUS_CONFIRMED)
+            ->whereNull('pemesanan_id')
+            ->orderBy('tanggal_konsultasi')
+            ->orderBy('waktu_konsultasi')
+            ->get();
 
         $stats = [
             'assigned_projects' => (clone $assignedProjects)->count(),
@@ -114,7 +121,7 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
 
-        return view('dashboard.designer', compact('stats', 'my_projects'));
+        return view('dashboard.designer', compact('stats', 'my_projects', 'assignedConsultations'));
     }
 
     // Admin Pages

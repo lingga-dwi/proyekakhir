@@ -7,6 +7,14 @@
 @section('content')
 <div class="{{ $adminView ? '' : 'min-h-screen bg-gray-50 py-8' }}">
     <div class="{{ $adminView ? 'mx-auto max-w-6xl' : 'mx-auto max-w-4xl px-4 sm:px-6 lg:px-8' }}">
+        @if(session('success'))
+            <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <ul class="list-disc space-y-1 pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div class="flex items-center justify-between">
@@ -52,13 +60,20 @@
                 'revision_requested' => 'Pelanggan meminta revisi desain awal',
                 'awaiting_dp' => 'Menunggu pembayaran DP 20%',
                 'dp_verification' => 'Bukti DP menunggu verifikasi admin',
-                'survey_scheduled' => 'Menunggu penjadwalan survei lokasi',
+                'survey_pending' => 'Menunggu admin menjadwalkan survei lokasi',
+                'survey_scheduled' => 'Survei lokasi telah dijadwalkan',
                 'final_design' => 'Desainer menyiapkan desain & RAB final',
                 'awaiting_final_approval' => 'Menunggu persetujuan desain final pelanggan',
                 'approved' => 'Desain final disetujui, pengerjaan berjalan',
             ];
-            $draftDocuments = $pemesanan->documents->where('stage', 'draft');
-            $finalDocuments = $pemesanan->documents->where('stage', 'final');
+            $draftDocuments = $pemesanan->documents
+                ->where('stage', 'draft')
+                ->where('submission_round', $pemesanan->draft_round);
+            $finalDocuments = $pemesanan->documents
+                ->where('stage', 'final')
+                ->where('submission_round', $pemesanan->final_round)
+                ->whereIn('document_type', ['design', 'rab']);
+            $surveyDocuments = $pemesanan->documents->where('document_type', 'survey');
             $dpInvoice = $pemesanan->dpInvoice;
         @endphp
 
@@ -68,13 +83,24 @@
             @if($pemesanan->catatan_progres)<p class="mt-2 text-sm leading-6 text-slate-700">{{ $pemesanan->catatan_progres }}</p>@endif
         </section>
 
-        @if($pemesanan->designer_id === auth()->id() && in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true))
+        @if((auth()->user()->isAdmin() || $pemesanan->designer_id === auth()->id()) && in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true))
+            @php
+                $activeDocumentStage = $pemesanan->workflow_stage === 'final_design' ? 'final' : 'draft';
+                $activeDocuments = $activeDocumentStage === 'final' ? $finalDocuments : $draftDocuments;
+                $activeRound = $activeDocumentStage === 'final' ? $pemesanan->final_round : $pemesanan->draft_round;
+                $hasDesign = $activeDocuments->contains('document_type', 'design');
+                $hasRab = $activeDocuments->contains('document_type', 'rab');
+            @endphp
             <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="font-semibold text-slate-950">Kirim dokumen ke pelanggan</h2>
-                <p class="mt-1 text-sm text-slate-500">Unggah desain, RAB, atau hasil survei. Dokumen akan menunggu keputusan pelanggan.</p>
-                <form method="POST" action="{{ route('designer.proyek.document.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
+                <h2 class="font-semibold text-slate-950">Kirim dokumen {{ $activeDocumentStage === 'final' ? 'final' : 'awal' }} · Putaran {{ $activeRound }}</h2>
+                <p class="mt-1 text-sm text-slate-500">Desain dan RAB wajib tersedia pada putaran yang sama sebelum sistem mengirimkannya untuk ditinjau pelanggan.</p>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                    <span class="rounded-full px-3 py-1 {{ $hasDesign ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ $hasDesign ? '✓' : '○' }} Desain</span>
+                    <span class="rounded-full px-3 py-1 {{ $hasRab ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ $hasRab ? '✓' : '○' }} RAB</span>
+                </div>
+                <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.pemesanan.document.upload', $pemesanan) : route('designer.proyek.document.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
                     @csrf
-                    <select name="document_type" class="rounded-lg border-slate-300" required><option value="design">Desain</option><option value="rab">RAB</option><option value="survey">Hasil survei</option></select>
+                    <select name="document_type" class="rounded-lg border-slate-300" required><option value="design">Desain</option><option value="rab">RAB</option></select>
                     <input type="file" name="document" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="rounded-lg border border-slate-300 p-2 text-sm">
                     <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Kirim dokumen</button>
                 </form>
@@ -84,11 +110,11 @@
         @foreach(['draft' => ['Dokumen desain awal & RAB', $draftDocuments], 'final' => ['Dokumen desain & RAB final', $finalDocuments]] as $stage => [$title, $documents])
             @if($documents->isNotEmpty())
                 <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 class="font-semibold text-slate-950">{{ $title }}</h2>
+                    <h2 class="font-semibold text-slate-950">{{ $title }} · Putaran {{ $stage === 'draft' ? $pemesanan->draft_round : $pemesanan->final_round }}</h2>
                     <div class="mt-4 space-y-2">
                         @foreach($documents as $document)
                             <a href="{{ route('pemesanan.document.download', [$pemesanan, $document]) }}" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm transition hover:border-amber-300 hover:bg-amber-50">
-                                <span><i class="fas fa-file-arrow-down mr-2 text-amber-600" aria-hidden="true"></i>{{ $document->original_name }}</span>
+                                <span><i class="fas fa-file-arrow-down mr-2 text-amber-600" aria-hidden="true"></i>{{ $document->document_type === 'rab' ? 'RAB' : 'Desain' }} — {{ $document->original_name }}</span>
                                 <span class="text-xs text-slate-400">v{{ $document->version }}</span>
                             </a>
                         @endforeach
@@ -124,15 +150,66 @@
             </section>
         @endif
 
-        @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'survey_scheduled')
+        @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'survey_pending')
             <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="font-semibold text-slate-950">Jadwalkan survei lokasi</h2>
-                <form method="POST" action="{{ route('admin.pemesanan.survey.schedule', $pemesanan) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                <h2 class="font-semibold text-slate-950">Tugaskan desainer & jadwalkan survei</h2>
+                <form method="POST" action="{{ route('admin.pemesanan.survey.schedule', $pemesanan) }}" class="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_1.4fr_auto]">
                     @csrf @method('PUT')
+                    <select name="designer_id" required class="rounded-lg border-slate-300">
+                        <option value="">Pilih desainer</option>
+                        @foreach($designers as $designer)
+                            <option value="{{ $designer->id }}" @selected(old('designer_id', $pemesanan->designer_id) == $designer->id)>{{ $designer->nama }}</option>
+                        @endforeach
+                    </select>
                     <input type="datetime-local" name="survey_scheduled_at" min="{{ now()->format('Y-m-d\\TH:i') }}" required class="rounded-lg border-slate-300">
                     <input type="text" name="survey_notes" maxlength="2000" placeholder="Catatan survei" class="rounded-lg border-slate-300">
                     <button class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Simpan jadwal</button>
                 </form>
+            </section>
+        @endif
+
+        @if($pemesanan->workflow_stage === 'survey_scheduled')
+            <section class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                <h2 class="font-semibold text-slate-950">Jadwal survei lokasi</h2>
+                <p class="mt-2 text-sm text-slate-700">{{ $pemesanan->survey_scheduled_at?->translatedFormat('j F Y, H:i') }}{{ $pemesanan->designer ? ' · '.$pemesanan->designer->nama : '' }}</p>
+                @if($pemesanan->survey_notes)<p class="mt-1 text-sm leading-6 text-slate-600">{{ $pemesanan->survey_notes }}</p>@endif
+                @if($pemesanan->designer_id === auth()->id())
+                    <form method="POST" action="{{ route('designer.proyek.survey.complete', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3">
+                        @csrf
+                        <textarea name="survey_result" rows="4" maxlength="5000" required class="rounded-lg border-slate-300" placeholder="Catat ukuran aktual, kondisi lokasi, titik listrik/mekanikal, dan temuan survei.">{{ old('survey_result') }}</textarea>
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <input type="file" name="survey_document" accept=".jpg,.jpeg,.png,.webp,.pdf" class="min-w-0 rounded-lg border border-slate-300 bg-white p-2 text-sm">
+                            <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Selesaikan survei</button>
+                        </div>
+                    </form>
+                @endif
+            </section>
+        @endif
+
+        @if($pemesanan->survey_result)
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Hasil survei lokasi</h2>
+                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $pemesanan->survey_result }}</p>
+                @foreach($surveyDocuments as $document)
+                    <a href="{{ route('pemesanan.document.download', [$pemesanan, $document]) }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-amber-700"><i class="fas fa-paperclip"></i>{{ $document->original_name }}</a>
+                @endforeach
+            </section>
+        @endif
+
+        @if($pemesanan->documentDecisions->isNotEmpty())
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Riwayat keputusan pelanggan</h2>
+                <div class="mt-3 divide-y divide-slate-100">
+                    @foreach($pemesanan->documentDecisions->sortByDesc('created_at') as $decision)
+                        <div class="py-3 text-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="font-semibold text-slate-800">{{ $decision->stage === 'draft' ? 'Desain awal' : 'Desain final' }} · Putaran {{ $decision->submission_round }}</p>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $decision->decision === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800' }}">{{ $decision->decision === 'approved' ? 'Disetujui' : 'Revisi diminta' }}</span>
+                            </div>
+                            @if($decision->feedback)<p class="mt-1 text-slate-600">{{ $decision->feedback }}</p>@endif
+                        </div>
+                    @endforeach
+                </div>
             </section>
         @endif
 

@@ -37,10 +37,14 @@ class Pemesanan extends Model
         'sumber_masuk',
         'status_pemesanan',
         'workflow_stage',
+        'draft_round',
+        'final_round',
         'progress',
         'target_selesai',
         'survey_scheduled_at',
         'survey_notes',
+        'survey_result',
+        'survey_completed_at',
         'catatan_progres',
         'total_harga',
         'jenis_proyek',
@@ -53,6 +57,9 @@ class Pemesanan extends Model
         'tanggal_pesan' => 'date',
         'target_selesai' => 'date',
         'survey_scheduled_at' => 'datetime',
+        'survey_completed_at' => 'datetime',
+        'draft_round' => 'integer',
+        'final_round' => 'integer',
         'progress' => 'integer',
         'luas_area' => 'decimal:2',
         'total_harga' => 'decimal:2',
@@ -87,6 +94,11 @@ class Pemesanan extends Model
     public function documents()
     {
         return $this->hasMany(ProjectDocument::class);
+    }
+
+    public function documentDecisions()
+    {
+        return $this->hasMany(ProjectDocumentDecision::class);
     }
 
     public function invoices()

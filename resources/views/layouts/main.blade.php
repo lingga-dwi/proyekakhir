@@ -50,20 +50,31 @@
                     <a href="{{ route('home') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('home') ? 'text-yellow-600' : '' }}">Beranda</a>
                     <a href="{{ route('about') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('about') ? 'text-yellow-600' : '' }}">Tentang Kami</a>
                     <a href="{{ route('katalog') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('katalog*') ? 'text-yellow-600' : '' }}">Katalog</a>
-                    <a href="{{ route('konsultasi.index') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('konsultasi*') ? 'text-yellow-600' : '' }}">Konsultasi</a>
+                    <a href="{{ route('konsultasi.index') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('konsultasi.index', 'konsultasi.create') ? 'text-yellow-600' : '' }}">Konsultasi</a>
                 </div>
                 
                 <!-- User Menu -->
-                <div class="col-start-3 row-start-1 hidden items-center justify-self-end space-x-4 lg:flex">
+                <div class="col-start-3 row-start-1 hidden items-center justify-self-end gap-2 lg:flex">
                     @auth
-                        @include('partials.notifications')
-                        @if(auth()->user()->isPelanggan())
-                            <a href="{{ route('pesanan.saya') }}" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50 hover:text-amber-700' }}">
-                                <i class="fas fa-folder-open text-xs" aria-hidden="true"></i>
-                                Pesanan Saya
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('dashboard.admin') }}"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.admin', 'admin.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-cog text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Admin Panel</span>
                             </a>
                         @endif
-                        <div class="relative w-48" x-data="{ open: false }">
+                        @if(auth()->user()->isPelanggan())
+                            <a href="{{ route('pesanan.saya') }}"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-folder-open text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Pesanan Saya</span>
+                            </a>
+                        @endif
+                        <div class="relative w-16" x-data="{ open: false }">
                             @php
                                 $roleLabel = match (auth()->user()->role) {
                                     'admin' => 'Admin',
@@ -75,26 +86,28 @@
                                     @click="open = !open"
                                     :aria-expanded="open.toString()"
                                     aria-haspopup="menu"
-                                    class="group relative z-10 flex w-full items-center gap-2.5 border bg-white px-2 py-1.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400"
+                                    aria-label="Buka menu akun"
+                                    class="group relative z-10 flex h-[46px] w-full items-center justify-between gap-1 rounded-xl border bg-white px-2 py-1.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400"
                                     :class="open
-                                        ? 'rounded-t-xl border-gray-200 border-b-transparent'
-                                        : 'rounded-xl border-gray-200 hover:border-amber-300 hover:shadow-sm'">
+                                        ? 'border-amber-300 shadow-sm'
+                                        : 'border-gray-200 hover:border-amber-300 hover:shadow-sm'">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
                                     <i class="fas fa-user text-sm"></i>
-                                </span>
-                                <span class="min-w-0 flex-1 leading-tight">
-                                    <span class="block max-w-[112px] truncate text-xs font-bold text-slate-900">{{ auth()->user()->nama }}</span>
-                                    <span class="mt-0.5 block text-[11px] font-medium text-gray-400">{{ $roleLabel }}</span>
                                 </span>
                                 <i class="fas fa-chevron-down text-[10px] text-slate-600 transition-transform duration-200" :class="open ? 'rotate-180' : ''" aria-hidden="true"></i>
                             </button>
                             
-                            <div x-cloak x-show="open" x-transition.origin.top.right @click.away="open = false" role="menu" class="absolute right-0 top-full z-50 w-full rounded-b-xl border border-t-0 border-gray-200 bg-white p-2 shadow-xl">
-                                @if(auth()->user()->isAdmin())
-                                    <a href="{{ route('dashboard.admin') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
-                                        <i class="fas fa-cog mr-2"></i>Admin Panel
-                                    </a>
-                                @elseif(auth()->user()->isDesigner())
+                            <div x-cloak x-show="open" x-transition.origin.top.right @click.away="open = false" role="menu" class="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-2 shadow-xl">
+                                <div class="flex items-center gap-3 border-b border-gray-100 px-3 py-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500" aria-hidden="true">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <span class="min-w-0 leading-tight">
+                                        <span class="block truncate text-sm font-bold text-slate-900">{{ auth()->user()->nama }}</span>
+                                        <span class="mt-1 block text-xs font-medium text-gray-400">{{ $roleLabel }}</span>
+                                    </span>
+                                </div>
+                                @if(auth()->user()->isDesigner())
                                     <a href="{{ route('dashboard.designer') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
                                         <i class="fas fa-drafting-compass mr-2"></i>Dashboard Designer
                                     </a>
@@ -107,6 +120,7 @@
                                 </form>
                             </div>
                         </div>
+                        @include('partials.notifications')
                     @else
                         <a href="{{ route('login') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium">Login</a>
                         <a href="{{ route('register') }}" class="bg-yellow-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-600">Daftar</a>
@@ -134,7 +148,7 @@
                     <a href="{{ route('home') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('home') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Beranda</a>
                     <a href="{{ route('about') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('about') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Tentang Kami</a>
                     <a href="{{ route('katalog') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('katalog*') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Katalog</a>
-                    <a href="{{ route('konsultasi.index') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('konsultasi*') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Konsultasi</a>
+                    <a href="{{ route('konsultasi.index') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('konsultasi.index', 'konsultasi.create') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Konsultasi</a>
                 </div>
 
                 <div class="mt-3 border-t border-gray-100 pt-3">
@@ -227,7 +241,7 @@
                     <ul class="mt-6 space-y-4 text-sm leading-relaxed text-white/80">
                         <li class="flex gap-3"><i class="fas fa-location-dot mt-1 text-amber-400" aria-hidden="true"></i><span>Pekanbaru, Riau, Indonesia</span></li>
                         <li><a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fab fa-whatsapp text-amber-400" aria-hidden="true"></i><span>+{{ $footerWhatsapp }}</span></a></li>
-                        <li><a href="https://www.instagram.com/daiku.portfolio/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fab fa-instagram text-amber-400" aria-hidden="true"></i><span>@daiku.portfolio</span></a></li>
+                        <li><a href="mailto:fendrabudiono@gmail.com" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fas fa-envelope text-amber-400" aria-hidden="true"></i><span>fendrabudiono@gmail.com</span></a></li>
                     </ul>
                 </div>
             </div>

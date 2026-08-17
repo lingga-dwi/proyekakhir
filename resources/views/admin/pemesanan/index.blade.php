@@ -115,6 +115,9 @@
                             'order:dibatalkan' => ['Dibatalkan', 'bg-red-100 text-red-800'],
                             default => ['Belum diketahui', 'bg-slate-100 text-slate-700'],
                         };
+                        if ($isConsultation && $item->status === 'pending' && $item->accepted_at) {
+                            [$statusLabel, $statusClass] = ['Diterima · belum dijadwalkan', 'bg-amber-100 text-amber-800'];
+                        }
                         $sourceLabel = match($item->source) {
                             'kantor' => 'Kantor',
                             'whatsapp' => 'WhatsApp',
@@ -148,7 +151,7 @@
                         <td class="px-5 py-4">
                             <p class="text-sm font-semibold text-slate-900">{{ $reference }}</p>
                             <p class="text-xs text-slate-500">{{ $itemDate->translatedFormat('d M Y') }}</p>
-                            @if($isConsultation && $item->scheduled_time)
+                            @if($isConsultation && $item->status === 'confirmed' && $item->scheduled_time)
                                 <p class="mt-1 text-[11px] font-medium text-slate-400">{{ substr($item->scheduled_time, 0, 5) }} WIB</p>
                             @endif
                         </td>
@@ -181,30 +184,54 @@
                                 <div class="flex max-w-[230px] flex-wrap items-center gap-3">
                                     <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-slate-700 hover:text-slate-950">Detail</button>
                                     @if($item->status === 'pending')
-                                        <details class="w-full">
-                                            <summary class="cursor-pointer text-sm font-semibold text-blue-700 hover:text-blue-800">Jadwalkan konsultasi</summary>
-                                            <form method="POST" action="{{ route('admin.pemesanan.konsultasi.schedule', $item->id) }}" class="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3">
-                                                @csrf @method('PUT')
-                                                <input type="date" name="tanggal_konsultasi" min="{{ now()->format('Y-m-d') }}" required class="rounded-lg border-slate-300 text-sm">
-                                                <input type="time" name="waktu_konsultasi" required class="rounded-lg border-slate-300 text-sm">
-                                                <select name="designer_id" required class="rounded-lg border-slate-300 text-sm">
-                                                    <option value="">Pilih desainer</option>
-                                                    @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
-                                                </select>
-                                                <textarea name="catatan_admin" rows="2" maxlength="2000" placeholder="Catatan jadwal (opsional)" class="rounded-lg border-slate-300 text-sm"></textarea>
-                                                <button class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Simpan jadwal</button>
+                                        @if(!$item->accepted_at)
+                                            <form
+                                                method="POST"
+                                                action="{{ route('admin.pemesanan.konsultasi.accept', $item->id) }}"
+                                                @submit.prevent="$dispatch('open-confirmation', {
+                                                    form: $el,
+                                                    title: 'Terima permintaan konsultasi?',
+                                                    message: 'Permintaan ini akan diterima dan dapat dilanjutkan ke pengaturan jadwal konsultasi.',
+                                                    confirmLabel: 'Ya, terima',
+                                                    tone: 'success'
+                                                })"
+                                            >
+                                                @csrf
+                                                <button class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Terima</button>
                                             </form>
-                                        </details>
-                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}" onsubmit="return confirm('Tolak permintaan konsultasi ini?')">
+                                        @else
+                                            <details class="w-full">
+                                                <summary class="cursor-pointer text-sm font-semibold text-blue-700 hover:text-blue-800">Atur jadwal</summary>
+                                                <form method="POST" action="{{ route('admin.pemesanan.konsultasi.schedule', $item->id) }}" class="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3">
+                                                    @csrf @method('PUT')
+                                                    <input type="date" name="tanggal_konsultasi" min="{{ now()->format('Y-m-d') }}" required class="rounded-lg border-slate-300 text-sm">
+                                                    <input type="time" name="waktu_konsultasi" required class="rounded-lg border-slate-300 text-sm">
+                                                    <select name="designer_id" required class="rounded-lg border-slate-300 text-sm">
+                                                        <option value="">Pilih desainer</option>
+                                                        @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
+                                                    </select>
+                                                    <textarea name="catatan_admin" rows="2" maxlength="2000" placeholder="Catatan jadwal (opsional)" class="rounded-lg border-slate-300 text-sm"></textarea>
+                                                    <button class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Simpan jadwal</button>
+                                                </form>
+                                            </details>
+                                        @endif
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}"
+                                            @submit.prevent="$dispatch('open-confirmation', {
+                                                form: $el,
+                                                title: 'Tolak permintaan konsultasi?',
+                                                message: 'Permintaan ini akan ditandai ditolak dan proses konsultasi tidak dapat dilanjutkan.',
+                                                confirmLabel: 'Ya, tolak',
+                                                tone: 'danger'
+                                            })"
+                                        >
                                             @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
                                             <button class="text-sm font-semibold text-red-600 hover:text-red-700">Tolak</button>
                                         </form>
                                     @endif
                                     @if($item->status === 'confirmed')
-                                        <form method="POST" action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}" onsubmit="return confirm('Konsultasi telah selesai dan siap masuk ke tahap desain awal?')">
-                                            @csrf @method('PUT')<input type="hidden" name="status" value="completed">
-                                            <button class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Selesai &amp; mulai desain</button>
-                                        </form>
+                                        <span class="text-sm font-medium text-slate-500">Menunggu hasil konsultasi desainer</span>
                                     @endif
                                 </div>
                             @else

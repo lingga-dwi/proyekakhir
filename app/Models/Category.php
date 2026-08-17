@@ -33,6 +33,11 @@ class Category extends Model
         return $this->hasMany(Category::class, 'parent_id')->where('is_active', true)->orderBy('sort_order');
     }
 
+    public function allChildren()
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
+
     public function katalogs()
     {
         return $this->hasMany(Katalog::class, 'category_id');
@@ -51,6 +56,6 @@ class Category extends Model
 
     public function hasChildren()
     {
-        return $this->children()->count() > 0;
+        return $this->allChildren()->exists();
     }
 }

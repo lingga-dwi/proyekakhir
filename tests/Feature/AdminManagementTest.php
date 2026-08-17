@@ -242,14 +242,16 @@ class AdminManagementTest extends TestCase
             ->assertDontSee('Permintaan Konsultasi')
             ->assertSee('Membutuhkan desain ruang tamu.');
 
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
+
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $consultation), [
             'tanggal_konsultasi' => now()->addWeek()->toDateString(),
             'waktu_konsultasi' => '10:00',
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $consultation), [
-            'status' => 'completed',
+        $this->actingAs($designer)->post(route('designer.konsultasi.complete', $consultation), [
+            'consultation_result' => 'Kebutuhan pelanggan telah dibahas dan siap dilanjutkan ke desain awal.',
         ])->assertRedirect();
 
         $consultation->refresh();

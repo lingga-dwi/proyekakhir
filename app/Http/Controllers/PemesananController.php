@@ -42,20 +42,26 @@ class PemesananController extends Controller
 
     public function show(Request $request, $id)
     {
-        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'dpInvoice'])->findOrFail($id);
+        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'documentDecisions.customer', 'dpInvoice'])->findOrFail($id);
         $this->authorizeOrderAccess($request, $pemesanan);
 
         $adminView = $request->routeIs('admin.pemesanan.show');
+        $designers = $request->user()->isAdmin()
+            ? User::where('role', 'designer')->orderBy('nama')->get(['id', 'nama'])
+            : collect();
 
-        return view('pemesanan.show', compact('pemesanan', 'adminView'));
+        return view('pemesanan.show', compact('pemesanan', 'adminView', 'designers'));
     }
 
     public function uploadDocument(Request $request, Pemesanan $pemesanan)
     {
-        abort_unless($pemesanan->designer_id === $request->user()->id, 403);
+        abort_unless(
+            $request->user()->isAdmin() || $pemesanan->designer_id === $request->user()->id,
+            403
+        );
 
         $data = $request->validate([
-            'document_type' => ['required', Rule::in(['design', 'rab', 'survey'])],
+            'document_type' => ['required', Rule::in(['design', 'rab'])],
             'document' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ]);
 
@@ -64,7 +70,11 @@ class PemesananController extends Controller
         abort_unless($isDraft || $isFinal, 422, 'Dokumen belum dapat diunggah pada tahap ini.');
 
         $stage = $isDraft ? 'draft' : 'final';
-        $nextVersion = (int) $pemesanan->documents()->where('stage', $stage)->max('version') + 1;
+        $round = $isDraft ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
+        $nextVersion = (int) $pemesanan->documents()
+            ->where('stage', $stage)
+            ->where('document_type', $data['document_type'])
+            ->max('version') + 1;
         $file = $data['document'];
         $path = $file->store('project-documents/'.$pemesanan->id.'/'.$stage, 'local');
 
@@ -72,10 +82,27 @@ class PemesananController extends Controller
             'uploaded_by' => $request->user()->id,
             'stage' => $stage,
             'document_type' => $data['document_type'],
+            'submission_round' => $round,
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'version' => $nextVersion,
         ]);
+
+        $submittedTypes = $pemesanan->documents()
+            ->where('stage', $stage)
+            ->where('submission_round', $round)
+            ->whereIn('document_type', ['design', 'rab'])
+            ->distinct()
+            ->pluck('document_type');
+
+        if ($submittedTypes->count() < 2) {
+            $missingLabel = $submittedTypes->contains('design') ? 'RAB' : 'desain';
+
+            return back()->with(
+                'success',
+                'Dokumen berhasil disimpan. Unggah '.$missingLabel.' pada putaran yang sama sebelum dikirim ke pelanggan.'
+            );
+        }
 
         $pemesanan->update([
             'workflow_stage' => $isDraft ? 'awaiting_draft_approval' : 'awaiting_final_approval',
@@ -109,17 +136,32 @@ class PemesananController extends Controller
         $data = $request->validate([
             'stage' => ['required', Rule::in(['draft', 'final'])],
             'decision' => ['required', Rule::in(['approved', 'revision_requested'])],
-            'feedback' => ['nullable', 'string', 'max:2000'],
+            'feedback' => ['nullable', 'required_if:decision,revision_requested', 'string', 'max:2000'],
         ]);
 
         $expectedStage = $data['stage'] === 'draft' ? 'awaiting_draft_approval' : 'awaiting_final_approval';
         abort_unless($pemesanan->workflow_stage === $expectedStage, 422, 'Tidak ada dokumen yang menunggu keputusan pada tahap ini.');
 
+        if ($data['stage'] === 'draft' && $data['decision'] === 'approved' && (float) $pemesanan->total_harga <= 0) {
+            return back()->withErrors(['decision' => 'Admin perlu menetapkan nilai proyek sebelum invoice DP dapat dibuat.']);
+        }
+
+        $round = $data['stage'] === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
+        $pemesanan->documentDecisions()->create([
+            'decided_by' => $request->user()->id,
+            'stage' => $data['stage'],
+            'submission_round' => $round,
+            'decision' => $data['decision'],
+            'feedback' => $data['feedback'] ?? null,
+        ]);
+
         if ($data['decision'] === 'revision_requested') {
-            $pemesanan->update([
+            $changes = [
                 'workflow_stage' => $data['stage'] === 'draft' ? 'revision_requested' : 'final_design',
                 'catatan_progres' => 'Pelanggan meminta revisi: '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
-            ]);
+            ];
+            $changes[$data['stage'] === 'draft' ? 'draft_round' : 'final_round'] = $round + 1;
+            $pemesanan->update($changes);
 
             if ($pemesanan->designer) {
                 $this->notifications->send(
@@ -135,10 +177,6 @@ class PemesananController extends Controller
         }
 
         if ($data['stage'] === 'draft') {
-            if ((float) $pemesanan->total_harga <= 0) {
-                return back()->withErrors(['decision' => 'Admin perlu menetapkan nilai proyek sebelum invoice DP dapat dibuat.']);
-            }
-
             $invoice = ProjectInvoice::firstOrCreate(
                 ['pemesanan_id' => $pemesanan->id, 'type' => 'dp_20'],
                 [
@@ -150,7 +188,7 @@ class PemesananController extends Controller
             );
 
             $pemesanan->update([
-                'workflow_stage' => $invoice->status === 'paid' ? 'survey_scheduled' : 'awaiting_dp',
+                'workflow_stage' => $invoice->status === 'paid' ? 'survey_pending' : 'awaiting_dp',
                 'progress' => 25,
                 'catatan_progres' => 'Desain awal disetujui. Invoice DP 20% '.$invoice->number.' telah dibuat.',
             ]);
@@ -220,7 +258,7 @@ class PemesananController extends Controller
         abort_unless($invoice && $invoice->status === 'submitted', 422, 'Tidak ada pembayaran DP yang menunggu verifikasi.');
 
         $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
-        $pemesanan->update(['workflow_stage' => 'survey_scheduled', 'progress' => 30, 'catatan_progres' => 'DP telah diverifikasi. Jadwalkan survei lokasi.']);
+        $pemesanan->update(['workflow_stage' => 'survey_pending', 'progress' => 30, 'catatan_progres' => 'DP telah diverifikasi. Admin dapat menugaskan desainer dan menjadwalkan survei lokasi.']);
 
         $this->notifications->send(
             $pemesanan->user,
@@ -235,17 +273,18 @@ class PemesananController extends Controller
 
     public function scheduleSurvey(Request $request, Pemesanan $pemesanan)
     {
-        abort_unless($pemesanan->workflow_stage === 'survey_scheduled', 422, 'Survei hanya dapat dijadwalkan setelah DP diverifikasi.');
+        abort_unless($pemesanan->workflow_stage === 'survey_pending', 422, 'Survei hanya dapat dijadwalkan setelah DP diverifikasi.');
         $data = $request->validate([
+            'designer_id' => ['required', Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'designer'))],
             'survey_scheduled_at' => ['required', 'date', 'after_or_equal:now'],
             'survey_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $pemesanan->update([
             ...$data,
-            'workflow_stage' => 'final_design',
+            'workflow_stage' => 'survey_scheduled',
             'progress' => 35,
-            'catatan_progres' => 'Survei lokasi dijadwalkan. Desainer dapat menyiapkan desain dan RAB final.',
+            'catatan_progres' => 'Survei lokasi telah dijadwalkan dan menunggu diselesaikan oleh desainer.',
         ]);
 
         $surveyDate = $pemesanan->fresh()->survey_scheduled_at->format('d M Y, H:i');
@@ -255,7 +294,57 @@ class PemesananController extends Controller
             $this->notifications->send($pemesanan->designer, 'Survei lokasi dijadwalkan', $surveyMessage, route('pemesanan.show', $pemesanan, false), 'Lihat jadwal');
         }
 
-        return back()->with('success', 'Survei lokasi dijadwalkan dan tahap desain final dimulai.');
+        return back()->with('success', 'Desainer ditugaskan dan survei lokasi berhasil dijadwalkan.');
+    }
+
+    public function completeSurvey(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless($pemesanan->designer_id === $request->user()->id, 403);
+        abort_unless($pemesanan->workflow_stage === 'survey_scheduled', 422, 'Survei belum dapat diselesaikan pada tahap ini.');
+
+        $data = $request->validate([
+            'survey_result' => ['required', 'string', 'max:5000'],
+            'survey_document' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+        ]);
+
+        if ($request->hasFile('survey_document')) {
+            $file = $data['survey_document'];
+            $path = $file->store('project-documents/'.$pemesanan->id.'/survey', 'local');
+            $version = (int) $pemesanan->documents()->where('document_type', 'survey')->max('version') + 1;
+            $pemesanan->documents()->create([
+                'uploaded_by' => $request->user()->id,
+                'stage' => 'final',
+                'document_type' => 'survey',
+                'submission_round' => (int) $pemesanan->final_round,
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'version' => $version,
+            ]);
+        }
+
+        $pemesanan->update([
+            'survey_result' => $data['survey_result'],
+            'survey_completed_at' => now(),
+            'workflow_stage' => 'final_design',
+            'progress' => 40,
+            'catatan_progres' => 'Survei lokasi selesai. Desainer dapat menyusun desain 3D detail dan RAB final.',
+        ]);
+
+        $this->notifications->send(
+            $pemesanan->user,
+            'Survei lokasi selesai',
+            'Survei proyek DI-'.$pemesanan->id.' telah diselesaikan. Desainer akan menyiapkan desain dan RAB final.',
+            route('pemesanan.show', $pemesanan, false),
+            'Lihat proyek'
+        );
+        $this->notifications->admins(
+            'Survei lokasi selesai',
+            'Desainer menyelesaikan survei proyek DI-'.$pemesanan->id.'.',
+            route('admin.pemesanan.show', $pemesanan, false),
+            'Tinjau hasil survei'
+        );
+
+        return back()->with('success', 'Hasil survei tersimpan. Tahap desain dan RAB final telah dibuka.');
     }
 
     public function uploadPaymentEvidence(Request $request, Pemesanan $pemesanan)

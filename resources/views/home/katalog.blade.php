@@ -42,7 +42,8 @@ function openSidebar(katalogId, syncUrl = true) {
     const overlay = document.getElementById('sidebarOverlay');
 
     if (syncUrl) updateSelectedDesignUrl(katalogId);
-    sidebar.classList.remove('translate-x-full');
+    sidebar.classList.remove('pointer-events-none', 'opacity-0', 'scale-95');
+    sidebar.setAttribute('aria-hidden', 'false');
     overlay.classList.remove('pointer-events-none', 'opacity-0');
     document.body.classList.add('overflow-hidden');
     loadSidebarContent(katalogId);
@@ -52,7 +53,8 @@ function closeSidebar() {
     const sidebar = document.getElementById('detailSidebar');
     const overlay = document.getElementById('sidebarOverlay');
 
-    sidebar.classList.add('translate-x-full');
+    sidebar.classList.add('pointer-events-none', 'opacity-0', 'scale-95');
+    sidebar.setAttribute('aria-hidden', 'true');
     overlay.classList.add('pointer-events-none', 'opacity-0');
     document.body.classList.remove('overflow-hidden');
     updateSelectedDesignUrl();
@@ -82,9 +84,11 @@ async function loadSidebarContent(katalogId) {
             ? data.style_tags.split(',').map(tag => tag.trim()).filter(Boolean)
             : [];
         const galleryHtml = gallery.length
-            ? `<div class="grid grid-cols-3 gap-2 px-6 pt-4">
-                ${gallery.map((image, index) => `
-                    <img src="${image}" alt="Galeri ${escapeHtml(data.nama_desain)} ${index + 1}" class="h-24 w-full cursor-zoom-in rounded-lg object-cover" onclick="event.stopPropagation(); openImageLightbox('${image}', 'Galeri ${escapeHtml(data.nama_desain)} ${index + 1}')" loading="lazy" decoding="async">
+            ? `<div class="flex h-32 shrink-0 items-center justify-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-3 py-2">
+                ${gallery.slice(0, 4).map((image, index) => `
+                    <button type="button" onclick="selectDetailImage(decodeURIComponent('${encodeURIComponent(image)}'), decodeURIComponent('${encodeURIComponent(`Galeri ${data.nama_desain} ${index + 1}`)}'))" class="h-28 w-52 shrink-0 overflow-hidden rounded-xl border-2 border-slate-200 bg-slate-100 transition hover:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <img src="${image}" alt="Galeri ${escapeHtml(data.nama_desain)} ${index + 1}" class="h-full w-full object-cover" loading="lazy" decoding="async">
+                    </button>
                 `).join('')}
                </div>`
             : '';
@@ -93,42 +97,47 @@ async function loadSidebarContent(katalogId) {
             : '';
 
         content.innerHTML = `
-            <div class="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white/95 px-6 py-4 backdrop-blur">
+            <div class="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
                 <div>
                     <p class="text-xs font-bold uppercase tracking-wider text-amber-700">Detail desain</p>
-                    <h2 class="mt-1 font-semibold text-slate-900">${escapeHtml(data.nama_desain)}</h2>
+                    <h2 class="mt-1 text-xl font-bold text-slate-900">${escapeHtml(data.nama_desain)}</h2>
                 </div>
                 <button type="button" onclick="closeSidebar()" class="flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800" aria-label="Tutup detail desain">
                     <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
 
-            ${imageUrl
-                ? `<img src="${imageUrl}" alt="${escapeHtml(data.nama_desain)}" class="h-72 w-full cursor-zoom-in object-cover" onclick="event.stopPropagation(); openImageLightbox('${imageUrl}', '${escapeHtml(data.nama_desain)}')" decoding="async">`
-                : `<div class="flex h-72 items-center justify-center bg-gray-100 text-gray-400"><i class="fas fa-image text-4xl" aria-hidden="true"></i></div>`}
-            ${galleryHtml}
-
-            <div class="space-y-7 p-6">
-                <div>
-                    ${data.category ? `<p class="text-sm font-bold uppercase tracking-wider text-amber-700">${escapeHtml(data.category)}</p>` : ''}
-                    <h1 class="mt-2 text-2xl font-bold text-slate-900">${escapeHtml(data.nama_desain)}</h1>
-                    <p class="mt-4 leading-relaxed text-gray-600">${escapeHtml(data.deskripsi)}</p>
+            <div class="grid min-h-0 flex-1 gap-5 overflow-y-auto bg-stone-50 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.62fr)_minmax(360px,1fr)] lg:gap-8 lg:overflow-hidden lg:px-10">
+                <div class="flex h-[38vh] min-h-0 flex-col self-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:h-[calc(100vh-12rem)] lg:max-h-[680px]">
+                    ${imageUrl
+                        ? `<button type="button" onclick="openImageLightbox(document.getElementById('detailMainImage').src, document.getElementById('detailMainImage').alt)" class="min-h-0 flex-1 cursor-zoom-in overflow-hidden bg-slate-100 focus:outline-none">
+                               <img id="detailMainImage" src="${imageUrl}" alt="${escapeHtml(data.nama_desain)}" class="h-full w-full object-contain" decoding="async">
+                           </button>`
+                        : `<div class="flex min-h-0 flex-1 items-center justify-center bg-gray-100 text-gray-400"><i class="fas fa-image text-5xl" aria-hidden="true"></i></div>`}
+                    ${galleryHtml}
                 </div>
 
-                ${tagsHtml}
+                <div class="flex min-h-0 flex-col justify-start gap-4 self-center overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:h-[calc(100vh-12rem)] lg:max-h-[680px] lg:p-8">
+                    <div>
+                        ${data.category ? `<p class="text-xs font-bold uppercase tracking-wider text-amber-700">${escapeHtml(data.category)}</p>` : ''}
+                        <p class="mt-3 line-clamp-4 text-[15px] leading-7 text-gray-600">${escapeHtml(data.deskripsi)}</p>
+                    </div>
 
-                ${(data.room_size || data.inspiration_story) ? `
-                    <div class="rounded-xl bg-stone-50 p-5">
-                        ${data.room_size ? `<p class="text-sm text-gray-500">Referensi ukuran</p><p class="mt-1 font-semibold text-slate-900">${escapeHtml(data.room_size)} m&sup2;</p>` : ''}
-                        ${data.inspiration_story ? `<p class="${data.room_size ? 'mt-4 border-t border-gray-200 pt-4' : ''} leading-relaxed text-gray-600">${escapeHtml(data.inspiration_story)}</p>` : ''}
-                    </div>` : ''}
+                    ${tagsHtml}
 
-                <div class="rounded-xl border border-amber-200 bg-amber-50 p-5">
-                    <h3 class="font-bold text-slate-900">Tertarik dengan arah desain ini?</h3>
-                    <p class="mt-2 text-sm leading-relaxed text-gray-600">Gunakan desain ini sebagai referensi awal. Ruang lingkup dan kebutuhan akhir dibahas bersama tim Daiku.</p>
-                    <a href="{{ route('konsultasi.create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
-                        Konsultasikan Desain Ini
-                    </a>
+                    ${(data.room_size || data.inspiration_story) ? `
+                        <div class="rounded-xl border border-stone-100 bg-stone-50 p-4">
+                            ${data.room_size ? `<p class="text-xs text-gray-500">Referensi ukuran</p><p class="mt-1 font-semibold text-slate-900">${escapeHtml(data.room_size)} m&sup2;</p>` : ''}
+                            ${data.inspiration_story ? `<p class="${data.room_size ? 'mt-3 border-t border-gray-200 pt-3' : ''} line-clamp-3 text-sm leading-relaxed text-gray-600">${escapeHtml(data.inspiration_story)}</p>` : ''}
+                        </div>` : ''}
+
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <h3 class="font-bold text-slate-900">Tertarik dengan arah desain ini?</h3>
+                        <p class="mt-1 text-sm leading-relaxed text-gray-600">Gunakan sebagai referensi awal untuk membahas kebutuhan ruang Anda.</p>
+                        <a href="{{ route('konsultasi.create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
+                            Konsultasikan Desain Ini
+                        </a>
+                    </div>
                 </div>
             </div>`;
     } catch (error) {
@@ -141,6 +150,13 @@ async function loadSidebarContent(katalogId) {
                 <button type="button" onclick="closeSidebar()" class="mt-5 text-sm font-semibold text-gray-700 hover:text-gray-900">Tutup</button>
             </div>`;
     }
+}
+
+function selectDetailImage(image, alt) {
+    const mainImage = document.getElementById('detailMainImage');
+    if (!mainImage) return;
+    mainImage.src = image;
+    mainImage.alt = alt;
 }
 </script>
 @endpush
@@ -213,12 +229,12 @@ async function loadSidebarContent(katalogId) {
     </main>
 </div>
 
-<aside id="detailSidebar" class="fixed inset-y-0 right-0 z-50 w-full max-w-lg translate-x-full overflow-y-auto bg-white shadow-2xl transition-transform duration-300 ease-out" aria-label="Detail desain">
-    <div id="sidebarContent">
+<aside id="detailSidebar" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Detail desain" class="pointer-events-none fixed inset-x-0 bottom-0 top-16 z-[45] w-full scale-95 overflow-hidden bg-white opacity-0 shadow-2xl transition duration-200 ease-out">
+    <div id="sidebarContent" class="flex h-full min-h-0 flex-col">
         <div class="flex min-h-80 items-center justify-center text-gray-500">Pilih desain untuk melihat detail.</div>
     </div>
 </aside>
-<div id="sidebarOverlay" onclick="closeSidebar()" class="pointer-events-none fixed inset-0 z-40 bg-black/55 opacity-0 transition-opacity duration-300" aria-hidden="true"></div>
+<div id="sidebarOverlay" onclick="closeSidebar()" class="pointer-events-none fixed inset-x-0 bottom-0 top-16 z-40 bg-black/55 opacity-0 transition-opacity duration-200" aria-hidden="true"></div>
 @endsection
 
 @push('scripts')

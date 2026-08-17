@@ -13,21 +13,33 @@
         'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700', 'Permintaan ini tidak dapat dilanjutkan.'],
         default => [ucfirst($konsultasi->status), 'bg-slate-100 text-slate-700', 'Status permintaan sedang diperbarui.'],
     };
+    if ($konsultasi->status === 'pending' && $konsultasi->accepted_at) {
+        [$statusLabel, $statusClass, $statusMessage] = ['Diterima', 'bg-amber-100 text-amber-800', 'Permintaan telah diterima. Tim Daiku sedang menentukan jadwal konsultasi dan desainer.'];
+    }
     $requestNote = trim((string) $konsultasi->deskripsi_kebutuhan);
     if (in_array(mb_strtolower($requestNote), ['', '-', 'gaada', 'tidak ada', 'n/a'], true)) {
         $requestNote = 'Belum ada catatan tambahan dari pelanggan.';
     }
+    $isAssignedDesigner = auth()->user()->isDesigner()
+        && $konsultasi->designer_id === auth()->id();
 @endphp
 
 <main class="min-h-screen bg-slate-50 py-10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <a href="{{ route('pesanan.saya') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-700 transition hover:text-amber-800">
+        <a href="{{ $isAssignedDesigner ? route('designer.dashboard') : route('pesanan.saya') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-700 transition hover:text-amber-800">
             <i class="fas fa-arrow-left text-xs" aria-hidden="true"></i>
-            Kembali ke Pesanan Saya
+            {{ $isAssignedDesigner ? 'Kembali ke Dashboard Desainer' : 'Kembali ke Pesanan Saya' }}
         </a>
 
         @if(session('success'))
             <div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                </ul>
+            </div>
         @endif
 
         <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="request-title">
@@ -89,6 +101,25 @@
                     <section class="lg:col-span-2" aria-labelledby="team-note-title">
                         <h2 id="team-note-title" class="text-lg font-bold text-slate-900">Catatan dari tim Daiku</h2>
                         <p class="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-5 leading-relaxed text-slate-700">{{ $konsultasi->catatan_admin }}</p>
+                    </section>
+                @endif
+
+                @if($konsultasi->consultation_result)
+                    <section class="lg:col-span-2" aria-labelledby="consultation-result-title">
+                        <h2 id="consultation-result-title" class="text-lg font-bold text-slate-900">Hasil konsultasi</h2>
+                        <p class="mt-3 whitespace-pre-line rounded-xl border border-emerald-100 bg-emerald-50 p-5 leading-relaxed text-slate-700">{{ $konsultasi->consultation_result }}</p>
+                    </section>
+                @endif
+
+                @if($isAssignedDesigner && $konsultasi->status === 'confirmed' && ! $konsultasi->pemesanan_id)
+                    <section class="rounded-xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2" aria-labelledby="complete-consultation-title">
+                        <h2 id="complete-consultation-title" class="text-lg font-bold text-slate-900">Catat hasil konsultasi</h2>
+                        <p class="mt-1 text-sm leading-6 text-slate-600">Ringkas kebutuhan, keputusan, kendala, dan tindak lanjut yang disepakati. Setelah disimpan, sistem membuat proyek desain awal.</p>
+                        <form method="POST" action="{{ route('designer.konsultasi.complete', $konsultasi) }}" class="mt-4 space-y-3">
+                            @csrf
+                            <textarea name="consultation_result" rows="6" maxlength="5000" required class="w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500" placeholder="Contoh: kebutuhan ruang, ukuran terverifikasi, preferensi, batas anggaran, dan keputusan konsultasi.">{{ old('consultation_result') }}</textarea>
+                            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Simpan hasil & mulai desain awal</button>
+                        </form>
                     </section>
                 @endif
             </div>

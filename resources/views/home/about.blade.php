@@ -13,26 +13,12 @@
                 Tentang Daiku
             </h1>
             <p class="mt-7 text-base leading-8 text-slate-600">
-                Kami mengkhususkan diri dalam desain interior layanan penuh. Portofolio proyek kami mencakup konstruksi rumah baru dan renovasi interior residensial dari semua ukuran, kecil hingga besar.
+                Daiku Interior &amp; Exterior menyediakan jasa desain dan pengerjaan interior-eksterior untuk hunian, ruang kerja, dan ruang usaha di Pekanbaru. Daiku menangani penataan ruang pada bangunan baru maupun renovasi.
             </p>
-            <p class="mt-7 text-base leading-8 text-slate-600">
-                Responsif terhadap visi klien kami, kami berkomitmen untuk mendesain yang mengekspresikan keterkaitan antara arsitektur dan tempat, ruang dan bentuk, warna dan material, ekonomi dan integritas.
+            <p class="mt-4 text-base leading-8 text-slate-600">
+                Setiap pekerjaan direncanakan berdasarkan fungsi ruang, ukuran, kondisi bangunan, kebutuhan penyimpanan, preferensi desain, dan anggaran klien. Layanannya mencakup perencanaan desain, pekerjaan sipil, produksi furnitur custom, serta pekerjaan mekanikal dan elektrikal.
             </p>
 
-            <dl class="mt-9 grid grid-cols-2 gap-6 border-t border-stone-300 pt-6 sm:grid-cols-3">
-                <div>
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Sejak</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">2017</dd>
-                </div>
-                <div>
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Lokasi</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">Pekanbaru</dd>
-                </div>
-                <div class="col-span-2 sm:col-span-1">
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Bidang</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">Interior & Eksterior</dd>
-                </div>
-            </dl>
         </div>
 
         <figure class="bg-stone-200">
@@ -58,33 +44,65 @@
         <div class="max-w-xl">
             <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Kisah Kami</p>
             <h2 id="story-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">
-                Bertumbuh bersama kebutuhan ruang di Pekanbaru.
+                Perjalanan Daiku sejak awal berdiri.
             </h2>
+
             <div class="mt-8 space-y-5 leading-8 text-slate-600">
                 <p>
-                    Daiku beroperasi sejak 2017 sebagai studio interior dan eksterior di Pekanbaru. Pekerjaan Daiku mencakup desain interior layanan penuh, pembangunan rumah baru, renovasi hunian, serta penataan ruang kerja dan usaha dalam berbagai skala.
+                    Daiku didirikan oleh Dhede dan Fendra untuk menangani kebutuhan desain dan pengerjaan ruang. Dalam perjalanannya, Daiku mengerjakan proyek hunian, kantor, dan ruang usaha di Pekanbaru serta sejumlah wilayah di Riau.
                 </p>
                 <p>
-                    Setiap proyek berawal dari percakapan tentang cara ruang akan digunakan. Kebutuhan aktivitas, penyimpanan, karakter visual, kondisi bangunan, dan anggaran menjadi dasar sebelum keputusan desain dibuat.
-                </p>
-                <p>
-                    Perencanaan tersebut kemudian dihubungkan dengan produksi furniture custom, pekerjaan sipil, serta mekanikal dan elektrikal agar gagasan yang disepakati dapat diwujudkan secara terarah.
+                    Pengalaman dari berbagai proyek tersebut membentuk lingkup kerja Daiku yang mencakup perencanaan desain, produksi furnitur custom, pekerjaan sipil, serta mekanikal dan elektrikal.
                 </p>
             </div>
+
+            <dl class="mt-8 grid grid-cols-2 gap-6 border-t border-stone-300 pt-6 sm:grid-cols-3">
+                <div>
+                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Sejak</dt>
+                    <dd class="mt-1 font-semibold text-slate-900">2017</dd>
+                </div>
+                <div>
+                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Lokasi</dt>
+                    <dd class="mt-1 font-semibold text-slate-900">Pekanbaru</dd>
+                </div>
+                <div class="col-span-2 sm:col-span-1">
+                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Bidang</dt>
+                    <dd class="mt-1 font-semibold text-slate-900">Interior & Eksterior</dd>
+                </div>
+            </dl>
 
         </div>
     </div>
 </section>
 
-<section class="bg-[#d9d1c3] py-20 text-center sm:py-28" aria-labelledby="belief-title">
-    <div class="mx-auto max-w-5xl px-4 sm:px-6">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-600">Yang Kami Percaya</p>
-        <h2 id="belief-title" class="mx-auto mt-7 max-w-4xl text-4xl leading-tight text-slate-950 sm:text-6xl">
-            Ruang yang baik tidak hanya menarik dilihat, tetapi juga nyaman dijalani setiap hari.
-        </h2>
-        <p class="mx-auto mt-8 max-w-2xl leading-8 text-slate-700">
-            Karena itu, Daiku menjaga hubungan antara arsitektur dan tempat, ruang dan bentuk, warna dan material, serta rencana dan anggaran dalam setiap pekerjaan.
-        </p>
+<section class="bg-[#d9d1c3] py-20 sm:py-24" aria-labelledby="principles-title">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-600">Prinsip Kerja Daiku</p>
+            <h2 id="principles-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">
+                Dasar Daiku dalam menjalankan setiap pekerjaan.
+            </h2>
+        </div>
+
+        <div class="mt-12 grid border-y border-stone-500/30 md:grid-cols-3">
+            <article class="py-8 md:pr-8">
+                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">01</p>
+                <h3 class="mt-4 text-2xl text-slate-950">Keterlibatan menyeluruh</h3>
+                <p class="mt-4 leading-7 text-slate-700">Daiku melibatkan pelanggan agar proses dan keputusan desain dapat dipahami dengan jelas.</p>
+            </article>
+
+            <article class="border-t border-stone-500/30 py-8 md:border-l md:border-t-0 md:px-8">
+                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">02</p>
+                <h3 class="mt-4 text-2xl text-slate-950">Perhatian terhadap detail</h3>
+                <p class="mt-4 leading-7 text-slate-700">Detail pekerjaan diperhatikan sejak penyusunan konsep hingga pemasangan furnitur.</p>
+            </article>
+
+            <article class="border-t border-stone-500/30 py-8 md:border-l md:border-t-0 md:pl-8">
+                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">03</p>
+                <h3 class="mt-4 text-2xl text-slate-950">Menyesuaikan anggaran</h3>
+                <p class="mt-4 leading-7 text-slate-700">Solusi pekerjaan disusun berdasarkan kebutuhan dan anggaran yang telah disepakati bersama pelanggan.</p>
+            </article>
+        </div>
     </div>
 </section>
 

@@ -28,6 +28,8 @@ class Konsultasi extends Model
 
     protected $fillable = [
         'user_id',
+        'accepted_by',
+        'accepted_at',
         'pemesanan_id',
         'designer_id',
         'scheduled_by',
@@ -44,6 +46,8 @@ class Konsultasi extends Model
         'waktu_konsultasi',
         'status',
         'catatan_admin',
+        'consultation_result',
+        'consulted_at',
         'active_slot',
         'attachments',
     ];
@@ -53,6 +57,8 @@ class Konsultasi extends Model
         'waktu_konsultasi' => 'datetime:H:i',
         'luas_ruangan' => 'decimal:2',
         'attachments' => 'array',
+        'consulted_at' => 'datetime',
+        'accepted_at' => 'datetime',
     ];
 
     // Relationships

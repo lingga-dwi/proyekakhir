@@ -31,9 +31,14 @@
         <p class="text-sm font-medium text-slate-600"><span class="font-semibold text-slate-950">{{ $stats['all'] }}</span> katalog aktif</p>
         <p class="mt-1 text-xs text-slate-400">Terakhir diubah ditampilkan lebih dahulu.</p>
     </div>
-    <a href="{{ route('admin.katalog.create') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
-        <i class="fas fa-plus mr-2"></i>Tambah Katalog
-    </a>
+    <div class="flex flex-col gap-2 sm:flex-row">
+        <a href="{{ route('admin.categories.index') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950">
+            <i class="fas fa-layer-group mr-2"></i>Kelola Kategori
+        </a>
+        <a href="{{ route('admin.katalog.create') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
+            <i class="fas fa-plus mr-2"></i>Tambah Katalog
+        </a>
+    </div>
 </div>
 
 <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">

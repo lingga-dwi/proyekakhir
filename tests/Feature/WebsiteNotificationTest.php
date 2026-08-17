@@ -33,13 +33,18 @@ class WebsiteNotificationTest extends TestCase
         $this->assertSame('Permintaan konsultasi baru', $admin->fresh()->notifications()->first()->data['title']);
 
         $consultation = Konsultasi::firstOrFail();
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
+        $this->assertSame('Permintaan konsultasi diterima', $customer->fresh()->notifications()->first()->data['title']);
+
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $consultation), [
             'tanggal_konsultasi' => now()->addDay()->toDateString(),
             'waktu_konsultasi' => '10:00',
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
-        $this->assertSame('Konsultasi telah dijadwalkan', $customer->fresh()->notifications()->first()->data['title']);
+        $this->assertTrue($customer->fresh()->notifications->contains(
+            fn ($notification) => $notification->data['title'] === 'Konsultasi telah dijadwalkan'
+        ));
         $this->assertSame('Jadwal konsultasi baru', $designer->fresh()->notifications()->first()->data['title']);
     }
 

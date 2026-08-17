@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminFaqController;
+use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerActivityController;
 use App\Http\Controllers\DashboardController;
@@ -75,11 +76,20 @@ Route::middleware(['auth'])->group(function () {
 
     Route::put('/designer/proyek/{pemesanan}', [PemesananController::class, 'updateAssignedProject'])
         ->name('designer.proyek.update')->middleware('role:designer');
+    Route::post('/designer/konsultasi/{konsultasi}/selesai', [KonsultasiController::class, 'completeByDesigner'])
+        ->name('designer.konsultasi.complete')->middleware('role:designer');
     Route::post('/designer/proyek/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
         ->name('designer.proyek.document.upload')->middleware('role:designer');
+    Route::post('/designer/proyek/{pemesanan}/survei/selesai', [PemesananController::class, 'completeSurvey'])
+        ->name('designer.proyek.survey.complete')->middleware('role:designer');
 
     // Admin routes
     Route::middleware(['role:admin'])->group(function () {
+        Route::get('/admin/categories', [AdminCategoryController::class, 'index'])->name('admin.categories.index');
+        Route::post('/admin/categories', [AdminCategoryController::class, 'store'])->name('admin.categories.store');
+        Route::put('/admin/categories/{category}', [AdminCategoryController::class, 'update'])->name('admin.categories.update');
+        Route::post('/admin/categories/{category}/toggle', [AdminCategoryController::class, 'toggle'])->name('admin.categories.toggle');
+        Route::delete('/admin/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('admin.categories.destroy');
         Route::post('/admin/katalog/bulk-action', [KatalogController::class, 'bulkAction'])->name('admin.katalog.bulk-action');
         Route::resource('admin/katalog', KatalogController::class, ['as' => 'admin']);
         Route::resource('admin/faq', AdminFaqController::class, ['as' => 'admin'])->except('show');
@@ -93,10 +103,14 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.payment-evidence.verify');
         Route::post('/admin/pemesanan/{pemesanan}/verifikasi-dp', [PemesananController::class, 'verifyDp'])
             ->name('admin.pemesanan.dp.verify');
+        Route::post('/admin/pemesanan/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
+            ->name('admin.pemesanan.document.upload');
         Route::put('/admin/pemesanan/{pemesanan}/survei', [PemesananController::class, 'scheduleSurvey'])
             ->name('admin.pemesanan.survey.schedule');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/jadwal', [KonsultasiController::class, 'schedule'])
             ->name('admin.pemesanan.konsultasi.schedule');
+        Route::post('/admin/pemesanan/konsultasi/{konsultasi}/terima', [KonsultasiController::class, 'accept'])
+            ->name('admin.pemesanan.konsultasi.accept');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/status', [KonsultasiController::class, 'updateStatus'])
             ->name('admin.pemesanan.konsultasi.update');
         Route::post('/admin/pemesanan/konsultasi/{konsultasi}/proyek', [KonsultasiController::class, 'convertToProject'])

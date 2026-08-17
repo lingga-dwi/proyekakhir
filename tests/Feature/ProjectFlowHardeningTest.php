@@ -117,6 +117,9 @@ class ProjectFlowHardeningTest extends TestCase
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
         $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
 
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second))->assertRedirect();
+
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
             'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
         ])->assertRedirect();
@@ -136,6 +139,9 @@ class ProjectFlowHardeningTest extends TestCase
 
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
         $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second))->assertRedirect();
 
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
             'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,

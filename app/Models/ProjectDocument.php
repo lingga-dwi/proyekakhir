@@ -9,7 +9,7 @@ class ProjectDocument extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['pemesanan_id', 'uploaded_by', 'stage', 'document_type', 'path', 'original_name', 'version'];
+    protected $fillable = ['pemesanan_id', 'uploaded_by', 'stage', 'document_type', 'submission_round', 'path', 'original_name', 'version'];
 
     public function pemesanan()
     {
