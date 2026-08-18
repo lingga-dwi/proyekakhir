@@ -65,6 +65,16 @@
                                 <span class="whitespace-nowrap text-xs font-bold">Admin Panel</span>
                             </a>
                         @endif
+                        @if(auth()->user()->isDesigner())
+                            <a href="{{ route('dashboard.designer') }}"
+                               aria-label="Buka Dashboard Desainer"
+                               class="flex h-[46px] w-36 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.designer', 'designer.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-drafting-compass text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Dashboard</span>
+                            </a>
+                        @endif
                         @if(auth()->user()->isPelanggan())
                             <a href="{{ route('pesanan.saya') }}"
                                class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
@@ -107,11 +117,6 @@
                                         <span class="mt-1 block text-xs font-medium text-gray-400">{{ $roleLabel }}</span>
                                     </span>
                                 </div>
-                                @if(auth()->user()->isDesigner())
-                                    <a href="{{ route('dashboard.designer') }}" role="menuitem" class="block rounded-xl px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-800">
-                                        <i class="fas fa-drafting-compass mr-2"></i>Dashboard Designer
-                                    </a>
-                                @endif
                                 <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-gray-100 pt-1">
                                     @csrf
                                     <button type="submit" role="menuitem" class="block w-full rounded-xl px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50">

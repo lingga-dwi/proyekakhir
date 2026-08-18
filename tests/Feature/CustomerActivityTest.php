@@ -108,7 +108,7 @@ class CustomerActivityTest extends TestCase
         $response = $this->actingAs($user)
             ->get(route('konsultasi.show', $consultation))
             ->assertOk()
-            ->assertSee('Dikonfirmasi');
+            ->assertSee('Desainer Ditugaskan');
 
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }

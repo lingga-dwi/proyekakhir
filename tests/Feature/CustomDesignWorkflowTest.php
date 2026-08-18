@@ -38,22 +38,32 @@ class CustomDesignWorkflowTest extends TestCase
 
         $consultation = Konsultasi::firstOrFail();
         $this->assertNotEmpty($consultation->attachments);
+        $this->assertSame('Pekanbaru', $consultation->alamat);
+        $this->assertSame('denah.jpg', $consultation->attachments[0]['name']);
+        Storage::disk('local')->assertExists($consultation->attachments[0]['path']);
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('Pekanbaru')
+            ->assertSee('Desain Interior Baru')
+            ->assertSee('Rumah Tinggal')
+            ->assertSee('Rp 25 - 50 Juta')
+            ->assertSee('denah.jpg')
+            ->assertSee('Membutuhkan kitchen set dan ruang makan.');
 
         $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
         $consultation->refresh();
         $this->assertSame($admin->id, $consultation->accepted_by);
         $this->assertNotNull($consultation->accepted_at);
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $consultation), [
-            'tanggal_konsultasi' => now()->addDay()->toDateString(),
-            'waktu_konsultasi' => '10:00',
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $consultation), [
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
         $consultation->refresh();
         $this->assertSame(Konsultasi::STATUS_CONFIRMED, $consultation->status);
         $this->assertSame($designer->id, $consultation->designer_id);
-        $this->assertNotNull($consultation->active_slot);
+        $this->assertNull($consultation->active_slot);
 
         $this->actingAs($designer)->post(route('designer.konsultasi.complete', $consultation), [
             'consultation_result' => 'Ukuran dan kebutuhan pelanggan telah dikonfirmasi. Lanjutkan desain awal dan RAB.',
@@ -67,6 +77,14 @@ class CustomDesignWorkflowTest extends TestCase
         $project = Pemesanan::firstOrFail();
         $this->assertSame('draft_design', $project->workflow_stage);
         $this->assertSame($designer->id, $project->designer_id);
+        $this->assertSame('Desain Interior Baru', $project->jenis_proyek);
+        $this->assertSame('Rumah Tinggal', $project->jenis_bangunan);
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('Pekanbaru')
+            ->assertSee('Rp 25 - 50 Juta')
+            ->assertSee('denah.jpg');
         $project->update(['total_harga' => 10000000]);
 
         $this->actingAs($designer)->post(route('designer.proyek.document.upload', $project), [
@@ -230,5 +248,30 @@ class CustomDesignWorkflowTest extends TestCase
             'submission_round' => 1,
         ]);
         $this->assertSame('Desain awal dan RAB tersedia', $customer->fresh()->notifications()->first()->data['title']);
+
+        $documents = $project->documents()->orderBy('id')->get();
+        $design = $documents->firstWhere('document_type', 'design');
+        $rab = $documents->firstWhere('document_type', 'rab');
+
+        $this->actingAs($customer)
+            ->get(route('pemesanan.show', $project))
+            ->assertOk()
+            ->assertSee('desain-admin.jpg')
+            ->assertSee('rab-admin.pdf')
+            ->assertSee('Setujui &amp; lanjut ke DP', false)
+            ->assertSee('Minta revisi');
+
+        $this->actingAs($customer)
+            ->get(route('pemesanan.document.download', [$project, $design]))
+            ->assertOk();
+
+        $this->actingAs($customer)
+            ->get(route('pemesanan.document.download', [$project, $rab]))
+            ->assertOk();
+
+        $otherCustomer = User::factory()->create(['role' => 'pelanggan']);
+        $this->actingAs($otherCustomer)
+            ->get(route('pemesanan.document.download', [$project, $design]))
+            ->assertForbidden();
     }
 }

@@ -49,27 +49,12 @@
 
             <div class="mt-8 space-y-5 leading-8 text-slate-600">
                 <p>
-                    Daiku didirikan oleh Dhede dan Fendra untuk menangani kebutuhan desain dan pengerjaan ruang. Dalam perjalanannya, Daiku mengerjakan proyek hunian, kantor, dan ruang usaha di Pekanbaru serta sejumlah wilayah di Riau.
+                    Daiku Interior &amp; Exterior didirikan oleh Dhede dan Fendra pada 2017 di Pekanbaru. Sejak awal, Daiku bergerak dalam bidang interior dan eksterior untuk hunian, kantor, serta ruang usaha di Pekanbaru dan sejumlah wilayah di Riau.
                 </p>
                 <p>
                     Pengalaman dari berbagai proyek tersebut membentuk lingkup kerja Daiku yang mencakup perencanaan desain, produksi furnitur custom, pekerjaan sipil, serta mekanikal dan elektrikal.
                 </p>
             </div>
-
-            <dl class="mt-8 grid grid-cols-2 gap-6 border-t border-stone-300 pt-6 sm:grid-cols-3">
-                <div>
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Sejak</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">2017</dd>
-                </div>
-                <div>
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Lokasi</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">Pekanbaru</dd>
-                </div>
-                <div class="col-span-2 sm:col-span-1">
-                    <dt class="text-[11px] uppercase tracking-[0.15em] text-stone-500">Bidang</dt>
-                    <dd class="mt-1 font-semibold text-slate-900">Interior & Eksterior</dd>
-                </div>
-            </dl>
 
         </div>
     </div>

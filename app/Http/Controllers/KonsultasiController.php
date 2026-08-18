@@ -76,6 +76,7 @@ class KonsultasiController extends Controller
                 'nama' => $data['nama'],
                 'email' => $email,
                 'no_telp' => $data['no_telp'],
+                'alamat' => $data['alamat'],
                 'jenis_konsultasi' => $data['jenis_konsultasi'],
                 'jenis_ruangan' => $data['jenis_ruangan'],
                 'budget_range' => $data['budget_range'],
@@ -90,7 +91,10 @@ class KonsultasiController extends Controller
         if ($request->hasFile('attachments')) {
             $attachments = [];
             foreach ($request->file('attachments') as $file) {
-                $attachments[] = $file->store('consultation-attachments/'.$konsultasi->id, 'local');
+                $attachments[] = [
+                    'path' => $file->store('consultation-attachments/'.$konsultasi->id, 'local'),
+                    'name' => $file->getClientOriginalName(),
+                ];
             }
             $konsultasi->update(['attachments' => $attachments]);
         }
@@ -134,10 +138,12 @@ class KonsultasiController extends Controller
 
         abort_unless($canAccess, 403, 'Unauthorized action.');
 
-        $path = $konsultasi->attachments[$index] ?? null;
+        $attachment = $konsultasi->attachments[$index] ?? null;
+        $path = is_array($attachment) ? ($attachment['path'] ?? null) : $attachment;
+        $name = is_array($attachment) ? ($attachment['name'] ?? basename((string) $path)) : basename((string) $path);
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
-        return Storage::disk('local')->download($path);
+        return Storage::disk('local')->download($path, $name);
     }
 
     public function updateStatus(Request $request, Konsultasi $konsultasi)
@@ -151,6 +157,16 @@ class KonsultasiController extends Controller
         if ($konsultasi->pemesanan_id && $data['status'] === Konsultasi::STATUS_CANCELLED) {
             throw ValidationException::withMessages([
                 'status' => 'Konsultasi yang sudah menjadi proyek tidak dapat dibatalkan dari antrean ini.',
+            ]);
+        }
+
+        if (
+            $konsultasi->status === Konsultasi::STATUS_PENDING
+            && $konsultasi->accepted_at
+            && $data['status'] === Konsultasi::STATUS_CANCELLED
+        ) {
+            throw ValidationException::withMessages([
+                'status' => 'Permintaan yang sudah diterima tidak dapat ditolak. Lanjutkan dengan menugaskan desainer.',
             ]);
         }
 
@@ -194,39 +210,33 @@ class KonsultasiController extends Controller
         return back()->with('success', 'Status konsultasi berhasil diperbarui.');
     }
 
-    public function schedule(Request $request, Konsultasi $konsultasi)
+    public function assignDesigner(Request $request, Konsultasi $konsultasi)
     {
-        if ($konsultasi->pemesanan_id || $konsultasi->status !== Konsultasi::STATUS_PENDING || ! $konsultasi->accepted_at) {
-            abort(422, 'Konsultasi ini tidak dapat dijadwalkan.');
+        if (
+            $konsultasi->pemesanan_id
+            || ! in_array($konsultasi->status, [Konsultasi::STATUS_PENDING, Konsultasi::STATUS_CONFIRMED], true)
+            || ! $konsultasi->accepted_at
+        ) {
+            abort(422, 'Desainer tidak dapat ditugaskan pada konsultasi ini.');
         }
 
         $data = $request->validate([
-            'tanggal_konsultasi' => ['required', 'date', 'after_or_equal:today'],
-            'waktu_konsultasi' => ['required', 'date_format:H:i'],
             'designer_id' => ['required', Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'designer'))],
             'catatan_admin' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $slot = $data['tanggal_konsultasi'].' '.substr($data['waktu_konsultasi'], 0, 5);
+        $konsultasi->update([
+            'designer_id' => $data['designer_id'],
+            'catatan_admin' => $data['catatan_admin'] ?? $konsultasi->catatan_admin,
+            'scheduled_by' => $request->user()->id,
+            'active_slot' => null,
+            'status' => Konsultasi::STATUS_CONFIRMED,
+        ]);
 
-        try {
-            $konsultasi->update([
-                ...$data,
-                'scheduled_by' => $request->user()->id,
-                'active_slot' => $slot,
-                'status' => Konsultasi::STATUS_CONFIRMED,
-            ]);
-        } catch (\Illuminate\Database\QueryException) {
-            throw ValidationException::withMessages([
-                'waktu_konsultasi' => 'Jadwal tersebut sudah digunakan. Pilih waktu konsultasi lain.',
-            ]);
-        }
-
-        $scheduledAt = $konsultasi->fresh()->tanggal_konsultasi->format('d M Y').' pukul '.substr($data['waktu_konsultasi'], 0, 5);
         $this->notifications->send(
             $konsultasi->user,
-            'Konsultasi telah dijadwalkan',
-            'Konsultasi Anda dijadwalkan pada '.$scheduledAt.'.',
+            'Desainer konsultasi telah ditugaskan',
+            'Desainer Daiku telah ditugaskan dan akan menghubungi Anda melalui WhatsApp untuk konsultasi.',
             route('konsultasi.show', $konsultasi, false),
             'Lihat konsultasi'
         );
@@ -234,14 +244,14 @@ class KonsultasiController extends Controller
         if ($designer) {
             $this->notifications->send(
                 $designer,
-                'Jadwal konsultasi baru',
-                'Anda ditugaskan untuk konsultasi '.$konsultasi->nama.' pada '.$scheduledAt.'.',
+                'Konsultasi baru ditugaskan',
+                'Anda ditugaskan untuk berkonsultasi dengan '.$konsultasi->nama.' melalui WhatsApp.',
                 route('dashboard.designer', [], false),
                 'Buka dashboard'
             );
         }
 
-        return back()->with('success', 'Konsultasi dijadwalkan dan desainer telah ditugaskan.');
+        return back()->with('success', 'Desainer konsultasi berhasil ditugaskan.');
     }
 
     public function accept(Request $request, Konsultasi $konsultasi)
@@ -262,12 +272,12 @@ class KonsultasiController extends Controller
         $this->notifications->send(
             $konsultasi->user,
             'Permintaan konsultasi diterima',
-            'Permintaan desain Anda telah diterima. Tim Daiku akan menentukan jadwal konsultasi dan desainer.',
+            'Permintaan desain Anda telah diterima. Tim Daiku akan menugaskan desainer untuk menghubungi Anda melalui WhatsApp.',
             route('konsultasi.show', $konsultasi, false),
             'Lihat permintaan'
         );
 
-        return back()->with('success', 'Permintaan diterima. Silakan atur jadwal konsultasi dan pilih desainer.');
+        return back()->with('success', 'Permintaan diterima. Silakan tugaskan desainer konsultasi.');
     }
 
     public function completeByDesigner(Request $request, Konsultasi $konsultasi)
@@ -330,8 +340,8 @@ class KonsultasiController extends Controller
                 'progress' => 10,
                 'designer_id' => $konsultasi->designer_id,
                 'total_harga' => 0,
-                'jenis_proyek' => 'Konsultasi '.$konsultasi->getJenisRuanganLabel(),
-                'jenis_bangunan' => 'Belum ditentukan',
+                'jenis_proyek' => $konsultasi->getJenisKonsultasiLabel(),
+                'jenis_bangunan' => $konsultasi->getJenisRuanganLabel(),
                 'luas_area' => $konsultasi->luas_ruangan,
                 'deskripsi_keinginan_desain' => $konsultasi->deskripsi_kebutuhan,
             ]);

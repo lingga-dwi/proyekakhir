@@ -143,6 +143,62 @@ class AdminCatalogManagementTest extends TestCase
             ->assertDontSee(route('katalog.detail', $draft), false);
     }
 
+    public function test_homepage_displays_six_latest_published_catalogs(): void
+    {
+        $category = $this->category('Ruang Keluarga');
+
+        for ($index = 1; $index <= 7; $index++) {
+            $catalog = $this->catalog($category, [
+                'nama_desain' => 'Desain Terbit '.$index,
+                'status' => 'published',
+            ]);
+            $catalog->forceFill(['created_at' => now()->subDays(8 - $index)])->saveQuietly();
+        }
+
+        $draft = $this->catalog($category, [
+            'nama_desain' => 'Draft Paling Baru',
+            'status' => 'draft',
+        ]);
+        $draft->forceFill(['created_at' => now()->addDay()])->saveQuietly();
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('Desain Terbit 1')
+            ->assertDontSee('Draft Paling Baru')
+            ->assertSeeInOrder([
+                'Desain Terbit 7',
+                'Desain Terbit 6',
+                'Desain Terbit 5',
+                'Desain Terbit 4',
+                'Desain Terbit 3',
+                'Desain Terbit 2',
+            ]);
+    }
+
+    public function test_homepage_and_catalog_use_the_same_order_when_publish_dates_match(): void
+    {
+        $category = $this->category('Dapur');
+        $publishedAt = now()->subDay();
+
+        foreach (['Desain Pertama', 'Desain Kedua', 'Desain Ketiga'] as $name) {
+            $catalog = $this->catalog($category, [
+                'nama_desain' => $name,
+                'status' => 'published',
+            ]);
+            $catalog->forceFill(['created_at' => $publishedAt])->saveQuietly();
+        }
+
+        $expectedOrder = ['Desain Pertama', 'Desain Kedua', 'Desain Ketiga'];
+
+        $this->get(route('katalog', ['sort' => 'latest']))
+            ->assertOk()
+            ->assertSeeInOrder($expectedOrder);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSeeInOrder($expectedOrder);
+    }
+
     public function test_catalog_form_does_not_expose_legacy_category_or_price(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

@@ -26,24 +26,30 @@ class AdminWorkItemService
     {
         $consultations = DB::table('konsultasi as consultation')
             ->leftJoin('users as customer', 'customer.id', '=', 'consultation.user_id')
+            ->leftJoin('users as designer', 'designer.id', '=', 'consultation.designer_id')
             ->whereNull('consultation.pemesanan_id')
             ->select([
                 DB::raw("'consultation' as item_type"),
                 'consultation.id',
-                DB::raw('COALESCE(customer.nama, consultation.nama) as customer_name'),
-                DB::raw('COALESCE(customer.email, consultation.email) as customer_email'),
+                'consultation.id as consultation_id',
+                DB::raw('COALESCE(consultation.nama, customer.nama) as customer_name'),
+                DB::raw('COALESCE(consultation.email, customer.email) as customer_email'),
                 'consultation.no_telp as customer_phone',
-                'consultation.jenis_ruangan as title',
+                DB::raw('COALESCE(consultation.alamat, customer.alamat) as customer_address'),
+                'consultation.jenis_konsultasi as title',
                 'consultation.deskripsi_kebutuhan as detail',
-                'consultation.jenis_konsultasi as space',
+                'consultation.jenis_ruangan as space',
+                'consultation.luas_ruangan as area',
+                'consultation.budget_range',
+                'consultation.attachments',
                 DB::raw("'website' as source"),
                 'consultation.status',
                 'consultation.accepted_at',
                 DB::raw('0 as progress'),
                 'consultation.tanggal_konsultasi as scheduled_date',
                 'consultation.waktu_konsultasi as scheduled_time',
-                DB::raw('NULL as designer_id'),
-                DB::raw('NULL as designer_name'),
+                'consultation.designer_id',
+                'designer.nama as designer_name',
                 DB::raw('NULL as target_selesai'),
                 DB::raw('0 as total_harga'),
                 'consultation.catatan_admin as note',
@@ -53,15 +59,21 @@ class AdminWorkItemService
         $orders = DB::table('pemesanan as orders')
             ->join('users as customer', 'customer.id', '=', 'orders.id_user')
             ->leftJoin('users as designer', 'designer.id', '=', 'orders.designer_id')
+            ->leftJoin('konsultasi as origin', 'origin.pemesanan_id', '=', 'orders.id')
             ->select([
                 DB::raw("'order' as item_type"),
                 'orders.id',
-                'customer.nama as customer_name',
-                'customer.email as customer_email',
-                'customer.no_telp as customer_phone',
+                'origin.id as consultation_id',
+                DB::raw('COALESCE(origin.nama, customer.nama) as customer_name'),
+                DB::raw('COALESCE(origin.email, customer.email) as customer_email'),
+                DB::raw('COALESCE(origin.no_telp, customer.no_telp) as customer_phone'),
+                DB::raw('COALESCE(origin.alamat, customer.alamat) as customer_address'),
                 'orders.jenis_proyek as title',
                 'orders.deskripsi_keinginan_desain as detail',
                 'orders.jenis_bangunan as space',
+                'orders.luas_area as area',
+                'origin.budget_range',
+                'origin.attachments',
                 'orders.sumber_masuk as source',
                 'orders.status_pemesanan as status',
                 DB::raw('NULL as accepted_at'),

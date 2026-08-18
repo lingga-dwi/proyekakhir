@@ -17,16 +17,12 @@ class HomeController extends Controller
             $portfolioKatalogs = collect();
         } else {
             try {
-                // Kurasi lintas kategori agar portofolio beranda tidak
-                // didominasi oleh satu jenis ruang saja.
-                $featuredIds = [23, 14, 88, 126, 16, 54];
-
                 $portfolioKatalogs = Katalog::with('category')
                     ->published()
-                    ->whereIn('id', $featuredIds)
-                    ->get()
-                    ->sortBy(fn (Katalog $katalog) => array_search($katalog->id, $featuredIds, true))
-                    ->values();
+                    ->orderByDesc('created_at')
+                    ->orderBy('id')
+                    ->take(6)
+                    ->get();
             } catch (\Throwable $e) {
                 // Saat DB mati, tampilkan tanpa data agar halaman tetap hidup
                 $portfolioKatalogs = collect();
@@ -98,7 +94,7 @@ class HomeController extends Controller
                         ->select('katalog.*');
                     break;
                 default:
-                    $query->latest();
+                    $query->orderByDesc('created_at')->orderBy('id');
                     break;
             }
         }

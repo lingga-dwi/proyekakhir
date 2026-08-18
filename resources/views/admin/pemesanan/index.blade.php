@@ -83,9 +83,8 @@
                     <th class="px-5 py-3 font-medium">Referensi</th>
                     <th class="px-5 py-3 font-medium">Pelanggan</th>
                     <th class="px-5 py-3 font-medium">Kebutuhan</th>
-                    <th class="px-5 py-3 font-medium">Sumber</th>
-                    <th class="px-5 py-3 font-medium">Tahap</th>
-                    <th class="px-5 py-3 font-medium">Progres</th>
+                    <th class="px-5 py-3 font-medium">Desainer Konsultasi</th>
+                    <th class="px-5 py-3 font-medium">Status &amp; Progres</th>
                     <th class="px-5 py-3 font-medium">Aksi</th>
                 </tr>
             </thead>
@@ -95,17 +94,46 @@
                         $isConsultation = $item->item_type === 'consultation';
                         $reference = ($isConsultation ? 'KS-' : 'DI-').str_pad((string) $item->id, 3, '0', STR_PAD_LEFT);
                         $title = $isConsultation ? match($item->title) {
+                            'free_consultation' => 'Desain Interior Baru',
+                            'virtual_design' => 'Renovasi Interior',
+                            'in_home_visit' => 'Custom Furniture',
+                            'chat_support' => 'Konsultasi Desain',
+                            default => 'Permintaan Konsultasi',
+                        } : ($item->title ?: 'Interior');
+                        $building = $isConsultation ? match($item->space) {
                             'living_room' => 'Rumah Tinggal',
                             'bedroom' => 'Apartemen',
                             'kitchen' => 'Ruko',
                             'bathroom' => 'Kantor',
                             'office' => 'Kafe / Restoran',
                             'whole_house' => 'Lainnya',
-                            default => 'Permintaan Konsultasi',
-                        } : ($item->title ?: 'Interior');
+                            default => 'Belum ditentukan',
+                        } : ($item->space ?: 'Belum ditentukan');
+                        $budgetLabel = match($item->budget_range) {
+                            'under_10m' => 'Di bawah Rp 10 Juta',
+                            '10m_25m' => 'Rp 10 - 25 Juta',
+                            '25m_50m' => 'Rp 25 - 50 Juta',
+                            '50m_100m' => 'Rp 50 - 100 Juta',
+                            'above_100m' => 'Di atas Rp 100 Juta',
+                            default => null,
+                        };
+                        $rawAttachments = is_string($item->attachments)
+                            ? (json_decode($item->attachments, true) ?: [])
+                            : ($item->attachments ?: []);
+                        $attachments = collect($rawAttachments)->map(function ($attachment, $index) use ($item) {
+                            $path = is_array($attachment) ? ($attachment['path'] ?? '') : $attachment;
+                            $name = is_array($attachment) ? ($attachment['name'] ?? basename($path)) : basename($path);
+
+                            return [
+                                'name' => $name,
+                                'url' => $item->consultation_id
+                                    ? route('konsultasi.attachment.download', [$item->consultation_id, $index])
+                                    : null,
+                            ];
+                        })->filter(fn ($attachment) => $attachment['url'])->values()->all();
                         [$statusLabel, $statusClass] = match($item->item_type.':'.$item->status) {
                             'consultation:pending' => ['Konsultasi masuk', 'bg-violet-100 text-violet-700'],
-                            'consultation:confirmed' => ['Konsultasi dikonfirmasi', 'bg-blue-100 text-blue-700'],
+                            'consultation:confirmed' => ['Desainer ditugaskan', 'bg-blue-100 text-blue-700'],
                             'consultation:completed' => ['Konsultasi selesai', 'bg-green-100 text-green-700'],
                             'consultation:cancelled' => ['Konsultasi ditolak', 'bg-red-100 text-red-700'],
                             'order:pending' => ['Pesanan baru', 'bg-orange-100 text-orange-800'],
@@ -116,15 +144,8 @@
                             default => ['Belum diketahui', 'bg-slate-100 text-slate-700'],
                         };
                         if ($isConsultation && $item->status === 'pending' && $item->accepted_at) {
-                            [$statusLabel, $statusClass] = ['Diterima · belum dijadwalkan', 'bg-amber-100 text-amber-800'];
+                            [$statusLabel, $statusClass] = ['Diterima · pilih desainer', 'bg-amber-100 text-amber-800'];
                         }
-                        $sourceLabel = match($item->source) {
-                            'kantor' => 'Kantor',
-                            'whatsapp' => 'WhatsApp',
-                            'telepon' => 'Telepon',
-                            'instagram' => 'Instagram',
-                            default => $isConsultation ? 'Form konsultasi' : 'Website',
-                        };
                         $itemDate = \Illuminate\Support\Carbon::parse($item->scheduled_date);
                         $detailPayload = [
                             'reference' => $reference,
@@ -135,10 +156,13 @@
                             'customer' => $item->customer_name,
                             'email' => $item->customer_email,
                             'phone' => $item->customer_phone,
+                            'address' => $item->customer_address,
                             'title' => $title,
-                            'space' => $item->space,
-                            'source' => $sourceLabel,
+                            'building' => $building,
+                            'area' => $item->area !== null ? (float) $item->area : null,
+                            'budgetLabel' => $budgetLabel,
                             'description' => $item->detail,
+                            'attachments' => $attachments,
                             'isProject' => ! $isConsultation,
                             'progress' => (int) $item->progress,
                             'designer' => $item->designer_name,
@@ -149,40 +173,64 @@
                     @endphp
                     <tr class="align-top hover:bg-slate-50">
                         <td class="px-5 py-4">
-                            <p class="text-sm font-semibold text-slate-900">{{ $reference }}</p>
+                            <button
+                                type="button"
+                                data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}"
+                                onclick="openDetailModal(this)"
+                                class="text-left text-sm font-bold text-amber-700 underline-offset-4 transition hover:text-amber-800 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-amber-500"
+                                aria-label="Buka detail {{ $reference }}"
+                            >{{ $reference }}</button>
                             <p class="text-xs text-slate-500">{{ $itemDate->translatedFormat('d M Y') }}</p>
-                            @if($isConsultation && $item->status === 'confirmed' && $item->scheduled_time)
-                                <p class="mt-1 text-[11px] font-medium text-slate-400">{{ substr($item->scheduled_time, 0, 5) }} WIB</p>
-                            @endif
                         </td>
                         <td class="px-5 py-4">
                             <p class="text-sm font-medium text-slate-900">{{ $item->customer_name }}</p>
                             <p class="max-w-[190px] truncate text-xs text-slate-500">{{ $item->customer_email }}</p>
                             @if($item->customer_phone)<p class="mt-1 text-[11px] text-slate-400">{{ $item->customer_phone }}</p>@endif
+                            <p class="mt-1 max-w-[240px] truncate text-[11px] text-slate-500" title="{{ $item->customer_address ?: 'Alamat proyek belum diisi' }}">
+                                <span class="font-medium text-slate-400">Alamat:</span> {{ $item->customer_address ?: 'Belum diisi' }}
+                            </p>
                         </td>
                         <td class="px-5 py-4">
                             <p class="text-sm font-medium text-slate-900">{{ $title }}</p>
                             <p class="max-w-xs truncate text-xs text-slate-500">{{ $item->detail ?: ($item->space ?: 'Belum ada catatan kebutuhan') }}</p>
                         </td>
-                        <td class="px-5 py-4 text-sm text-slate-600">{{ $sourceLabel }}</td>
-                        <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ $statusLabel }}</span></td>
                         <td class="px-5 py-4">
-                            @if($isConsultation)
-                                <span class="text-xs font-medium text-slate-400">Pra-pesanan</span>
+                            @if($isConsultation && $item->accepted_at && in_array($item->status, ['pending', 'confirmed'], true))
+                                <form method="POST" action="{{ route('admin.pemesanan.konsultasi.assign', $item->id) }}" class="flex min-w-[210px] items-center gap-2">
+                                    @csrf @method('PUT')
+                                    <label class="sr-only" for="consultation-designer-{{ $item->id }}">Pilih desainer konsultasi</label>
+                                    <select id="consultation-designer-{{ $item->id }}" name="designer_id" required class="min-w-0 flex-1 rounded-lg border-slate-300 py-2 text-xs focus:border-amber-500 focus:ring-amber-500">
+                                        <option value="">Pilih desainer</option>
+                                        @foreach($designers as $designer)
+                                            <option value="{{ $designer->id }}" @selected((int) $item->designer_id === $designer->id)>{{ $designer->nama }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button class="inline-flex h-9 shrink-0 items-center rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700">{{ $item->designer_id ? 'Ganti' : 'Tugaskan' }}</button>
+                                </form>
+                                <p class="mt-1 text-[11px] text-slate-400">Konsultasi melalui WhatsApp</p>
+                            @elseif($isConsultation)
+                                <p class="text-sm font-medium text-slate-600">{{ $item->designer_name ?: ($item->accepted_at ? 'Belum ditugaskan' : 'Terima permintaan dahulu') }}</p>
                             @else
-                                <div class="flex items-center gap-2">
-                                    <div class="h-2 w-20 overflow-hidden rounded-full bg-slate-200">
+                                <p class="text-sm font-medium text-slate-700">{{ $item->designer_name ?: 'Belum ditugaskan' }}</p>
+                                <p class="mt-1 text-[11px] text-slate-400">Desainer proyek</p>
+                            @endif
+                        </td>
+                        <td class="px-5 py-4">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ $statusLabel }}</span>
+                            @if($isConsultation)
+                                <p class="mt-2 text-xs font-medium text-slate-400">Pra-pesanan</p>
+                            @else
+                                <div class="mt-2 flex items-center gap-2">
+                                    <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
                                         <div class="h-full rounded-full bg-amber-400" style="width: {{ $item->progress }}%"></div>
                                     </div>
                                     <span class="text-xs font-semibold text-slate-500">{{ $item->progress }}%</span>
                                 </div>
-                                <p class="mt-1 text-[11px] text-slate-400">{{ $item->designer_name ?: 'Belum ada desainer' }}</p>
                             @endif
                         </td>
                         <td class="px-5 py-4">
                             @if($isConsultation)
-                                <div class="flex max-w-[230px] flex-wrap items-center gap-3">
-                                    <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-slate-700 hover:text-slate-950">Detail</button>
+                                <div class="flex max-w-[260px] flex-wrap items-center gap-2">
                                     @if($item->status === 'pending')
                                         @if(!$item->accepted_at)
                                             <form
@@ -191,55 +239,60 @@
                                                 @submit.prevent="$dispatch('open-confirmation', {
                                                     form: $el,
                                                     title: 'Terima permintaan konsultasi?',
-                                                    message: 'Permintaan ini akan diterima dan dapat dilanjutkan ke pengaturan jadwal konsultasi.',
+                                                    message: 'Permintaan ini akan diterima dan dapat dilanjutkan dengan penugasan desainer konsultasi.',
                                                     confirmLabel: 'Ya, terima',
                                                     tone: 'success'
                                                 })"
                                             >
                                                 @csrf
-                                                <button class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Terima</button>
+                                                <button class="inline-flex h-9 items-center justify-center rounded-lg bg-emerald-600 px-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700">Terima</button>
                                             </form>
-                                        @else
-                                            <details class="w-full">
-                                                <summary class="cursor-pointer text-sm font-semibold text-blue-700 hover:text-blue-800">Atur jadwal</summary>
-                                                <form method="POST" action="{{ route('admin.pemesanan.konsultasi.schedule', $item->id) }}" class="mt-3 grid gap-2 rounded-xl bg-slate-50 p-3">
-                                                    @csrf @method('PUT')
-                                                    <input type="date" name="tanggal_konsultasi" min="{{ now()->format('Y-m-d') }}" required class="rounded-lg border-slate-300 text-sm">
-                                                    <input type="time" name="waktu_konsultasi" required class="rounded-lg border-slate-300 text-sm">
-                                                    <select name="designer_id" required class="rounded-lg border-slate-300 text-sm">
-                                                        <option value="">Pilih desainer</option>
-                                                        @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
-                                                    </select>
-                                                    <textarea name="catatan_admin" rows="2" maxlength="2000" placeholder="Catatan jadwal (opsional)" class="rounded-lg border-slate-300 text-sm"></textarea>
-                                                    <button class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Simpan jadwal</button>
-                                                </form>
-                                            </details>
                                         @endif
-                                        <form
-                                            method="POST"
-                                            action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}"
-                                            @submit.prevent="$dispatch('open-confirmation', {
-                                                form: $el,
-                                                title: 'Tolak permintaan konsultasi?',
-                                                message: 'Permintaan ini akan ditandai ditolak dan proses konsultasi tidak dapat dilanjutkan.',
-                                                confirmLabel: 'Ya, tolak',
-                                                tone: 'danger'
-                                            })"
-                                        >
-                                            @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
-                                            <button class="text-sm font-semibold text-red-600 hover:text-red-700">Tolak</button>
-                                        </form>
+                                        @if(!$item->accepted_at)
+                                            <form
+                                                method="POST"
+                                                action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}"
+                                                @submit.prevent="$dispatch('open-confirmation', {
+                                                    form: $el,
+                                                    title: 'Tolak permintaan konsultasi?',
+                                                    message: 'Permintaan ini akan ditandai ditolak dan proses konsultasi tidak dapat dilanjutkan.',
+                                                    confirmLabel: 'Ya, tolak',
+                                                    tone: 'danger'
+                                                })"
+                                            >
+                                                @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
+                                                <button class="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">Tolak</button>
+                                            </form>
+                                        @endif
                                     @endif
                                     @if($item->status === 'confirmed')
-                                        <span class="text-sm font-medium text-slate-500">Menunggu hasil konsultasi desainer</span>
+                                        <span class="text-sm font-medium text-slate-500">Menunggu hasil konsultasi</span>
+                                    @endif
+                                    @if($item->status === 'completed')
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.pemesanan.konsultasi.convert', $item->id) }}"
+                                            @submit.prevent="$dispatch('open-confirmation', {
+                                                form: $el,
+                                                title: 'Lanjutkan menjadi pesanan?',
+                                                message: 'Data konsultasi akan diteruskan menjadi pesanan proyek dan dapat dikelola oleh admin.',
+                                                confirmLabel: 'Ya, lanjutkan',
+                                                tone: 'success'
+                                            })"
+                                        >
+                                            @csrf
+                                            <button class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800">Lanjutkan ke Pesanan</button>
+                                        </form>
+                                    @endif
+                                    @if($item->status === 'cancelled')
+                                        <span class="text-sm text-slate-400">Tidak dilanjutkan</span>
                                     @endif
                                 </div>
                             @else
-                                <div class="flex items-center gap-3">
-                                    <button type="button" data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}" onclick="openDetailModal(this)" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Detail</button>
+                                <div class="flex items-center gap-2">
                                     <button
                                         type="button"
-                                        class="text-sm font-semibold text-blue-700 hover:text-blue-800"
+                                        class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                         data-project="{{ json_encode([
                                             'id' => $item->id,
                                             'status' => $item->status,
@@ -250,13 +303,13 @@
                                             'note' => $item->note,
                                         ], JSON_THROW_ON_ERROR) }}"
                                         onclick="openProjectModal(this)"
-                                    >Kelola</button>
+                                    >Kelola Pesanan</button>
                                 </div>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada permintaan atau pesanan yang sesuai filter.</td></tr>
+                    <tr><td colspan="6" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada permintaan atau pesanan yang sesuai filter.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -361,7 +414,6 @@ function closeProjectModal() {
 function openDetailModal(button) {
     const detail = JSON.parse(button.dataset.detail);
     const contact = [detail.email, detail.phone].filter(Boolean).join(' · ') || 'Belum ada kontak';
-    const need = [detail.title, detail.space].filter(Boolean).join(' · ') || 'Belum ditentukan';
     const formatRupiah = value => value > 0 ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value) : 'Belum ditentukan';
 
     document.getElementById('detailModalType').textContent = `${detail.type} · ${detail.reference}`;
@@ -371,9 +423,24 @@ function openDetailModal(button) {
     document.getElementById('detailModalStatus').className = `rounded-full px-3 py-1 text-xs font-semibold ${detail.statusClass}`;
     document.getElementById('detailModalCustomer').textContent = detail.customer || 'Belum diisi';
     document.getElementById('detailModalContact').textContent = contact;
-    document.getElementById('detailModalNeed').textContent = need;
-    document.getElementById('detailModalSource').textContent = detail.source || 'Website';
+    document.getElementById('detailModalAddress').textContent = detail.address || 'Belum diisi';
+    document.getElementById('detailModalProjectType').textContent = detail.title || 'Belum ditentukan';
+    document.getElementById('detailModalBuilding').textContent = detail.building || 'Belum ditentukan';
+    document.getElementById('detailModalArea').textContent = detail.area !== null ? `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(detail.area)} m²` : 'Belum diisi';
+    document.getElementById('detailModalRequestBudget').textContent = detail.budgetLabel || formatRupiah(detail.budget);
     document.getElementById('detailModalDescription').textContent = detail.description || 'Belum ada catatan kebutuhan.';
+    const attachmentSection = document.getElementById('detailModalAttachments');
+    const attachmentList = document.getElementById('detailModalAttachmentList');
+    attachmentList.replaceChildren();
+    (detail.attachments || []).forEach(attachment => {
+        const link = document.createElement('a');
+        link.href = attachment.url;
+        link.className = 'flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50';
+        link.innerHTML = '<i class="fas fa-paperclip text-amber-600" aria-hidden="true"></i><span class="min-w-0 flex-1 truncate"></span><i class="fas fa-download text-slate-400" aria-hidden="true"></i>';
+        link.querySelector('span').textContent = attachment.name;
+        attachmentList.appendChild(link);
+    });
+    attachmentSection.classList.toggle('hidden', !detail.attachments?.length);
     document.getElementById('detailModalProject').classList.toggle('hidden', !detail.isProject);
     document.getElementById('detailModalProgress').textContent = `${detail.progress}%`;
     document.getElementById('detailModalDesigner').textContent = detail.designer || 'Belum ditetapkan';

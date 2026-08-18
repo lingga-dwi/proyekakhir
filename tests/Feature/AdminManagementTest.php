@@ -138,6 +138,23 @@ class AdminManagementTest extends TestCase
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
+    public function test_user_management_edit_button_contains_safe_modal_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $user = User::factory()->create([
+            'nama' => "D'Artagnan Interior",
+            'email' => 'designer@example.com',
+            'role' => 'designer',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.users.index'))
+            ->assertOk()
+            ->assertSee('onclick="openUserModal(this)"', false)
+            ->assertSee('data-user-name="D&#039;Artagnan Interior"', false)
+            ->assertSee('data-update-url="'.route('admin.users.update', $user).'"', false);
+    }
+
     public function test_admin_cannot_delete_their_own_account(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
@@ -213,7 +230,7 @@ class AdminManagementTest extends TestCase
             ->assertRedirect(route('admin.pemesanan.index'));
     }
 
-    public function test_scheduled_consultation_creates_a_project_after_it_is_completed(): void
+    public function test_assigned_consultation_creates_a_project_after_it_is_completed(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
         $customer = $this->user('customer@example.com', 'pelanggan');
@@ -244,9 +261,19 @@ class AdminManagementTest extends TestCase
 
         $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $consultation), [
-            'tanggal_konsultasi' => now()->addWeek()->toDateString(),
-            'waktu_konsultasi' => '10:00',
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('Desainer Konsultasi')
+            ->assertSee('Pilih desainer')
+            ->assertDontSee('Atur Jadwal')
+            ->assertDontSee('>Tolak<', false);
+
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $consultation), [
+            'status' => Konsultasi::STATUS_CANCELLED,
+        ])->assertSessionHasErrors('status');
+        $this->assertSame(Konsultasi::STATUS_PENDING, $consultation->fresh()->status);
+
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $consultation), [
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
@@ -267,6 +294,49 @@ class AdminManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.pemesanan.index'))
             ->assertOk()
             ->assertSee('DI-'.str_pad((string) $consultation->pemesanan_id, 3, '0', STR_PAD_LEFT))
+            ->assertDontSee('KS-'.str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT));
+    }
+
+    public function test_completed_legacy_consultation_can_be_continued_as_managed_order(): void
+    {
+        $admin = $this->user('admin@example.com', 'admin');
+        $customer = $this->user('customer@example.com', 'pelanggan');
+        $consultation = Konsultasi::create([
+            'user_id' => $customer->id,
+            'nama' => $customer->nama,
+            'email' => $customer->email,
+            'no_telp' => '08123456789',
+            'alamat' => 'Kartika Indah',
+            'jenis_konsultasi' => 'free_consultation',
+            'jenis_ruangan' => 'living_room',
+            'budget_range' => '10m_25m',
+            'timeline' => 'flexible',
+            'luas_ruangan' => 30,
+            'deskripsi_kebutuhan' => 'Konsultasi lama yang belum menjadi pesanan.',
+            'tanggal_konsultasi' => now()->toDateString(),
+            'waktu_konsultasi' => '10:00',
+            'status' => Konsultasi::STATUS_COMPLETED,
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index'))
+            ->assertOk()
+            ->assertSee('Lanjutkan ke Pesanan');
+
+        $this->actingAs($admin)
+            ->post(route('admin.pemesanan.konsultasi.convert', $consultation))
+            ->assertRedirect();
+
+        $consultation->refresh();
+        $this->assertNotNull($consultation->pemesanan_id);
+        $this->assertDatabaseHas('pemesanan', [
+            'id' => $consultation->pemesanan_id,
+            'jenis_proyek' => 'Desain Interior Baru',
+            'jenis_bangunan' => 'Rumah Tinggal',
+        ]);
+
+        $this->actingAs($admin)->get(route('admin.pemesanan.index', ['search' => 'DI-'.$consultation->pemesanan_id]))
+            ->assertOk()
+            ->assertSee('Kelola Pesanan')
             ->assertDontSee('KS-'.str_pad((string) $consultation->id, 3, '0', STR_PAD_LEFT));
     }
 
@@ -354,6 +424,65 @@ class AdminManagementTest extends TestCase
             ->assertSee('Proyek Milik Desainer')
             ->assertSee('45%')
             ->assertDontSee('Proyek Desainer Lain');
+    }
+
+    public function test_designer_has_separate_manageable_project_page_for_assigned_work(): void
+    {
+        $customer = $this->user('customer@example.com', 'pelanggan');
+        $designer = $this->user('designer@example.com', 'designer');
+        $otherDesigner = $this->user('other-designer@example.com', 'designer');
+
+        $activeProject = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_IN_PROGRESS,
+            'jenis_proyek' => 'Interior Kantor Aktif',
+            'progress' => 60,
+        ]);
+        Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_COMPLETED,
+            'jenis_proyek' => 'Interior Selesai',
+            'progress' => 100,
+        ]);
+        Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $otherDesigner->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_IN_PROGRESS,
+            'jenis_proyek' => 'Proyek Rahasia Desainer Lain',
+            'progress' => 30,
+        ]);
+
+        $this->actingAs($designer)->get(route('designer.projects.index'))
+            ->assertOk()
+            ->assertSee('Dashboard')
+            ->assertSee('Proyek Saya')
+            ->assertSee('Interior Kantor Aktif')
+            ->assertSee('Interior Selesai')
+            ->assertSee('Update progres')
+            ->assertSee(route('pemesanan.show', $activeProject), false)
+            ->assertDontSee('Proyek Rahasia Desainer Lain');
+
+        $this->actingAs($designer)->get(route('designer.projects.index', ['status' => Pemesanan::STATUS_COMPLETED]))
+            ->assertOk()
+            ->assertSee('Interior Selesai')
+            ->assertDontSee('Interior Kantor Aktif')
+            ->assertDontSee('Proyek Rahasia Desainer Lain');
+    }
+
+    public function test_designer_public_navigation_has_dashboard_shortcut(): void
+    {
+        $designer = User::factory()->create(['role' => 'designer']);
+
+        $this->actingAs($designer)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertSee('aria-label="Buka Dashboard Desainer"', false)
+            ->assertSee(route('dashboard.designer'), false);
     }
 
     public function test_only_assigned_designer_can_open_project_detail(): void

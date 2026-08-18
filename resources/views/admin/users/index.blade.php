@@ -46,7 +46,7 @@
                     <td class="px-5 py-4 text-sm text-slate-600">{{ $user->email }}</td>
                     <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $roleClass }}">{{ $roleLabels[$user->role] }}</span></td>
                     <td class="px-5 py-4 text-sm text-slate-600">{{ $user->created_at->translatedFormat('d M Y') }}</td>
-                    <td class="px-5 py-4"><div class="flex items-center gap-3"><button type="button" class="text-sm font-semibold text-blue-700 hover:text-blue-800" onclick='openUserModal({{ $user->id }}, @js($user->nama), @js($user->email), @js($user->role))'>Edit</button>
+                    <td class="px-5 py-4"><div class="flex items-center gap-3"><button type="button" class="text-sm font-semibold text-blue-700 hover:text-blue-800" data-user-id="{{ $user->id }}" data-user-name="{{ $user->nama }}" data-user-email="{{ $user->email }}" data-user-role="{{ $user->role }}" data-update-url="{{ route('admin.users.update', $user) }}" onclick="openUserModal(this)">Edit</button>
                         @unless($user->is(auth()->user()))<form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Hapus pengguna ini?')">@csrf @method('DELETE')<button class="text-sm font-semibold text-red-600 hover:text-red-700">Hapus</button></form>@endunless
                     </div></td>
                 </tr>
@@ -75,10 +75,14 @@
 
 @push('scripts')
 <script>
-function openUserModal(id = null, name = '', email = '', role = 'pelanggan') {
-    const editing = id !== null;
+function openUserModal(trigger = null) {
+    const editing = trigger instanceof HTMLElement;
+    const id = editing ? trigger.dataset.userId : null;
+    const name = editing ? trigger.dataset.userName : '';
+    const email = editing ? trigger.dataset.userEmail : '';
+    const role = editing ? trigger.dataset.userRole : 'pelanggan';
     document.getElementById('user-modal-title').textContent = editing ? 'Edit Pengguna' : 'Tambah Pengguna';
-    document.getElementById('userForm').action = editing ? `{{ url('/admin/users') }}/${id}` : @js(route('admin.users.store'));
+    document.getElementById('userForm').action = editing ? trigger.dataset.updateUrl : @js(route('admin.users.store'));
     document.getElementById('userMethod').disabled = !editing;
     document.getElementById('userMethod').value = 'PUT';
     document.getElementById('userName').value = name;

@@ -47,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard routes (Admin & Designer only)
     Route::get('/dashboard/admin', [DashboardController::class, 'admin'])->name('dashboard.admin')->middleware('role:admin');
     Route::get('/dashboard/designer', [DashboardController::class, 'designer'])->name('dashboard.designer')->middleware('role:designer');
+    Route::get('/designer/proyek', [DashboardController::class, 'designerProjects'])
+        ->name('designer.projects.index')->middleware('role:designer');
 
     // Customer-only routes
     Route::middleware(['role:pelanggan'])->group(function () {
@@ -107,8 +109,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.document.upload');
         Route::put('/admin/pemesanan/{pemesanan}/survei', [PemesananController::class, 'scheduleSurvey'])
             ->name('admin.pemesanan.survey.schedule');
-        Route::put('/admin/pemesanan/konsultasi/{konsultasi}/jadwal', [KonsultasiController::class, 'schedule'])
-            ->name('admin.pemesanan.konsultasi.schedule');
+        Route::put('/admin/pemesanan/konsultasi/{konsultasi}/desainer', [KonsultasiController::class, 'assignDesigner'])
+            ->name('admin.pemesanan.konsultasi.assign');
         Route::post('/admin/pemesanan/konsultasi/{konsultasi}/terima', [KonsultasiController::class, 'accept'])
             ->name('admin.pemesanan.konsultasi.accept');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/status', [KonsultasiController::class, 'updateStatus'])

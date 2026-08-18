@@ -1,8 +1,8 @@
 @extends('layouts.dashboard')
 
 @section('title', 'Dashboard Desainer - Daiku Interior')
-@section('page-title', 'Proyek Saya')
-@section('page-description', 'Penugasan dan progres proyek yang menjadi tanggung jawab Anda')
+@section('page-title', 'Dashboard Desainer')
+@section('page-description', 'Ringkasan konsultasi dan proyek yang menjadi tanggung jawab Anda')
 
 @section('content')
 @php
@@ -31,15 +31,15 @@
 @if($assignedConsultations->isNotEmpty())
     <section class="mt-6 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm" aria-labelledby="consultation-assignments-title">
         <div class="border-b border-amber-100 bg-amber-50 px-5 py-4">
-            <h2 id="consultation-assignments-title" class="font-semibold text-slate-950">Jadwal Konsultasi</h2>
-            <p class="mt-0.5 text-xs text-slate-600">Catat hasil konsultasi agar proyek dapat masuk ke tahap desain awal dan RAB.</p>
+            <h2 id="consultation-assignments-title" class="font-semibold text-slate-950">Konsultasi Ditugaskan</h2>
+            <p class="mt-0.5 text-xs text-slate-600">Hubungi pelanggan melalui WhatsApp, lalu catat hasil konsultasi agar proyek dapat masuk ke tahap desain awal dan RAB.</p>
         </div>
         <div class="divide-y divide-slate-100">
             @foreach($assignedConsultations as $consultation)
                 <article class="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-semibold text-slate-950">{{ $consultation->nama }} · {{ $consultation->getJenisKonsultasiLabel() }}</p>
-                        <p class="mt-1 text-sm text-slate-500">{{ $consultation->tanggal_konsultasi->translatedFormat('d M Y') }} pukul {{ $consultation->waktu_konsultasi->format('H:i') }} · {{ $consultation->getJenisRuanganLabel() }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ $consultation->getJenisRuanganLabel() }} · WhatsApp {{ $consultation->no_telp }}</p>
                     </div>
                     <a href="{{ route('konsultasi.show', $consultation) }}" class="inline-flex w-fit items-center gap-2 text-sm font-semibold text-amber-700 hover:text-amber-800">Buka konsultasi <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i></a>
                 </article>
@@ -49,9 +49,12 @@
 @endif
 
 <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="assigned-projects-title">
-    <div class="border-b border-slate-100 px-5 py-4">
-        <h2 id="assigned-projects-title" class="font-semibold text-slate-950">Daftar Penugasan</h2>
-        <p class="mt-0.5 text-xs text-slate-500">Perbarui progres proyek yang ditugaskan kepada Anda.</p>
+    <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+        <div>
+            <h2 id="assigned-projects-title" class="font-semibold text-slate-950">Penugasan Terbaru</h2>
+            <p class="mt-0.5 text-xs text-slate-500">Proyek terbaru yang ditugaskan kepada Anda.</p>
+        </div>
+        <a href="{{ route('designer.projects.index') }}" class="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-800">Lihat semua proyek <i class="fas fa-arrow-right ml-1 text-xs" aria-hidden="true"></i></a>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full min-w-[720px] text-left">

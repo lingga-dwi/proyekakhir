@@ -55,6 +55,9 @@
                     </a>
                 @else
                     <a href="{{ route('dashboard.designer') }}" class="{{ $baseNav }} {{ request()->routeIs('dashboard.designer') ? $activeNav : $inactiveNav }}">
+                        <i class="fas fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
+                    </a>
+                    <a href="{{ route('designer.projects.index') }}" class="{{ $baseNav }} {{ request()->routeIs('designer.projects.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-drafting-compass w-5 text-center"></i><span>Proyek Saya</span>
                     </a>
                 @endif
@@ -183,12 +186,6 @@
             @click.stop
         >
             <div class="px-6 pb-5 pt-6 sm:px-7 sm:pt-7">
-                <div
-                    class="mb-5 flex h-12 w-12 items-center justify-center rounded-full"
-                    :class="tone === 'danger' ? 'bg-red-50 text-red-600' : (tone === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-700')"
-                >
-                    <i class="fas text-lg" :class="tone === 'danger' ? 'fa-triangle-exclamation' : (tone === 'success' ? 'fa-circle-check' : 'fa-circle-question')"></i>
-                </div>
                 <h2 id="confirmation-dialog-title" class="text-xl font-bold text-slate-950" x-text="title"></h2>
                 <p id="confirmation-dialog-message" class="mt-2 text-sm leading-6 text-slate-600" x-text="message"></p>
             </div>

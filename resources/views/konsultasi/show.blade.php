@@ -8,7 +8,7 @@
     $whatsappUrl = 'https://wa.me/'.$whatsappNumber.'?text='.rawurlencode('Halo Daiku, saya ingin menanyakan permintaan desain DI-'.$konsultasi->id.'.');
     [$statusLabel, $statusClass, $statusMessage] = match ($konsultasi->status) {
         'pending' => ['Menunggu Konfirmasi', 'bg-amber-100 text-amber-800', 'Permintaan sedang ditinjau oleh tim Daiku.'],
-        'confirmed' => ['Dikonfirmasi', 'bg-blue-100 text-blue-800', 'Permintaan telah dikonfirmasi dan akan ditindaklanjuti oleh tim Daiku.'],
+        'confirmed' => ['Desainer Ditugaskan', 'bg-blue-100 text-blue-800', 'Desainer Daiku telah ditugaskan dan akan menghubungi Anda melalui WhatsApp.'],
         'completed' => ['Selesai', 'bg-emerald-100 text-emerald-800', 'Peninjauan permintaan telah selesai.'],
         'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700', 'Permintaan ini tidak dapat dilanjutkan.'],
         default => [ucfirst($konsultasi->status), 'bg-slate-100 text-slate-700', 'Status permintaan sedang diperbarui.'],
@@ -58,7 +58,8 @@
                     <dl class="mt-5 grid gap-4 sm:grid-cols-2">
                         <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Nama</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->nama }}</dd></div>
                         <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">No. WhatsApp</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->no_telp }}</dd></div>
-                        <div class="sm:col-span-2"><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all font-semibold text-slate-800">{{ $konsultasi->email ?: 'Tidak diisi' }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all font-semibold text-slate-800">{{ $konsultasi->email ?: 'Tidak diisi' }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Alamat proyek</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->alamat ?: $konsultasi->user?->alamat ?: 'Tidak diisi' }}</dd></div>
                     </dl>
                 </section>
 
@@ -87,9 +88,13 @@
                         <h2 id="attachment-title" class="text-lg font-bold text-slate-900">Lampiran referensi</h2>
                         <div class="mt-3 grid gap-3 sm:grid-cols-2">
                             @foreach($konsultasi->attachments as $index => $attachment)
+                                @php
+                                    $attachmentPath = is_array($attachment) ? ($attachment['path'] ?? '') : $attachment;
+                                    $attachmentName = is_array($attachment) ? ($attachment['name'] ?? basename($attachmentPath)) : basename($attachmentPath);
+                                @endphp
                                 <a href="{{ route('konsultasi.attachment.download', [$konsultasi, $index]) }}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50">
                                     <i class="fas fa-paperclip text-amber-600" aria-hidden="true"></i>
-                                    <span class="truncate">{{ basename($attachment) }}</span>
+                                    <span class="truncate">{{ $attachmentName }}</span>
                                     <i class="fas fa-download ml-auto text-slate-400" aria-hidden="true"></i>
                                 </a>
                             @endforeach

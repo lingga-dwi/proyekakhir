@@ -101,8 +101,7 @@ class DashboardController extends Controller
             ->where('designer_id', $designer->id)
             ->where('status', Konsultasi::STATUS_CONFIRMED)
             ->whereNull('pemesanan_id')
-            ->orderBy('tanggal_konsultasi')
-            ->orderBy('waktu_konsultasi')
+            ->latest('updated_at')
             ->get();
 
         $stats = [
@@ -122,6 +121,40 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard.designer', compact('stats', 'my_projects', 'assignedConsultations'));
+    }
+
+    public function designerProjects(Request $request)
+    {
+        $designer = $request->user();
+        $allowedStatuses = Pemesanan::STATUSES;
+
+        $projects = Pemesanan::with(['user', 'katalog'])
+            ->where('designer_id', $designer->id)
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->string('search'));
+                $numericId = preg_match('/^(?:DI-?)?(\d+)$/i', $search, $match) ? (int) $match[1] : null;
+
+                $query->where(function ($nested) use ($search, $numericId) {
+                    $nested->where('jenis_proyek', 'like', "%{$search}%")
+                        ->orWhere('jenis_bangunan', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($customer) => $customer
+                            ->where('nama', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%"));
+
+                    if ($numericId) {
+                        $nested->orWhere('id', $numericId);
+                    }
+                });
+            })
+            ->when(
+                in_array($request->status, $allowedStatuses, true),
+                fn ($query) => $query->where('status_pemesanan', $request->status)
+            )
+            ->latest('updated_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('designer.projects.index', compact('projects'));
     }
 
     // Admin Pages

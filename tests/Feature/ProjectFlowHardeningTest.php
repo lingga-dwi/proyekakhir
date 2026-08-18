@@ -106,7 +106,7 @@ class ProjectFlowHardeningTest extends TestCase
         ]);
     }
 
-    public function test_admin_cannot_schedule_two_consultations_on_the_same_slot(): void
+    public function test_admin_can_assign_same_designer_to_multiple_consultations(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
         $designer = User::factory()->create(['role' => 'designer']);
@@ -120,39 +120,44 @@ class ProjectFlowHardeningTest extends TestCase
         $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
         $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second))->assertRedirect();
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
-            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [
+            'designer_id' => $designer->id,
         ])->assertRedirect();
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $second), [
-            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
-        ])->assertSessionHasErrors('waktu_konsultasi');
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $second), [
+            'designer_id' => $designer->id,
+        ])->assertRedirect();
+
+        $this->assertSame($designer->id, $first->fresh()->designer_id);
+        $this->assertSame($designer->id, $second->fresh()->designer_id);
+        $this->assertSame(Konsultasi::STATUS_CONFIRMED, $first->fresh()->status);
+        $this->assertSame(Konsultasi::STATUS_CONFIRMED, $second->fresh()->status);
+        $this->assertNull($first->fresh()->active_slot);
+        $this->assertNull($second->fresh()->active_slot);
     }
 
-    public function test_cancelled_consultation_releases_its_reserved_slot(): void
+    public function test_admin_can_change_the_assigned_consultation_designer(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
-        $designer = User::factory()->create(['role' => 'designer']);
+        $firstDesigner = User::factory()->create(['role' => 'designer']);
+        $secondDesigner = User::factory()->create(['role' => 'designer']);
         $firstCustomer = User::factory()->create(['role' => 'pelanggan']);
-        $secondCustomer = User::factory()->create(['role' => 'pelanggan']);
         $slot = now()->addWeek()->toDateString();
 
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
-        $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
 
         $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second))->assertRedirect();
 
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $first), [
-            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [
+            'designer_id' => $firstDesigner->id,
         ])->assertRedirect();
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $first), ['status' => Konsultasi::STATUS_CANCELLED])->assertRedirect();
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.schedule', $second), [
-            'tanggal_konsultasi' => $slot, 'waktu_konsultasi' => '10:00', 'designer_id' => $designer->id,
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [
+            'designer_id' => $secondDesigner->id,
         ])->assertRedirect();
 
+        $this->assertSame($secondDesigner->id, $first->fresh()->designer_id);
+        $this->assertSame(Konsultasi::STATUS_CONFIRMED, $first->fresh()->status);
         $this->assertNull($first->fresh()->active_slot);
-        $this->assertNotNull($second->fresh()->active_slot);
     }
 
     public function test_customer_attachments_are_private_and_owner_authorized(): void
@@ -175,7 +180,8 @@ class ProjectFlowHardeningTest extends TestCase
         ])->assertRedirect();
 
         $consultation = Konsultasi::latest('id')->firstOrFail();
-        $path = $consultation->attachments[0];
+        $path = $consultation->attachments[0]['path'];
+        $this->assertSame('denah.jpg', $consultation->attachments[0]['name']);
         Storage::disk('local')->assertExists($path);
 
         $this->actingAs($owner)->get(route('konsultasi.attachment.download', [$consultation, 0]))->assertOk();

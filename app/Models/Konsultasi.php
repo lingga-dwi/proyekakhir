@@ -36,6 +36,7 @@ class Konsultasi extends Model
         'nama',
         'email',
         'no_telp',
+        'alamat',
         'jenis_konsultasi',
         'jenis_ruangan',
         'budget_range',
