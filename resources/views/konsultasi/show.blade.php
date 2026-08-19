@@ -7,8 +7,8 @@
     $whatsappNumber = preg_replace('/\D+/', '', config('services.daiku.whatsapp_number'));
     $whatsappUrl = 'https://wa.me/'.$whatsappNumber.'?text='.rawurlencode('Halo Daiku, saya ingin menanyakan permintaan desain DI-'.$konsultasi->id.'.');
     [$statusLabel, $statusClass, $statusMessage] = match ($konsultasi->status) {
-        'pending' => ['Menunggu Konfirmasi', 'bg-amber-100 text-amber-800', 'Permintaan sedang ditinjau oleh tim Daiku.'],
-        'confirmed' => ['Desainer Ditugaskan', 'bg-blue-100 text-blue-800', 'Desainer Daiku telah ditugaskan dan akan menghubungi Anda melalui WhatsApp.'],
+        'pending' => [\App\Support\ProjectStageLabel::forKonsultasi($konsultasi), 'bg-amber-100 text-amber-800', 'Permintaan sedang ditinjau oleh tim Daiku.'],
+        'confirmed' => [\App\Support\ProjectStageLabel::forKonsultasi($konsultasi), 'bg-blue-100 text-blue-800', 'Desainer Daiku telah ditugaskan dan akan menghubungi Anda melalui WhatsApp.'],
         'completed' => ['Selesai', 'bg-emerald-100 text-emerald-800', 'Peninjauan permintaan telah selesai.'],
         'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700', 'Permintaan ini tidak dapat dilanjutkan.'],
         default => [ucfirst($konsultasi->status), 'bg-slate-100 text-slate-700', 'Status permintaan sedang diperbarui.'],
@@ -116,10 +116,10 @@
                     </section>
                 @endif
 
-                @if($isAssignedDesigner && $konsultasi->status === 'confirmed' && ! $konsultasi->pemesanan_id)
+                @if($isAssignedDesigner && $konsultasi->status === 'confirmed' && $konsultasi->pemesanan?->workflow_stage === 'konsultasi')
                     <section class="rounded-xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2" aria-labelledby="complete-consultation-title">
                         <h2 id="complete-consultation-title" class="text-lg font-bold text-slate-900">Catat hasil konsultasi</h2>
-                        <p class="mt-1 text-sm leading-6 text-slate-600">Ringkas kebutuhan, keputusan, kendala, dan tindak lanjut yang disepakati. Setelah disimpan, sistem membuat proyek desain awal.</p>
+                        <p class="mt-1 text-sm leading-6 text-slate-600">Ringkas kebutuhan, keputusan, kendala, dan tindak lanjut yang disepakati. Setelah disimpan, proyek masuk ke tahap desain awal.</p>
                         <form method="POST" action="{{ route('designer.konsultasi.complete', $konsultasi) }}" class="mt-4 space-y-3">
                             @csrf
                             <textarea name="consultation_result" rows="6" maxlength="5000" required class="w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500" placeholder="Contoh: kebutuhan ruang, ukuran terverifikasi, preferensi, batas anggaran, dan keputusan konsultasi.">{{ old('consultation_result') }}</textarea>

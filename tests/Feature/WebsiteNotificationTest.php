@@ -33,16 +33,11 @@ class WebsiteNotificationTest extends TestCase
         $this->assertSame('Permintaan konsultasi baru', $admin->fresh()->notifications()->first()->data['title']);
 
         $consultation = Konsultasi::firstOrFail();
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
-        $this->assertSame('Permintaan konsultasi diterima', $customer->fresh()->notifications()->first()->data['title']);
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $consultation), [
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation), [
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
-        $this->assertTrue($customer->fresh()->notifications->contains(
-            fn ($notification) => $notification->data['title'] === 'Desainer konsultasi telah ditugaskan'
-        ));
+        $this->assertSame('Permintaan diterima dan desainer ditugaskan', $customer->fresh()->notifications()->first()->data['title']);
         $this->assertSame('Konsultasi baru ditugaskan', $designer->fresh()->notifications()->first()->data['title']);
     }
 

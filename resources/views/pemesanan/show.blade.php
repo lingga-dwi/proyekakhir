@@ -23,49 +23,23 @@
                     <p class="text-gray-600">Dibuat pada {{ $pemesanan->created_at->format('d M Y H:i') }}</p>
                 </div>
                 <div class="text-right">
-                    @switch($pemesanan->status_pemesanan)
-                        @case('pending')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                <i class="fas fa-clock mr-2"></i>Menunggu Konfirmasi
-                            </span>
-                            @break
-                        @case('dikonfirmasi')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                <i class="fas fa-check mr-2"></i>Dikonfirmasi
-                            </span>
-                            @break
-                        @case('sedang_dikerjakan')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-                                <i class="fas fa-cog mr-2"></i>Sedang Dikerjakan
-                            </span>
-                            @break
-                        @case('selesai')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                <i class="fas fa-check-circle mr-2"></i>Selesai
-                            </span>
-                            @break
-                        @default
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                                {{ ucfirst($pemesanan->status_pemesanan) }}
-                            </span>
-                    @endswitch
+                    @php
+                        $stageLabel = \App\Support\ProjectStageLabel::forPemesanan($pemesanan);
+                        $stageBadgeClass = match(true) {
+                            $pemesanan->status_pemesanan === 'dibatalkan' => 'bg-red-100 text-red-800',
+                            $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
+                            $pemesanan->workflow_stage === 'approved' => 'bg-orange-100 text-orange-800',
+                            default => 'bg-amber-100 text-amber-800',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium {{ $stageBadgeClass }}">
+                        {{ $stageLabel }}
+                    </span>
                 </div>
             </div>
         </div>
 
         @php
-            $workflowLabels = [
-                'draft_design' => 'Desainer menyiapkan desain awal & RAB',
-                'awaiting_draft_approval' => 'Menunggu review desain awal pelanggan',
-                'revision_requested' => 'Pelanggan meminta revisi desain awal',
-                'awaiting_dp' => 'Menunggu pembayaran DP 20%',
-                'dp_verification' => 'Bukti DP menunggu verifikasi admin',
-                'survey_pending' => 'Menunggu admin menjadwalkan survei lokasi',
-                'survey_scheduled' => 'Survei lokasi telah dijadwalkan',
-                'final_design' => 'Desainer menyiapkan desain & RAB final',
-                'awaiting_final_approval' => 'Menunggu persetujuan desain final pelanggan',
-                'approved' => 'Desain final disetujui, pengerjaan berjalan',
-            ];
             $draftDocuments = $pemesanan->documents
                 ->where('stage', 'draft')
                 ->where('submission_round', $pemesanan->draft_round);
@@ -79,7 +53,7 @@
 
         <section class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">Tahap proses saat ini</p>
-            <h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $workflowLabels[$pemesanan->workflow_stage] ?? 'Proses proyek' }}</h2>
+            <h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $stageLabel }}</h2>
             @if($pemesanan->catatan_progres)<p class="mt-2 text-sm leading-6 text-slate-700">{{ $pemesanan->catatan_progres }}</p>@endif
         </section>
 
@@ -102,7 +76,28 @@
                     @csrf
                     <select name="document_type" class="rounded-lg border-slate-300" required><option value="design">Desain</option><option value="rab">RAB</option></select>
                     <input type="file" name="document" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="rounded-lg border border-slate-300 p-2 text-sm">
-                    <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Kirim dokumen</button>
+                    <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Unggah dokumen</button>
+                </form>
+
+                @if(auth()->user()->isAdmin() && $activeDocumentStage === 'draft')
+                    <form method="POST" action="{{ route('admin.proyek.update', $pemesanan) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status_pemesanan" value="{{ $pemesanan->status_pemesanan }}">
+                        <input type="number" name="total_harga" min="0" step="1000" value="{{ $pemesanan->total_harga > 0 ? $pemesanan->total_harga : '' }}" placeholder="Nilai penawaran (Rp)" class="rounded-lg border-slate-300">
+                        <button class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Simpan nilai</button>
+                    </form>
+                @endif
+
+                <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.pemesanan.document.send', $pemesanan) : route('designer.proyek.document.send', $pemesanan) }}" class="mt-3">
+                    @csrf
+                    <button
+                        class="w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        @disabled(! $hasDesign || ! $hasRab || ($activeDocumentStage === 'draft' && (float) $pemesanan->total_harga <= 0))
+                    >Kirim ke Pelanggan</button>
+                    @if($activeDocumentStage === 'draft' && (float) $pemesanan->total_harga <= 0)
+                        <p class="mt-1.5 text-xs text-slate-500">Tetapkan nilai penawaran sebelum mengirim ke pelanggan.</p>
+                    @endif
                 </form>
             </section>
         @endif

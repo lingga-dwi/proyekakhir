@@ -82,6 +82,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('designer.konsultasi.complete')->middleware('role:designer');
     Route::post('/designer/proyek/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
         ->name('designer.proyek.document.upload')->middleware('role:designer');
+    Route::delete('/designer/proyek/{pemesanan}/dokumen/{document}', [PemesananController::class, 'deleteDocument'])
+        ->name('designer.proyek.document.delete')->middleware('role:designer');
+    Route::post('/designer/proyek/{pemesanan}/dokumen/kirim', [PemesananController::class, 'sendDocuments'])
+        ->name('designer.proyek.document.send')->middleware('role:designer');
     Route::post('/designer/proyek/{pemesanan}/survei/selesai', [PemesananController::class, 'completeSurvey'])
         ->name('designer.proyek.survey.complete')->middleware('role:designer');
 
@@ -107,6 +111,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.dp.verify');
         Route::post('/admin/pemesanan/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
             ->name('admin.pemesanan.document.upload');
+        Route::delete('/admin/pemesanan/{pemesanan}/dokumen/{document}', [PemesananController::class, 'deleteDocument'])
+            ->name('admin.pemesanan.document.delete');
+        Route::post('/admin/pemesanan/{pemesanan}/dokumen/kirim', [PemesananController::class, 'sendDocuments'])
+            ->name('admin.pemesanan.document.send');
         Route::put('/admin/pemesanan/{pemesanan}/survei', [PemesananController::class, 'scheduleSurvey'])
             ->name('admin.pemesanan.survey.schedule');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/desainer', [KonsultasiController::class, 'assignDesigner'])

@@ -62,31 +62,56 @@
 
 <section class="bg-[#d9d1c3] py-20 sm:py-24" aria-labelledby="principles-title">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="max-w-2xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-600">Prinsip Kerja Daiku</p>
-            <h2 id="principles-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">
-                Dasar Daiku dalam menjalankan setiap pekerjaan.
+        <div class="mx-auto max-w-3xl text-center">
+            <h2 id="principles-title" class="text-4xl leading-tight text-slate-950 sm:text-5xl">
+                Visi dan Misi Daiku
             </h2>
         </div>
 
-        <div class="mt-12 grid border-y border-stone-500/30 md:grid-cols-3">
-            <article class="py-8 md:pr-8">
-                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">01</p>
-                <h3 class="mt-4 text-2xl text-slate-950">Keterlibatan menyeluruh</h3>
-                <p class="mt-4 leading-7 text-slate-700">Daiku melibatkan pelanggan agar proses dan keputusan desain dapat dipahami dengan jelas.</p>
-            </article>
+        <div class="mx-auto mt-14 max-w-2xl text-center">
+            <div class="flex items-center justify-center gap-4">
+                <span class="h-px flex-1 bg-stone-500/30"></span>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Visi</p>
+                <span class="h-px flex-1 bg-stone-500/30"></span>
+            </div>
+            <p class="mt-6 text-xl leading-8 text-slate-800 sm:text-2xl">
+                Menjadi perusahaan interior dan konstruksi terpercaya di Riau yang menghadirkan solusi desain inovatif, berkualitas, dan berorientasi pada kepuasan pelanggan.
+            </p>
+        </div>
 
-            <article class="border-t border-stone-500/30 py-8 md:border-l md:border-t-0 md:px-8">
-                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">02</p>
-                <h3 class="mt-4 text-2xl text-slate-950">Perhatian terhadap detail</h3>
-                <p class="mt-4 leading-7 text-slate-700">Detail pekerjaan diperhatikan sejak penyusunan konsep hingga pemasangan furnitur.</p>
-            </article>
-
-            <article class="border-t border-stone-500/30 py-8 md:border-l md:border-t-0 md:pl-8">
-                <p class="text-xs font-semibold tracking-[0.18em] text-stone-600">03</p>
-                <h3 class="mt-4 text-2xl text-slate-950">Menyesuaikan anggaran</h3>
-                <p class="mt-4 leading-7 text-slate-700">Solusi pekerjaan disusun berdasarkan kebutuhan dan anggaran yang telah disepakati bersama pelanggan.</p>
-            </article>
+        <div class="mx-auto mt-14 max-w-2xl">
+            <div class="flex items-center justify-center gap-4">
+                <span class="h-px flex-1 bg-stone-500/30"></span>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Misi</p>
+                <span class="h-px flex-1 bg-stone-500/30"></span>
+            </div>
+            <ol class="mt-8 space-y-4">
+                <li class="flex items-start gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-700/40 text-xs font-semibold text-amber-700">01</span>
+                    <span class="mt-1 h-5 w-px shrink-0 bg-stone-500/30"></span>
+                    <p class="leading-7 text-slate-700">Memberikan layanan desain, renovasi, dan pembuatan furnitur custom yang profesional dan berkualitas.</p>
+                </li>
+                <li class="flex items-start gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-700/40 text-xs font-semibold text-amber-700">02</span>
+                    <span class="mt-1 h-5 w-px shrink-0 bg-stone-500/30"></span>
+                    <p class="leading-7 text-slate-700">Mengutamakan kepuasan pelanggan melalui pelayanan yang responsif, transparan, dan tepat waktu.</p>
+                </li>
+                <li class="flex items-start gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-700/40 text-xs font-semibold text-amber-700">03</span>
+                    <span class="mt-1 h-5 w-px shrink-0 bg-stone-500/30"></span>
+                    <p class="leading-7 text-slate-700">Menghasilkan karya yang mengutamakan fungsi, estetika, serta kualitas material dan pengerjaan.</p>
+                </li>
+                <li class="flex items-start gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-700/40 text-xs font-semibold text-amber-700">04</span>
+                    <span class="mt-1 h-5 w-px shrink-0 bg-stone-500/30"></span>
+                    <p class="leading-7 text-slate-700">Terus berinovasi mengikuti perkembangan desain, teknologi, dan kebutuhan pasar.</p>
+                </li>
+                <li class="flex items-start gap-4">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-700/40 text-xs font-semibold text-amber-700">05</span>
+                    <span class="mt-1 h-5 w-px shrink-0 bg-stone-500/30"></span>
+                    <p class="leading-7 text-slate-700">Membangun hubungan jangka panjang dengan pelanggan melalui kepercayaan, integritas, dan hasil kerja terbaik.</p>
+                </li>
+            </ol>
         </div>
     </div>
 </section>
@@ -128,41 +153,6 @@
                     Perhatian pada ukuran, material, produksi, dan pemasangan dijaga agar pekerjaan yang terbangun tetap selaras dengan rencana dan anggaran.
                 </p>
             </article>
-        </div>
-    </div>
-</section>
-
-<section class="bg-[#f5f4f0] py-20 sm:py-28" aria-labelledby="expertise-title">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="grid gap-12 lg:grid-cols-[0.7fr_1.3fr] lg:gap-20">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Keahlian Daiku</p>
-                <h2 id="expertise-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">
-                    Satu proses yang saling terhubung.
-                </h2>
-                <p class="mt-6 max-w-md leading-8 text-slate-600">
-                    Setiap bidang bekerja sebagai bagian dari proses yang sama untuk menjaga kesinambungan antara desain dan pelaksanaan.
-                </p>
-            </div>
-
-            <div class="border-t border-stone-300">
-                <article class="grid gap-3 border-b border-stone-300 py-7 sm:grid-cols-[0.8fr_1.2fr]">
-                    <h3 class="text-2xl text-slate-950">Desain & Perencanaan</h3>
-                    <p class="leading-7 text-slate-600">Tata ruang, visual, material, dan detail sebagai dasar pelaksanaan proyek.</p>
-                </article>
-                <article class="grid gap-3 border-b border-stone-300 py-7 sm:grid-cols-[0.8fr_1.2fr]">
-                    <h3 class="text-2xl text-slate-950">Teknik Sipil</h3>
-                    <p class="leading-7 text-slate-600">Penyesuaian elemen ruang dari lantai, dinding, partisi, hingga plafon.</p>
-                </article>
-                <article class="grid gap-3 border-b border-stone-300 py-7 sm:grid-cols-[0.8fr_1.2fr]">
-                    <h3 class="text-2xl text-slate-950">Furniture Custom</h3>
-                    <p class="leading-7 text-slate-600">Furniture berdasarkan ukuran, fungsi penyimpanan, dan karakter desain ruang.</p>
-                </article>
-                <article class="grid gap-3 border-b border-stone-300 py-7 sm:grid-cols-[0.8fr_1.2fr]">
-                    <h3 class="text-2xl text-slate-950">Mekanikal & Elektrikal</h3>
-                    <p class="leading-7 text-slate-600">Dukungan desain dan instalasi untuk melengkapi fungsi ruang.</p>
-                </article>
-            </div>
         </div>
     </div>
 </section>

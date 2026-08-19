@@ -3,20 +3,15 @@
     $headerNotifications = auth()->user()->notifications()->latest()->limit(8)->get();
     $unreadNotificationCount = auth()->user()->unreadNotifications()->count();
 @endphp
-<div class="relative" x-data="{ notificationOpen: false }">
-    <button type="button" @click="notificationOpen = !notificationOpen" @click.outside="notificationOpen = false" class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700" aria-label="Notifikasi" :aria-expanded="notificationOpen.toString()">
+<div class="relative" x-data="{ notificationOpen: false, unreadCount: {{ $unreadNotificationCount }} }">
+    <button type="button" @click="notificationOpen = !notificationOpen; if (notificationOpen && unreadCount > 0) { unreadCount = 0; fetch('{{ route('notifications.read-all') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' } }); }" @click.outside="notificationOpen = false" class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700" aria-label="Notifikasi" :aria-expanded="notificationOpen.toString()">
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.85 23.85 0 0 0 5.454-1.31A8.97 8.97 0 0 1 18 9.75V9a6 6 0 1 0-12 0v.75a8.97 8.97 0 0 1-2.312 6.022c1.733.562 3.56 1.003 5.455 1.31m5.714 0a24.26 24.26 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
-        @if($unreadNotificationCount > 0)
-            <span class="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
-        @endif
+        <span x-cloak x-show="unreadCount > 0" class="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
     </button>
 
     <div x-cloak x-show="notificationOpen" x-transition.origin.top.right class="absolute right-0 top-12 z-[80] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <div><p class="font-bold text-slate-950">Notifikasi</p><p class="text-xs text-slate-500">{{ $unreadNotificationCount }} belum dibaca</p></div>
-            @if($unreadNotificationCount > 0)
-                <form method="POST" action="{{ route('notifications.read-all') }}">@csrf<button class="text-xs font-semibold text-amber-700 hover:text-amber-800">Tandai semua dibaca</button></form>
-            @endif
+            <div><p class="font-bold text-slate-950">Notifikasi</p><p class="text-xs text-slate-500" x-text="unreadCount + ' belum dibaca'"></p></div>
         </div>
         <div class="max-h-96 divide-y divide-slate-100 overflow-y-auto">
             @forelse($headerNotifications as $notification)

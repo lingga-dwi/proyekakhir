@@ -37,6 +37,8 @@ class AdminCategoryManagementTest extends TestCase
         $this->actingAs($admin)
             ->get(route('admin.categories.index'))
             ->assertOk()
+            ->assertSee('Kelola Katalog')
+            ->assertDontSee('href="'.route('admin.categories.index').'"', false)
             ->assertSee('Ruang Komersial')
             ->assertSee('Salon');
 

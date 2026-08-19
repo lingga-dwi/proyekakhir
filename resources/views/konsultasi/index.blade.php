@@ -20,9 +20,19 @@
                 </p>
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                     @auth
-                        <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
-                            Buat Pesanan
-                        </a>
+                        @if(auth()->user()->isPelanggan())
+                            <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Buat Pesanan
+                            </a>
+                        @elseif(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.pemesanan.index') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Kelola Pesanan
+                            </a>
+                        @elseif(auth()->user()->isDesigner())
+                            <a href="{{ route('dashboard.designer') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Dashboard Desainer
+                            </a>
+                        @endif
                     @else
                         <a href="{{ route('register') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
                             Buat Pesanan

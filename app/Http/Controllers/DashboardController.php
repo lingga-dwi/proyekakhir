@@ -128,7 +128,7 @@ class DashboardController extends Controller
         $designer = $request->user();
         $allowedStatuses = Pemesanan::STATUSES;
 
-        $projects = Pemesanan::with(['user', 'katalog'])
+        $projects = Pemesanan::with(['user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer'])
             ->where('designer_id', $designer->id)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = trim((string) $request->string('search'));

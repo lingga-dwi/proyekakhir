@@ -67,12 +67,12 @@
                         @endif
                         @if(auth()->user()->isDesigner())
                             <a href="{{ route('dashboard.designer') }}"
-                               aria-label="Buka Dashboard Desainer"
-                               class="flex h-[46px] w-36 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.designer', 'designer.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                               aria-label="Buka Desainer Panel"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.designer', 'designer.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
-                                    <i class="fas fa-drafting-compass text-sm"></i>
+                                    <i class="fas fa-cog text-sm"></i>
                                 </span>
-                                <span class="whitespace-nowrap text-xs font-bold">Dashboard</span>
+                                <span class="whitespace-nowrap text-xs font-bold">Desainer Panel</span>
                             </a>
                         @endif
                         @if(auth()->user()->isPelanggan())
@@ -162,7 +162,7 @@
                         @if(auth()->user()->isAdmin())
                             <a href="{{ route('dashboard.admin') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Admin Panel</a>
                         @elseif(auth()->user()->isDesigner())
-                            <a href="{{ route('dashboard.designer') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Dashboard Designer</a>
+                            <a href="{{ route('dashboard.designer') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Desainer Panel</a>
                         @else
                             <a href="{{ route('pesanan.saya') }}" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Pesanan Saya</a>
                         @endif

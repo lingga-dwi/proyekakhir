@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Konsultasi;
+use App\Models\Pemesanan;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CustomerActivityTest extends TestCase
@@ -108,8 +111,99 @@ class CustomerActivityTest extends TestCase
         $response = $this->actingAs($user)
             ->get(route('konsultasi.show', $consultation))
             ->assertOk()
-            ->assertSee('Desainer Ditugaskan');
+            ->assertSee('Konsultasi');
 
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
+    public function test_pesanan_saya_shows_tinjau_button_with_review_payload_when_draft_is_awaiting_approval(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+            'deskripsi_keinginan_desain' => 'Ingin nuansa minimalis modern.',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-awal.jpg'),
+        ]);
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'rab',
+            'document' => UploadedFile::fake()->create('rab-awal.pdf', 100, 'application/pdf'),
+        ]);
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project));
+
+        $project->refresh();
+        $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
+
+        $response = $this->actingAs($customer)->get(route('pesanan.saya'));
+
+        $response->assertOk()
+            ->assertSee('Tinjau')
+            ->assertSee('data-review=', false)
+            ->assertSee('desain-awal.jpg')
+            ->assertSee('rab-awal.pdf')
+            ->assertDontSee('Lihat Detail');
+    }
+
+    public function test_customer_can_approve_draft_design_from_review_modal_via_ajax(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'awaiting_draft_approval',
+            'progress' => 20,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $response = $this->actingAs($customer)->postJson(route('pemesanan.document.decision', $project), [
+            'stage' => 'draft',
+            'decision' => 'approved',
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertSame('awaiting_dp', $project->fresh()->workflow_stage);
+    }
+
+    public function test_customer_can_request_revision_from_review_modal_via_ajax(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'awaiting_draft_approval',
+            'progress' => 20,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $response = $this->actingAs($customer)->postJson(route('pemesanan.document.decision', $project), [
+            'stage' => 'draft',
+            'decision' => 'revision_requested',
+            'feedback' => 'Tolong perbesar area dapur.',
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertSame('revision_requested', $project->fresh()->workflow_stage);
+        $this->assertSame(2, $project->fresh()->draft_round);
     }
 }

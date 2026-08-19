@@ -27,6 +27,30 @@ class ProjectFlowHardeningTest extends TestCase
         }
     }
 
+    public function test_consultation_call_to_action_matches_the_authenticated_role(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
+
+        $this->actingAs($customer)->get(route('konsultasi.index'))
+            ->assertOk()
+            ->assertSee('Buat Pesanan')
+            ->assertSee('href="'.route('konsultasi.create').'"', false);
+
+        $this->actingAs($admin)->get(route('konsultasi.index'))
+            ->assertOk()
+            ->assertSee('Kelola Pesanan')
+            ->assertSee('href="'.route('admin.pemesanan.index').'"', false)
+            ->assertDontSee('href="'.route('konsultasi.create').'"', false);
+
+        $this->actingAs($designer)->get(route('konsultasi.index'))
+            ->assertOk()
+            ->assertSee('Dashboard Desainer')
+            ->assertSee('href="'.route('dashboard.designer').'"', false)
+            ->assertDontSee('href="'.route('konsultasi.create').'"', false);
+    }
+
     public function test_direct_pemesanan_redirects_to_consultation_without_mutating_profile(): void
     {
         $user = User::create([
@@ -117,14 +141,10 @@ class ProjectFlowHardeningTest extends TestCase
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
         $second = Konsultasi::create($this->consultationData($secondCustomer, $slot));
 
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second))->assertRedirect();
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first), [
             'designer_id' => $designer->id,
         ])->assertRedirect();
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $second), [
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $second), [
             'designer_id' => $designer->id,
         ])->assertRedirect();
 
@@ -134,6 +154,24 @@ class ProjectFlowHardeningTest extends TestCase
         $this->assertSame(Konsultasi::STATUS_CONFIRMED, $second->fresh()->status);
         $this->assertNull($first->fresh()->active_slot);
         $this->assertNull($second->fresh()->active_slot);
+    }
+
+    public function test_admin_must_choose_a_designer_when_accepting_a_consultation(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $consultation = Konsultasi::create(
+            $this->consultationData($customer, now()->addWeek()->toDateString())
+        );
+
+        $this->actingAs($admin)
+            ->post(route('admin.pemesanan.konsultasi.accept', $consultation))
+            ->assertSessionHasErrors('designer_id');
+
+        $consultation->refresh();
+        $this->assertSame(Konsultasi::STATUS_PENDING, $consultation->status);
+        $this->assertNull($consultation->accepted_at);
+        $this->assertNull($consultation->designer_id);
     }
 
     public function test_admin_can_change_the_assigned_consultation_designer(): void
@@ -146,9 +184,7 @@ class ProjectFlowHardeningTest extends TestCase
 
         $first = Konsultasi::create($this->consultationData($firstCustomer, $slot));
 
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first))->assertRedirect();
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $first), [
             'designer_id' => $firstDesigner->id,
         ])->assertRedirect();
         $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $first), [

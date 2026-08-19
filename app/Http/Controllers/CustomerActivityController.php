@@ -12,7 +12,7 @@ class CustomerActivityController extends Controller
     {
         $user = $request->user();
         $activities = $user->pemesanans()
-            ->with('katalog')
+            ->with(['katalog', 'konsultasi', 'documents'])
             ->get()
             ->map(function ($pemesanan) {
                 $reference = 'PRY-'.str_pad((string) $pemesanan->id, 4, '0', STR_PAD_LEFT);
@@ -26,6 +26,52 @@ class CustomerActivityController extends Controller
                     ? number_format((float) $pemesanan->luas_area, 2, ',', '.').' m²'
                     : null;
                 $meta = implode(' · ', array_filter([$building, $area]));
+
+                $reviewStage = match ($pemesanan->workflow_stage) {
+                    'awaiting_draft_approval' => 'draft',
+                    'awaiting_final_approval' => 'final',
+                    default => null,
+                };
+                $reviewPayload = null;
+                if ($reviewStage) {
+                    $round = $reviewStage === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
+                    $documents = $pemesanan->documents
+                        ->where('stage', $reviewStage)
+                        ->where('submission_round', $round)
+                        ->whereIn('document_type', ['design', 'rab'])
+                        ->groupBy('document_type')
+                        ->map(fn ($group) => $group->sortByDesc('version')->first())
+                        ->map(fn ($document) => [
+                            'type' => $document->document_type,
+                            'name' => $document->original_name,
+                            'size' => \Illuminate\Support\Facades\Storage::disk('local')->exists($document->path)
+                                ? \Illuminate\Support\Facades\Storage::disk('local')->size($document->path)
+                                : null,
+                            'downloadUrl' => route('pemesanan.document.download', [$pemesanan->id, $document->id]),
+                        ])
+                        ->values()->all();
+                    $budgetLabel = match ($pemesanan->konsultasi?->budget_range) {
+                        'under_10m' => 'Di bawah Rp 10 Juta',
+                        '10m_25m' => 'Rp 10 - 25 Juta',
+                        '25m_50m' => 'Rp 25 - 50 Juta',
+                        '50m_100m' => 'Rp 50 - 100 Juta',
+                        'above_100m' => 'Di atas Rp 100 Juta',
+                        default => null,
+                    };
+
+                    $reviewPayload = [
+                        'id' => $pemesanan->id,
+                        'reference' => $reference,
+                        'stage' => $reviewStage,
+                        'title' => $title ?: 'Pesanan desain',
+                        'building' => $building,
+                        'area' => $area,
+                        'budgetLabel' => $budgetLabel,
+                        'requirementNote' => $pemesanan->deskripsi_keinginan_desain,
+                        'documents' => $documents,
+                        'decisionUrl' => route('pemesanan.document.decision', $pemesanan),
+                    ];
+                }
 
                 return (object) [
                     'type' => 'pemesanan',
@@ -44,6 +90,7 @@ class CustomerActivityController extends Controller
                     'progress' => (int) $pemesanan->progress,
                     'created_at' => $pemesanan->created_at,
                     'detail_url' => route('pemesanan.show', $pemesanan),
+                    'review' => $reviewPayload,
                     'searchable' => mb_strtolower(implode(' ', [
                         $reference,
                         $title,
@@ -81,6 +128,7 @@ class CustomerActivityController extends Controller
                     'progress' => null,
                     'created_at' => $konsultasi->created_at,
                     'detail_url' => route('konsultasi.show', $konsultasi),
+                    'review' => null,
                     'searchable' => mb_strtolower(implode(' ', [
                         $reference,
                         $title,

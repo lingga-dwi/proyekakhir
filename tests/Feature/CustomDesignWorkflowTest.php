@@ -51,14 +51,12 @@ class CustomDesignWorkflowTest extends TestCase
             ->assertSee('denah.jpg')
             ->assertSee('Membutuhkan kitchen set dan ruang makan.');
 
-        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.pemesanan.konsultasi.accept', $consultation), [
+            'designer_id' => $designer->id,
+        ])->assertRedirect();
         $consultation->refresh();
         $this->assertSame($admin->id, $consultation->accepted_by);
         $this->assertNotNull($consultation->accepted_at);
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.assign', $consultation), [
-            'designer_id' => $designer->id,
-        ])->assertRedirect();
 
         $consultation->refresh();
         $this->assertSame(Konsultasi::STATUS_CONFIRMED, $consultation->status);
@@ -101,6 +99,11 @@ class CustomDesignWorkflowTest extends TestCase
         ])->assertRedirect();
 
         $project->refresh();
+        $this->assertSame('draft_design', $project->workflow_stage);
+
+        $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
+
+        $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
 
         $this->actingAs($customer)->post(route('pemesanan.document.decision', $project), [
@@ -125,6 +128,11 @@ class CustomDesignWorkflowTest extends TestCase
             'document_type' => 'rab',
             'document' => UploadedFile::fake()->create('rab-awal-revisi.pdf', 100, 'application/pdf'),
         ])->assertRedirect();
+
+        $project->refresh();
+        $this->assertSame('revision_requested', $project->workflow_stage);
+
+        $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
 
         $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
@@ -178,6 +186,14 @@ class CustomDesignWorkflowTest extends TestCase
             'document' => UploadedFile::fake()->create('rab-final.pdf', 100, 'application/pdf'),
         ])->assertRedirect();
 
+        $project->refresh();
+        $this->assertSame('final_design', $project->workflow_stage);
+
+        $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
+
+        $project->refresh();
+        $this->assertSame('awaiting_final_approval', $project->workflow_stage);
+
         $this->actingAs($customer)->post(route('pemesanan.document.decision', $project), [
             'stage' => 'final',
             'decision' => 'approved',
@@ -221,6 +237,7 @@ class CustomDesignWorkflowTest extends TestCase
             'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
             'workflow_stage' => 'draft_design',
             'progress' => 10,
+            'total_harga' => 10000000,
             'jenis_proyek' => 'Desain interior',
             'jenis_bangunan' => 'Rumah tinggal',
         ]);
@@ -237,6 +254,11 @@ class CustomDesignWorkflowTest extends TestCase
             'document_type' => 'rab',
             'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
         ])->assertRedirect();
+
+        $project->refresh();
+        $this->assertSame('draft_design', $project->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project))->assertRedirect();
 
         $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
@@ -273,5 +295,315 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($otherCustomer)
             ->get(route('pemesanan.document.download', [$project, $design]))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_delete_a_design_document_before_it_is_sent_to_the_customer(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+        ])->assertRedirect();
+
+        $document = $project->documents()->firstOrFail();
+        Storage::disk('local')->assertExists($document->path);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.pemesanan.document.delete', [$project, $document]))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('project_documents', ['id' => $document->id]);
+        Storage::disk('local')->assertMissing($document->path);
+    }
+
+    public function test_deleting_a_sent_document_reverts_the_project_back_to_draft_editing(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+        ]);
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'rab',
+            'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
+        ]);
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project));
+
+        $project->refresh();
+        $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
+        $document = $project->documents()->where('document_type', 'design')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->delete(route('admin.pemesanan.document.delete', [$project, $document]))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('project_documents', ['id' => $document->id]);
+        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
+        $this->assertDatabaseHas('project_documents', ['pemesanan_id' => $project->id, 'document_type' => 'rab']);
+    }
+
+    public function test_document_cannot_be_deleted_once_customer_has_already_decided_on_it(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'survey_pending',
+            'progress' => 25,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $document = $project->documents()->create([
+            'uploaded_by' => $admin->id,
+            'stage' => 'draft',
+            'document_type' => 'design',
+            'submission_round' => 1,
+            'path' => 'project-documents/'.$project->id.'/draft/desain.jpg',
+            'original_name' => 'desain-final.jpg',
+            'version' => 1,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('admin.pemesanan.document.delete', [$project, $document]))
+            ->assertStatus(422);
+
+        $this->assertDatabaseHas('project_documents', ['id' => $document->id]);
+    }
+
+    public function test_designer_cannot_delete_a_project_document(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+        ]);
+        $document = $project->documents()->firstOrFail();
+
+        $this->actingAs($designer)
+            ->delete(route('admin.pemesanan.document.delete', [$project, $document]))
+            ->assertForbidden();
+    }
+
+    public function test_document_upload_and_delete_return_json_for_ajax_requests(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $uploadResponse = $this->actingAs($admin)
+            ->postJson(route('admin.pemesanan.document.upload', $project), [
+                'document_type' => 'design',
+                'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+            ]);
+
+        $uploadResponse->assertOk()->assertJson([
+            'success' => true,
+            'documentType' => 'design',
+            'canManageDocuments' => true,
+            'isAwaitingDecision' => false,
+            'canSend' => false,
+        ]);
+        $uploadResponse->assertJsonStructure(['document' => ['id', 'name', 'size', 'downloadUrl', 'deleteUrl']]);
+        $document = $project->documents()->firstOrFail();
+        $this->assertSame($document->id, $uploadResponse->json('document.id'));
+
+        $rabResponse = $this->actingAs($admin)
+            ->postJson(route('admin.pemesanan.document.upload', $project), [
+                'document_type' => 'rab',
+                'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
+            ]);
+        $rabResponse->assertOk()->assertJson([
+            'success' => true,
+            'documentType' => 'rab',
+            'canManageDocuments' => true,
+            'isAwaitingDecision' => false,
+            'canSend' => true,
+        ]);
+        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
+
+        $sendResponse = $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project));
+        $sendResponse->assertOk()->assertJson([
+            'success' => true,
+            'canManageDocuments' => false,
+            'isAwaitingDecision' => true,
+        ]);
+        $this->assertSame('awaiting_draft_approval', $project->fresh()->workflow_stage);
+
+        $deleteResponse = $this->actingAs($admin)
+            ->deleteJson(route('admin.pemesanan.document.delete', [$project, $document]));
+        $deleteResponse->assertOk()->assertJson([
+            'success' => true,
+            'documentType' => 'design',
+            'document' => null,
+            'canManageDocuments' => true,
+            'isAwaitingDecision' => false,
+        ]);
+        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
+    }
+
+    public function test_designer_can_upload_and_delete_documents_via_ajax_on_own_project(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $designer = User::factory()->create(['role' => 'designer']);
+        $otherDesigner = User::factory()->create(['role' => 'designer']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $uploadResponse = $this->actingAs($designer)
+            ->postJson(route('designer.proyek.document.upload', $project), [
+                'document_type' => 'design',
+                'document' => UploadedFile::fake()->image('desain-desainer.jpg'),
+            ]);
+
+        $uploadResponse->assertOk()->assertJson(['success' => true, 'documentType' => 'design']);
+        $document = $project->documents()->firstOrFail();
+        $this->assertSame(
+            route('designer.proyek.document.delete', [$project, $document]),
+            $uploadResponse->json('document.deleteUrl')
+        );
+
+        $this->actingAs($otherDesigner)
+            ->deleteJson(route('designer.proyek.document.delete', [$project, $document]))
+            ->assertForbidden();
+
+        $this->actingAs($designer)
+            ->deleteJson(route('designer.proyek.document.delete', [$project, $document]))
+            ->assertOk()
+            ->assertJson(['success' => true, 'document' => null]);
+
+        $this->assertDatabaseMissing('project_documents', ['id' => $document->id]);
+    }
+
+    public function test_sending_documents_fails_when_rab_is_missing(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+        ]);
+
+        $response = $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project));
+
+        $response->assertStatus(422)->assertJson(['success' => false]);
+        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
+    }
+
+    public function test_sending_draft_documents_fails_without_a_price(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'draft_design',
+            'progress' => 10,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-admin.jpg'),
+        ]);
+        $this->actingAs($admin)->post(route('admin.pemesanan.document.upload', $project), [
+            'document_type' => 'rab',
+            'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response = $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project));
+
+        $response->assertStatus(422)->assertJson(['success' => false]);
+        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
+
+        $project->update(['total_harga' => 5000000]);
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project))
+            ->assertOk()->assertJson(['success' => true]);
+        $this->assertSame('awaiting_draft_approval', $project->fresh()->workflow_stage);
     }
 }

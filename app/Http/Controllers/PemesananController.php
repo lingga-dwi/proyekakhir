@@ -65,7 +65,7 @@ class PemesananController extends Controller
             'document' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
         ]);
 
-        $isDraft = in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested'], true);
+        $isDraft = in_array($pemesanan->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested'], true);
         $isFinal = $pemesanan->workflow_stage === 'final_design';
         abort_unless($isDraft || $isFinal, 422, 'Dokumen belum dapat diunggah pada tahap ini.');
 
@@ -88,6 +88,28 @@ class PemesananController extends Controller
             'version' => $nextVersion,
         ]);
 
+        $message = 'Dokumen berhasil disimpan.';
+
+        if ($request->wantsJson()) {
+            return $this->documentJsonResponse($pemesanan->fresh(), $data['document_type'], $message, actor: $request->user());
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function sendDocuments(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless(
+            $request->user()->isAdmin() || $pemesanan->designer_id === $request->user()->id,
+            403
+        );
+
+        $isDraft = in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested'], true);
+        $isFinal = $pemesanan->workflow_stage === 'final_design';
+        abort_unless($isDraft || $isFinal, 422, 'Dokumen belum dapat dikirim pada tahap ini.');
+
+        $stage = $isDraft ? 'draft' : 'final';
+        $round = $isDraft ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
         $submittedTypes = $pemesanan->documents()
             ->where('stage', $stage)
             ->where('submission_round', $round)
@@ -97,11 +119,23 @@ class PemesananController extends Controller
 
         if ($submittedTypes->count() < 2) {
             $missingLabel = $submittedTypes->contains('design') ? 'RAB' : 'desain';
+            $message = 'Unggah '.$missingLabel.' terlebih dahulu sebelum mengirim ke pelanggan.';
 
-            return back()->with(
-                'success',
-                'Dokumen berhasil disimpan. Unggah '.$missingLabel.' pada putaran yang sama sebelum dikirim ke pelanggan.'
-            );
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->withErrors(['document' => $message]);
+        }
+
+        if ($isDraft && (float) $pemesanan->total_harga <= 0) {
+            $message = 'Tetapkan nilai penawaran sebelum mengirim ke pelanggan.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->withErrors(['total_harga' => $message]);
         }
 
         $pemesanan->update([
@@ -118,7 +152,13 @@ class PemesananController extends Controller
             'Tinjau dokumen'
         );
 
-        return back()->with('success', 'Dokumen berhasil dikirim ke pelanggan untuk ditinjau.');
+        $message = 'Dokumen berhasil dikirim ke pelanggan untuk ditinjau.';
+
+        if ($request->wantsJson()) {
+            return $this->documentJsonResponse($pemesanan->fresh(), $submittedTypes->first(), $message, actor: $request->user());
+        }
+
+        return back()->with('success', $message);
     }
 
     public function downloadDocument(Request $request, Pemesanan $pemesanan, ProjectDocument $document)
@@ -127,6 +167,101 @@ class PemesananController extends Controller
         $this->authorizeOrderAccess($request, $pemesanan);
 
         return Storage::disk('local')->download($document->path, $document->original_name);
+    }
+
+    public function deleteDocument(Request $request, Pemesanan $pemesanan, ProjectDocument $document)
+    {
+        abort_unless(
+            $request->user()->isAdmin() || $pemesanan->designer_id === $request->user()->id,
+            403
+        );
+        abort_unless($document->pemesanan_id === $pemesanan->id, 404);
+
+        $deletableStages = ['konsultasi', 'draft_design', 'revision_requested', 'final_design', 'awaiting_draft_approval', 'awaiting_final_approval'];
+        abort_unless(in_array($pemesanan->workflow_stage, $deletableStages, true), 422, 'Dokumen tidak dapat dihapus pada tahap ini.');
+
+        $documentType = $document->document_type;
+        $stage = $document->stage;
+        $round = $document->submission_round;
+        $wasAwaitingDecision = in_array($pemesanan->workflow_stage, ['awaiting_draft_approval', 'awaiting_final_approval'], true);
+
+        Storage::disk('local')->delete($document->path);
+        $document->delete();
+
+        if ($wasAwaitingDecision) {
+            $remainingTypes = $pemesanan->documents()
+                ->where('stage', $stage)
+                ->where('submission_round', $round)
+                ->whereIn('document_type', ['design', 'rab'])
+                ->distinct()
+                ->pluck('document_type');
+
+            if ($remainingTypes->count() < 2) {
+                $pemesanan->update([
+                    'workflow_stage' => $stage === 'draft' ? 'draft_design' : 'final_design',
+                ]);
+            }
+        }
+
+        $message = 'Dokumen berhasil dihapus.';
+
+        if ($request->wantsJson()) {
+            return $this->documentJsonResponse($pemesanan->fresh(), $documentType, $message, deleted: true, actor: $request->user());
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function documentJsonResponse(Pemesanan $pemesanan, string $documentType, string $message, bool $deleted = false, ?User $actor = null)
+    {
+        $isKonsultasi = $pemesanan->workflow_stage === 'konsultasi';
+        $isDraft = in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested'], true);
+        $isFinal = $pemesanan->workflow_stage === 'final_design';
+        $isAwaitingDecision = in_array($pemesanan->workflow_stage, ['awaiting_draft_approval', 'awaiting_final_approval'], true);
+        $deleteRouteName = $actor?->isAdmin() ? 'admin.pemesanan.document.delete' : 'designer.proyek.document.delete';
+
+        $stage = $isKonsultasi || $isDraft || in_array($pemesanan->workflow_stage, ['awaiting_draft_approval'], true) ? 'draft' : 'final';
+        $round = $stage === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
+
+        $document = null;
+        if (! $deleted) {
+            $latest = $pemesanan->documents()
+                ->where('stage', $stage)
+                ->where('submission_round', $round)
+                ->where('document_type', $documentType)
+                ->orderByDesc('version')
+                ->first();
+
+            if ($latest) {
+                $document = [
+                    'id' => $latest->id,
+                    'name' => $latest->original_name,
+                    'size' => Storage::disk('local')->exists($latest->path) ? Storage::disk('local')->size($latest->path) : null,
+                    'downloadUrl' => route('pemesanan.document.download', [$pemesanan->id, $latest->id]),
+                    'deleteUrl' => route($deleteRouteName, [$pemesanan->id, $latest->id]),
+                ];
+            }
+        }
+
+        $submittedCount = $pemesanan->documents()
+            ->where('stage', $stage)
+            ->where('submission_round', $round)
+            ->whereIn('document_type', ['design', 'rab'])
+            ->distinct('document_type')
+            ->count('document_type');
+        $sendRouteName = $actor?->isAdmin() ? 'admin.pemesanan.document.send' : 'designer.proyek.document.send';
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'documentType' => $documentType,
+            'document' => $document,
+            'canManageDocuments' => $isKonsultasi || $isDraft || $isFinal,
+            'isAwaitingDecision' => $isAwaitingDecision,
+            'canSend' => ($isDraft || $isFinal) && $submittedCount >= 2,
+            'totalHarga' => (float) $pemesanan->total_harga,
+            'sendUrl' => route($sendRouteName, $pemesanan->id),
+        ]);
     }
 
     public function decideDocument(Request $request, Pemesanan $pemesanan)
@@ -143,7 +278,13 @@ class PemesananController extends Controller
         abort_unless($pemesanan->workflow_stage === $expectedStage, 422, 'Tidak ada dokumen yang menunggu keputusan pada tahap ini.');
 
         if ($data['stage'] === 'draft' && $data['decision'] === 'approved' && (float) $pemesanan->total_harga <= 0) {
-            return back()->withErrors(['decision' => 'Admin perlu menetapkan nilai proyek sebelum invoice DP dapat dibuat.']);
+            $message = 'Admin perlu menetapkan nilai proyek sebelum invoice DP dapat dibuat.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+
+            return back()->withErrors(['decision' => $message]);
         }
 
         $round = $data['stage'] === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
@@ -173,7 +314,13 @@ class PemesananController extends Controller
                 );
             }
 
-            return back()->with('success', 'Permintaan revisi telah dikirim kepada desainer.');
+            $message = 'Permintaan revisi telah dikirim kepada desainer.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => $message]);
+            }
+
+            return back()->with('success', $message);
         }
 
         if ($data['stage'] === 'draft') {
@@ -201,7 +348,13 @@ class PemesananController extends Controller
                 'Lihat invoice'
             );
 
-            return back()->with('success', 'Desain awal disetujui. Invoice DP 20% telah dibuat.');
+            $message = 'Desain awal disetujui. Invoice DP 20% telah dibuat.';
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => $message]);
+            }
+
+            return back()->with('success', $message);
         }
 
         $pemesanan->update([
@@ -227,7 +380,13 @@ class PemesananController extends Controller
             'Kelola proyek'
         );
 
-        return back()->with('success', 'Desain final disetujui. Proyek masuk ke tahap pengerjaan.');
+        $message = 'Desain final disetujui. Proyek masuk ke tahap pengerjaan.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function uploadDpEvidence(Request $request, Pemesanan $pemesanan)
@@ -449,7 +608,7 @@ class PemesananController extends Controller
     {
         $data = $request->validate([
             'status_pemesanan' => ['required', Rule::in(Pemesanan::STATUSES)],
-            'progress' => ['required', 'integer', 'between:0,100'],
+            'progress' => ['nullable', 'integer', 'between:0,100'],
             'target_selesai' => ['nullable', 'date'],
             'designer_id' => [
                 'nullable',
@@ -467,8 +626,13 @@ class PemesananController extends Controller
         }
 
         $changed = $this->workflow->update($pemesanan, $data, $request->user());
+        $message = $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.';
 
-        return back()->with('success', $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.');
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function updateAssignedProject(Request $request, Pemesanan $pemesanan)
@@ -484,7 +648,7 @@ class PemesananController extends Controller
                     Pemesanan::STATUS_COMPLETED,
                 ]),
             ],
-            'progress' => ['required', 'integer', 'between:0,100'],
+            'progress' => ['nullable', 'integer', 'between:0,100'],
             'target_selesai' => ['nullable', 'date'],
             'catatan_progres' => ['required', 'string', 'max:2000'],
         ]);
@@ -502,8 +666,13 @@ class PemesananController extends Controller
             $request->user(),
             'Progres proyek diperbarui oleh desainer.'
         );
+        $message = $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.';
 
-        return back()->with('success', $changed ? 'Progres proyek berhasil diperbarui.' : 'Tidak ada perubahan proyek.');
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
     }
 
     private function authorizeOrderAccess(Request $request, Pemesanan $pemesanan): void

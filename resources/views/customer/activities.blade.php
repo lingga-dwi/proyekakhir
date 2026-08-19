@@ -104,7 +104,6 @@
                                 <th scope="col" class="px-6 py-4">Pesanan</th>
                                 <th scope="col" class="px-5 py-4">Jenis</th>
                                 <th scope="col" class="px-5 py-4">Status</th>
-                                <th scope="col" class="px-5 py-4">Progres</th>
                                 <th scope="col" class="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
@@ -112,7 +111,6 @@
                             @foreach($activities as $activity)
                                 @php
                                     [$statusLabel, $statusClass] = $statusStyles[$activity->normalized_status];
-                                    $progress = max(0, min(100, (int) ($activity->progress ?? 0)));
                                 @endphp
                                 <tr class="group transition hover:bg-slate-50/80">
                                     <td class="px-6 py-5">
@@ -129,23 +127,23 @@
                                     <td class="px-5 py-5">
                                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                     </td>
-                                    <td class="px-5 py-5">
-                                        @if($activity->type === 'pemesanan')
-                                            <div class="flex items-center gap-3">
-                                                <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
-                                                    <div class="h-full rounded-full bg-amber-400" style="width: {{ $progress }}%"></div>
-                                                </div>
-                                                <span class="text-xs font-semibold text-slate-600">{{ $progress }}%</span>
-                                            </div>
-                                        @else
-                                            <span class="text-sm text-slate-400">Tahap konsultasi</span>
-                                        @endif
-                                    </td>
                                     <td class="px-6 py-5 text-right">
-                                        <a href="{{ $activity->detail_url }}" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-amber-50 hover:text-amber-700">
-                                            Lihat Detail
-                                            <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                        </a>
+                                        @if($activity->review)
+                                            <button
+                                                type="button"
+                                                class="inline-flex w-36 items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
+                                                data-review="{{ json_encode($activity->review, JSON_THROW_ON_ERROR) }}"
+                                                onclick="openReviewModal(this)"
+                                            >
+                                                Tinjau
+                                                <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                            </button>
+                                        @else
+                                            <a href="{{ $activity->detail_url }}" class="inline-flex w-36 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
+                                                Lihat Detail
+                                                <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                            </a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach
@@ -157,7 +155,6 @@
                     @foreach($activities as $activity)
                         @php
                             [$statusLabel, $statusClass] = $statusStyles[$activity->normalized_status];
-                            $progress = max(0, min(100, (int) ($activity->progress ?? 0)));
                         @endphp
                         <article class="p-4 sm:p-5">
                             <div class="min-w-0">
@@ -174,18 +171,23 @@
                                     <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ $activity->type_label }}</span>
                                     <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                 </div>
-                                <a href="{{ $activity->detail_url }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-700">
-                                    Lihat Detail
-                                    <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                </a>
+                                @if($activity->review)
+                                    <button
+                                        type="button"
+                                        class="inline-flex w-36 items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-1.5 text-sm font-semibold text-slate-950"
+                                        data-review="{{ json_encode($activity->review, JSON_THROW_ON_ERROR) }}"
+                                        onclick="openReviewModal(this)"
+                                    >
+                                        Tinjau
+                                        <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                    </button>
+                                @else
+                                    <a href="{{ $activity->detail_url }}" class="inline-flex w-36 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
+                                        Lihat Detail
+                                        <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                    </a>
+                                @endif
                             </div>
-
-                            @if($activity->type === 'pemesanan')
-                                <div class="mt-4">
-                                    <div class="mb-2 flex justify-between text-xs font-semibold text-slate-500"><span>Progres proyek</span><span>{{ $progress }}%</span></div>
-                                    <div class="h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-amber-400" style="width: {{ $progress }}%"></div></div>
-                                </div>
-                            @endif
                         </article>
                     @endforeach
                 </div>
@@ -210,4 +212,150 @@
         </section>
     </div>
 </main>
+
+@include('customer._review_modal')
 @endsection
+
+@push('scripts')
+<script>
+let currentReviewData = null;
+
+function reviewCsrfToken() {
+    return document.querySelector('#reviewCsrfForm input[name="_token"]').value;
+}
+
+function formatReviewFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function openReviewModal(button) {
+    const review = JSON.parse(button.dataset.review);
+    currentReviewData = review;
+
+    document.getElementById('reviewModalReference').textContent = `#${review.reference}`;
+    document.getElementById('reviewModalReferenceValue').textContent = review.reference;
+    document.getElementById('reviewModalSubtitle').textContent = review.stage === 'draft'
+        ? 'Tinjau desain awal dan draft RAB sebelum melanjutkan ke pembayaran DP.'
+        : 'Tinjau desain dan RAB final sebelum proyek masuk ke tahap pengerjaan.';
+    document.getElementById('reviewModalTitle').textContent = review.title || 'Belum ditentukan';
+    document.getElementById('reviewModalBuilding').textContent = review.building || 'Belum ditentukan';
+    document.getElementById('reviewModalArea').textContent = review.area || 'Belum diisi';
+    document.getElementById('reviewModalBudget').textContent = review.budgetLabel || 'Belum ditentukan';
+
+    const noteSection = document.getElementById('reviewModalNoteSection');
+    if (review.requirementNote) {
+        document.getElementById('reviewModalNote').textContent = review.requirementNote;
+        noteSection.classList.remove('hidden');
+    } else {
+        noteSection.classList.add('hidden');
+    }
+
+    const docTypeMeta = {
+        design: { label: 'Desain Awal', icon: 'fa-file-image', color: 'text-red-500' },
+        rab: { label: 'Draft RAB', icon: 'fa-file-lines', color: 'text-emerald-500' },
+    };
+    const documentList = document.getElementById('reviewModalDocuments');
+    documentList.replaceChildren();
+    (review.documents || []).forEach(document_ => {
+        const meta = docTypeMeta[document_.type] || { label: document_.type, icon: 'fa-file', color: 'text-slate-400' };
+        const extension = (document_.name.split('.').pop() || '').toUpperCase();
+        const card = document.createElement('div');
+        card.className = 'rounded-xl border border-slate-200 p-4';
+        card.innerHTML = `<i class="fas ${meta.icon} text-3xl ${meta.color}" aria-hidden="true"></i>
+            <p class="mt-3 truncate text-sm font-semibold text-slate-900">${meta.label}.${extension.toLowerCase()}</p>
+            <p class="mt-0.5 text-xs text-slate-400">${extension}${document_.size ? ' · ' + formatReviewFileSize(document_.size) : ''}</p>
+            <a href="${document_.downloadUrl}" class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 hover:text-amber-800">
+                Lihat / Unduh <i class="fas fa-download" aria-hidden="true"></i>
+            </a>`;
+        documentList.appendChild(card);
+    });
+
+    document.getElementById('reviewModalInfoText').textContent = review.stage === 'draft'
+        ? 'Setelah Anda menyetujui desain awal dan draft RAB, sistem akan menampilkan pembayaran DP 20%.'
+        : 'Setelah Anda menyetujui desain dan RAB final, proyek akan masuk ke tahap pengerjaan.';
+
+    hideRevisionPanel();
+    clearTimeout(reviewToastTimer);
+    document.getElementById('reviewModalToast').classList.add('hidden');
+
+    const modal = document.getElementById('reviewModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeReviewModal() {
+    const modal = document.getElementById('reviewModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function showRevisionPanel() {
+    document.getElementById('reviewModalRevisionPanel').classList.remove('hidden');
+    document.getElementById('reviewModalRevisionBtn').classList.add('hidden');
+    document.getElementById('reviewModalApproveBtn').classList.add('hidden');
+    document.getElementById('reviewModalCancelRevisionBtn').classList.remove('hidden');
+    document.getElementById('reviewModalSubmitRevisionBtn').classList.remove('hidden');
+    document.getElementById('reviewModalFeedback').focus();
+}
+
+function hideRevisionPanel() {
+    document.getElementById('reviewModalRevisionPanel').classList.add('hidden');
+    document.getElementById('reviewModalFeedback').value = '';
+    document.getElementById('reviewModalRevisionBtn').classList.remove('hidden');
+    document.getElementById('reviewModalApproveBtn').classList.remove('hidden');
+    document.getElementById('reviewModalCancelRevisionBtn').classList.add('hidden');
+    document.getElementById('reviewModalSubmitRevisionBtn').classList.add('hidden');
+}
+
+let reviewToastTimer = null;
+function showReviewToast(message, tone = 'success') {
+    const toast = document.getElementById('reviewModalToast');
+    toast.textContent = message;
+    toast.className = tone === 'success'
+        ? 'rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800'
+        : 'rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800';
+    clearTimeout(reviewToastTimer);
+    reviewToastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+}
+
+function submitReviewDecision(decision) {
+    const feedback = document.getElementById('reviewModalFeedback').value.trim();
+    if (decision === 'revision_requested' && !feedback) {
+        showReviewToast('Catatan revisi wajib diisi.', 'error');
+        return;
+    }
+
+    const buttons = ['reviewModalApproveBtn', 'reviewModalSubmitRevisionBtn'].map(id => document.getElementById(id));
+    buttons.forEach(button => button.disabled = true);
+
+    fetch(currentReviewData.decisionUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': reviewCsrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            stage: currentReviewData.stage,
+            decision,
+            feedback: feedback || null,
+        }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal mengirim keputusan.');
+                showReviewToast(errorMessage, 'error');
+                return;
+            }
+            showReviewToast(json.message || 'Keputusan berhasil dikirim.');
+            setTimeout(() => window.location.reload(), 1200);
+        })
+        .catch(() => showReviewToast('Gagal mengirim keputusan. Periksa koneksi Anda.', 'error'))
+        .finally(() => buttons.forEach(button => button.disabled = false));
+}
+
+document.getElementById('reviewModal').addEventListener('click', event => {
+    if (event.target.id === 'reviewModal') closeReviewModal();
+});
+</script>
+@endpush

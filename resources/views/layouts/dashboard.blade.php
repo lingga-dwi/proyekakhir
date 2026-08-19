@@ -38,11 +38,8 @@
                     <a href="{{ route('admin.pemesanan.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.pemesanan.*', 'admin.proyek.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-clipboard-list w-5 text-center"></i><span>Kelola Pesanan</span>
                     </a>
-                    <a href="{{ route('admin.katalog.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.katalog.*') ? $activeNav : $inactiveNav }}">
+                    <a href="{{ route('admin.katalog.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.katalog.*', 'admin.categories.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-images w-5 text-center"></i><span>Kelola Katalog</span>
-                    </a>
-                    <a href="{{ route('admin.categories.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.categories.*') ? $activeNav : $inactiveNav }}">
-                        <i class="fas fa-layer-group w-5 text-center"></i><span>Kelola Kategori</span>
                     </a>
                     <a href="{{ route('admin.faq.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.faq.*') ? $activeNav : $inactiveNav }}">
                         <i class="fas fa-circle-question w-5 text-center"></i><span>Kelola FAQ</span>
@@ -125,13 +122,15 @@
         x-data="{
             open: false,
             pendingForm: null,
+            onConfirm: null,
             title: 'Konfirmasi tindakan',
             message: 'Apakah Anda yakin ingin melanjutkan?',
             confirmLabel: 'Konfirmasi',
             tone: 'primary',
             submitting: false,
             show(detail) {
-                this.pendingForm = detail.form;
+                this.pendingForm = detail.form || null;
+                this.onConfirm = detail.onConfirm || null;
                 this.title = detail.title || 'Konfirmasi tindakan';
                 this.message = detail.message || 'Apakah Anda yakin ingin melanjutkan?';
                 this.confirmLabel = detail.confirmLabel || 'Konfirmasi';
@@ -144,9 +143,20 @@
                 if (this.submitting) return;
                 this.open = false;
                 this.pendingForm = null;
+                this.onConfirm = null;
             },
             confirm() {
-                if (!this.pendingForm || this.submitting) return;
+                if (this.submitting) return;
+                if (this.onConfirm) {
+                    this.submitting = true;
+                    Promise.resolve(this.onConfirm()).finally(() => {
+                        this.submitting = false;
+                        this.open = false;
+                        this.onConfirm = null;
+                    });
+                    return;
+                }
+                if (!this.pendingForm) return;
                 this.submitting = true;
                 this.pendingForm.submit();
             }

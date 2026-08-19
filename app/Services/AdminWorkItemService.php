@@ -54,6 +54,9 @@ class AdminWorkItemService
                 DB::raw('0 as total_harga'),
                 'consultation.catatan_admin as note',
                 'consultation.created_at',
+                DB::raw('NULL as workflow_stage'),
+                DB::raw('NULL as draft_round'),
+                DB::raw('NULL as final_round'),
             ]);
 
         $orders = DB::table('pemesanan as orders')
@@ -86,6 +89,9 @@ class AdminWorkItemService
                 'orders.total_harga',
                 'orders.catatan_progres as note',
                 'orders.created_at',
+                'orders.workflow_stage',
+                'orders.draft_round',
+                'orders.final_round',
             ]);
 
         $query = DB::query()->fromSub($consultations->unionAll($orders), 'work_items');

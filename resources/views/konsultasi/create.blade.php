@@ -42,7 +42,6 @@
                             <option value="free_consultation" @selected(old('jenis_konsultasi') === 'free_consultation')>Desain Interior Baru</option>
                             <option value="virtual_design" @selected(old('jenis_konsultasi') === 'virtual_design')>Renovasi Interior</option>
                             <option value="in_home_visit" @selected(old('jenis_konsultasi') === 'in_home_visit')>Custom Furniture</option>
-                            <option value="chat_support" @selected(old('jenis_konsultasi') === 'chat_support')>Konsultasi Desain</option>
                         </select>
                         @error('jenis_konsultasi') <p class="request-error">{{ $message }}</p> @enderror
                     </div>
@@ -59,7 +58,7 @@
                         </select>
                         @error('jenis_ruangan') <p class="request-error">{{ $message }}</p> @enderror
                     </div>
-                    @include('konsultasi.partials.request-input', ['name' => 'luas_ruangan', 'label' => 'Luas Area (m2)', 'value' => old('luas_ruangan', 0), 'required' => true, 'placeholder' => '0', 'type' => 'number', 'min' => '0', 'step' => '0.01'])
+                    @include('konsultasi.partials.request-input', ['name' => 'luas_ruangan', 'label' => 'Luas Area (m2)', 'value' => old('luas_ruangan'), 'required' => true, 'placeholder' => 'Contoh: 20', 'type' => 'number', 'min' => '1', 'step' => '0.01'])
                     <div>
                         <label for="budget_range" class="mb-2 block text-sm font-semibold text-slate-800">Anggaran</label>
                         <select id="budget_range" name="budget_range" required class="request-control">
