@@ -112,7 +112,8 @@ class ProjectFlowHardeningTest extends TestCase
             'deskripsi_kebutuhan' => 'Butuh masukan desain.',
         ]);
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('pesanan.saya'));
+        $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('konsultasi', [
             'user_id' => $user->id,
@@ -172,6 +173,33 @@ class ProjectFlowHardeningTest extends TestCase
         $this->assertSame(Konsultasi::STATUS_PENDING, $consultation->status);
         $this->assertNull($consultation->accepted_at);
         $this->assertNull($consultation->designer_id);
+    }
+
+    public function test_admin_can_reject_a_consultation_with_a_reason_and_customer_is_notified(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $consultation = Konsultasi::create(
+            $this->consultationData($customer, now()->addWeek()->toDateString())
+        );
+
+        $this->actingAs($admin)->put(route('admin.pemesanan.konsultasi.update', $consultation), [
+            'status' => Konsultasi::STATUS_CANCELLED,
+            'catatan_admin' => 'Area layanan di luar jangkauan.',
+        ])->assertRedirect();
+
+        $consultation->refresh();
+        $this->assertSame(Konsultasi::STATUS_CANCELLED, $consultation->status);
+        $this->assertSame('Area layanan di luar jangkauan.', $consultation->catatan_admin);
+
+        $this->assertSame(
+            'Permintaan konsultasi ditolak',
+            $customer->fresh()->notifications()->first()->data['title']
+        );
+        $this->assertStringContainsString(
+            'Area layanan di luar jangkauan.',
+            $customer->fresh()->notifications()->first()->data['message']
+        );
     }
 
     public function test_admin_can_change_the_assigned_consultation_designer(): void

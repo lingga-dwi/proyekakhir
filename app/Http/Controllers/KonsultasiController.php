@@ -72,21 +72,21 @@ class KonsultasiController extends Controller
         ]);
 
         $konsultasi = Konsultasi::create([
-                'user_id' => $user->id,
-                'nama' => $data['nama'],
-                'email' => $email,
-                'no_telp' => $data['no_telp'],
-                'alamat' => $data['alamat'],
-                'jenis_konsultasi' => $data['jenis_konsultasi'],
-                'jenis_ruangan' => $data['jenis_ruangan'],
-                'budget_range' => $data['budget_range'],
-                'timeline' => 'flexible',
-                'luas_ruangan' => $data['luas_ruangan'],
-                'deskripsi_kebutuhan' => $data['deskripsi_kebutuhan'] ?? '',
-                'tanggal_konsultasi' => now()->toDateString(),
-                'waktu_konsultasi' => now()->format('H:i:s'),
-                'status' => Konsultasi::STATUS_PENDING,
-            ]);
+            'user_id' => $user->id,
+            'nama' => $data['nama'],
+            'email' => $email,
+            'no_telp' => $data['no_telp'],
+            'alamat' => $data['alamat'],
+            'jenis_konsultasi' => $data['jenis_konsultasi'],
+            'jenis_ruangan' => $data['jenis_ruangan'],
+            'budget_range' => $data['budget_range'],
+            'timeline' => 'flexible',
+            'luas_ruangan' => $data['luas_ruangan'],
+            'deskripsi_kebutuhan' => $data['deskripsi_kebutuhan'] ?? '',
+            'tanggal_konsultasi' => now()->toDateString(),
+            'waktu_konsultasi' => now()->format('H:i:s'),
+            'status' => Konsultasi::STATUS_PENDING,
+        ]);
 
         if ($request->hasFile('attachments')) {
             $attachments = [];
@@ -106,7 +106,7 @@ class KonsultasiController extends Controller
             'Tinjau permintaan'
         );
 
-        return redirect()->route('konsultasi.show', $konsultasi->id)
+        return redirect()->route('pesanan.saya')
             ->with('success', 'Permintaan berhasil dikirim. Tim Daiku akan menghubungi Anda segera.');
     }
 
@@ -144,6 +144,17 @@ class KonsultasiController extends Controller
         abort_unless($path && Storage::disk('local')->exists($path), 404);
 
         return Storage::disk('local')->download($path, $name);
+    }
+
+    public function destroy(Konsultasi $konsultasi)
+    {
+        abort_if($konsultasi->pemesanan_id, 422, 'Konsultasi yang sudah menjadi proyek harus dihapus dari Kelola Pesanan pada proyek terkait.');
+
+        $reference = 'KS-'.str_pad((string) $konsultasi->id, 3, '0', STR_PAD_LEFT);
+        $konsultasi->delete();
+
+        return redirect()->route('admin.pemesanan.index')
+            ->with('success', 'Permintaan konsultasi '.$reference.' berhasil dihapus.');
     }
 
     public function updateStatus(Request $request, Konsultasi $konsultasi)
@@ -206,6 +217,19 @@ class KonsultasiController extends Controller
         }
 
         $konsultasi->update($data);
+
+        if ($data['status'] === Konsultasi::STATUS_CANCELLED) {
+            $reason = trim((string) ($data['catatan_admin'] ?? ''));
+            $this->notifications->send(
+                $konsultasi->user,
+                'Permintaan konsultasi ditolak',
+                $reason !== ''
+                    ? 'Permintaan konsultasi Anda ditolak. Alasan: '.$reason
+                    : 'Permintaan konsultasi Anda ditolak oleh tim Daiku.',
+                route('konsultasi.show', $konsultasi, false),
+                'Lihat detail'
+            );
+        }
 
         return back()->with('success', 'Status konsultasi berhasil diperbarui.');
     }
@@ -309,7 +333,10 @@ class KonsultasiController extends Controller
 
     public function completeByDesigner(Request $request, Konsultasi $konsultasi)
     {
-        abort_unless($konsultasi->designer_id === $request->user()->id, 403);
+        abort_unless(
+            $request->user()->isAdmin() || $konsultasi->designer_id === $request->user()->id,
+            403
+        );
         abort_unless($konsultasi->pemesanan_id, 422, 'Konsultasi ini belum memiliki proyek terkait.');
 
         $project = $konsultasi->pemesanan;
@@ -353,11 +380,14 @@ class KonsultasiController extends Controller
         $this->notifications->admins(
             'Konsultasi selesai',
             'Desainer menyelesaikan konsultasi '.$konsultasi->nama.' dan proyek DI-'.$project->id.' masuk ke tahap desain awal.',
-            route('admin.pemesanan.show', $project, false),
+            route('admin.pemesanan.index', ['search' => 'DI-'.$project->id], false),
             'Tinjau proyek'
         );
 
-        return redirect()->route('pemesanan.show', $project)
+        $redirectRoute = $request->user()->isAdmin() ? 'admin.pemesanan.index' : 'pemesanan.show';
+        $redirectParams = $request->user()->isAdmin() ? ['search' => 'DI-'.$project->id] : [$project];
+
+        return redirect()->route($redirectRoute, $redirectParams)
             ->with('success', 'Hasil konsultasi tersimpan dan proyek masuk ke tahap desain awal.');
     }
 

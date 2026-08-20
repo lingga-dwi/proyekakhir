@@ -104,6 +104,13 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
 
         $project->refresh();
+        $this->assertSame('awaiting_admin_validation', $project->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ])->assertRedirect();
+
+        $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
 
         $this->actingAs($customer)->post(route('pemesanan.document.decision', $project), [
@@ -135,7 +142,19 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
 
         $project->refresh();
+        $this->assertSame('awaiting_admin_validation', $project->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ])->assertRedirect();
+
+        $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
+
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.store', $project), [
+            'name' => 'DP',
+            'amount' => 2000000,
+        ])->assertOk();
 
         $this->actingAs($customer)->post(route('pemesanan.document.decision', $project), [
             'stage' => 'draft',
@@ -152,26 +171,8 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('admin.pemesanan.dp.verify', $project))->assertRedirect();
 
         $project->refresh();
-        $this->assertSame('survey_pending', $project->workflow_stage);
-
-        $this->actingAs($admin)->put(route('admin.pemesanan.survey.schedule', $project), [
-            'designer_id' => $designer->id,
-            'survey_scheduled_at' => now()->addDays(2)->format('Y-m-d H:i:s'),
-            'survey_notes' => 'Pastikan pengukuran plafon dan titik listrik.',
-        ])->assertRedirect();
-
-        $project->refresh();
         $this->assertSame('survey_scheduled', $project->workflow_stage);
-
-        $this->actingAs($designer)->post(route('designer.proyek.survey.complete', $project), [
-            'survey_result' => 'Ukuran aktual, kondisi plafon, dan titik listrik telah didokumentasikan.',
-            'survey_document' => UploadedFile::fake()->image('hasil-survei.jpg'),
-        ])->assertRedirect();
-
-        $project->refresh();
-        $this->assertSame('final_design', $project->workflow_stage);
-        $this->assertNotNull($project->survey_completed_at);
-        $this->assertNotEmpty($project->survey_result);
+        $this->assertSame($designer->id, $project->designer_id);
 
         $this->actingAs($designer)->post(route('designer.proyek.document.upload', $project), [
             'document_type' => 'design',
@@ -179,7 +180,7 @@ class CustomDesignWorkflowTest extends TestCase
         ])->assertRedirect();
 
         $project->refresh();
-        $this->assertSame('final_design', $project->workflow_stage);
+        $this->assertSame('survey_scheduled', $project->workflow_stage);
 
         $this->actingAs($designer)->post(route('designer.proyek.document.upload', $project), [
             'document_type' => 'rab',
@@ -187,7 +188,7 @@ class CustomDesignWorkflowTest extends TestCase
         ])->assertRedirect();
 
         $project->refresh();
-        $this->assertSame('final_design', $project->workflow_stage);
+        $this->assertSame('survey_scheduled', $project->workflow_stage);
 
         $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
 
@@ -261,7 +262,7 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project))->assertRedirect();
 
         $project->refresh();
-        $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
+        $this->assertSame('awaiting_admin_validation', $project->workflow_stage);
         $this->assertDatabaseCount('project_documents', 2);
         $this->assertDatabaseHas('project_documents', [
             'pemesanan_id' => $project->id,
@@ -269,6 +270,13 @@ class CustomDesignWorkflowTest extends TestCase
             'document_type' => 'design',
             'submission_round' => 1,
         ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ])->assertRedirect();
+
+        $project->refresh();
+        $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
         $this->assertSame('Desain awal dan RAB tersedia', $customer->fresh()->notifications()->first()->data['title']);
 
         $documents = $project->documents()->orderBy('id')->get();
@@ -355,6 +363,11 @@ class CustomDesignWorkflowTest extends TestCase
             'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
         ]);
         $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project));
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ]);
 
         $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
@@ -379,7 +392,7 @@ class CustomDesignWorkflowTest extends TestCase
             'id_user' => $customer->id,
             'tanggal_pesan' => now()->toDateString(),
             'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
-            'workflow_stage' => 'survey_pending',
+            'workflow_stage' => 'survey_scheduled',
             'progress' => 25,
             'total_harga' => 10000000,
             'jenis_proyek' => 'Desain interior',
@@ -486,6 +499,11 @@ class CustomDesignWorkflowTest extends TestCase
             'canManageDocuments' => false,
             'isAwaitingDecision' => true,
         ]);
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ])->assertOk();
         $this->assertSame('awaiting_draft_approval', $project->fresh()->workflow_stage);
 
         $deleteResponse = $this->actingAs($admin)
@@ -571,7 +589,7 @@ class CustomDesignWorkflowTest extends TestCase
         $this->assertSame('draft_design', $project->fresh()->workflow_stage);
     }
 
-    public function test_sending_draft_documents_fails_without_a_price(): void
+    public function test_sending_draft_documents_succeeds_without_a_price_but_admin_validation_requires_one(): void
     {
         Storage::fake('local');
 
@@ -596,14 +614,249 @@ class CustomDesignWorkflowTest extends TestCase
             'document' => UploadedFile::fake()->create('rab-admin.pdf', 100, 'application/pdf'),
         ]);
 
-        $response = $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project));
-
-        $response->assertStatus(422)->assertJson(['success' => false]);
-        $this->assertSame('draft_design', $project->fresh()->workflow_stage);
-
-        $project->update(['total_harga' => 5000000]);
+        // The designer/admin must be able to send the draft RAB for admin validation before
+        // a price is set, since the draft RAB is what informs the admin's price decision.
         $this->actingAs($admin)->postJson(route('admin.pemesanan.document.send', $project))
             ->assertOk()->assertJson(['success' => true]);
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+
+        // Admin cannot validate & send to the customer without setting a price.
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project))
+            ->assertSessionHasErrors('total_harga');
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 5000000,
+        ])->assertRedirect();
+
         $this->assertSame('awaiting_draft_approval', $project->fresh()->workflow_stage);
+
+        // Validating no longer locks in a fixed 20% invoice — billing is fully flexible
+        // and left to the admin to create via "Buat Tagihan" whenever they choose.
+        $this->assertDatabaseCount('project_invoices', 0);
+
+        $this->actingAs($customer)->postJson(route('pemesanan.document.decision', $project), [
+            'stage' => 'draft',
+            'decision' => 'approved',
+        ])->assertOk()->assertJson(['success' => true]);
+        $this->assertNotSame('awaiting_draft_approval', $project->fresh()->workflow_stage);
+    }
+
+    public function test_admin_can_request_revision_during_validation(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'awaiting_admin_validation',
+            'progress' => 15,
+            'draft_round' => 1,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.revision', $project), [
+            'feedback' => 'Ukuran kabinet tidak sesuai permintaan pelanggan.',
+        ])->assertRedirect();
+
+        $project->refresh();
+        $this->assertSame('revision_requested', $project->workflow_stage);
+        $this->assertSame(2, $project->draft_round);
+        $this->assertSame(
+            'Admin meminta revisi',
+            $designer->fresh()->notifications()->first()->data['title']
+        );
+    }
+
+    public function test_designer_can_send_draft_documents_directly_from_konsultasi_stage(): void
+    {
+        Storage::fake('local');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $designer = User::factory()->create(['role' => 'designer']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'designer_id' => $designer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'konsultasi',
+            'progress' => 10,
+            'jenis_proyek' => 'Desain interior',
+            'jenis_bangunan' => 'Rumah tinggal',
+        ]);
+
+        $this->actingAs($designer)->post(route('designer.proyek.document.upload', $project), [
+            'document_type' => 'design',
+            'document' => UploadedFile::fake()->image('desain-awal.jpg'),
+        ])->assertRedirect();
+        $this->actingAs($designer)->post(route('designer.proyek.document.upload', $project), [
+            'document_type' => 'rab',
+            'document' => UploadedFile::fake()->create('rab-awal.pdf', 100, 'application/pdf'),
+        ])->assertRedirect();
+
+        $this->assertSame('konsultasi', $project->fresh()->workflow_stage);
+
+        // The designer must be able to send the draft desain & RAB straight from the
+        // Konsultasi stage, without a separate "complete consultation" step first.
+        $this->actingAs($designer)->postJson(route('designer.proyek.document.send', $project))
+            ->assertOk()->assertJson(['success' => true]);
+
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+        $this->assertDatabaseHas('project_documents', [
+            'pemesanan_id' => $project->id,
+            'document_type' => 'design',
+            'stage' => 'draft',
+        ]);
+    }
+
+    public function test_admin_can_create_a_flexible_invoice_for_a_project(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'approved',
+            'total_harga' => 50000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+
+        $response = $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.store', $project), [
+            'name' => 'Termin 2 - Pemasangan',
+            'amount' => 20000000,
+            'due_date' => now()->addDays(10)->toDateString(),
+            'note' => 'Dibayar setelah pemasangan kabinet selesai.',
+        ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+        $this->assertDatabaseHas('project_invoices', [
+            'pemesanan_id' => $project->id,
+            'type' => 'custom',
+            'name' => 'Termin 2 - Pemasangan',
+            'amount' => 20000000,
+            'status' => 'pending',
+            'created_by' => $admin->id,
+        ]);
+        $this->assertSame(
+            'Tagihan baru tersedia',
+            $customer->fresh()->notifications()->first()->data['title']
+        );
+    }
+
+    public function test_admin_can_create_invoice_beyond_project_value_for_additional_charges(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'approved',
+            'total_harga' => 50000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+        $project->invoices()->create([
+            'number' => 'DP-2026-00001',
+            'type' => 'dp_20',
+            'name' => 'DP 20%',
+            'amount' => 10000000,
+            'status' => 'paid',
+        ]);
+
+        // Amounts that exceed the remaining project value are allowed, to cover
+        // additional charges (biaya tambahan) beyond the original quote.
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.store', $project), [
+            'name' => 'Biaya Tambahan',
+            'amount' => 45000000,
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('project_invoices', ['name' => 'Biaya Tambahan', 'amount' => 45000000]);
+    }
+
+    public function test_admin_can_mark_a_custom_invoice_as_paid(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'approved',
+            'total_harga' => 50000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+        $invoice = $project->invoices()->create([
+            'number' => 'INV-2026-0001-'.$project->id,
+            'type' => 'custom',
+            'name' => 'Termin 2',
+            'amount' => 15000000,
+            'status' => 'pending',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.paid', [$project, $invoice]))
+            ->assertOk()->assertJson(['success' => true]);
+
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame($admin->id, $invoice->fresh()->verified_by);
+    }
+
+    public function test_customer_can_upload_evidence_for_any_unpaid_invoice(): void
+    {
+        Storage::fake('payment_evidence');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'approved',
+            'total_harga' => 50000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+        $firstInvoice = $project->invoices()->create([
+            'number' => 'DP-2026-00001',
+            'type' => 'custom',
+            'name' => 'DP',
+            'amount' => 10000000,
+            'status' => 'paid',
+            'created_at' => now()->subDay(),
+        ]);
+        $secondInvoice = $project->invoices()->create([
+            'number' => 'INV-2026-0001-'.$project->id,
+            'type' => 'custom',
+            'name' => 'Biaya Tambahan',
+            'amount' => 5000000,
+            'status' => 'pending',
+            'created_by' => $admin->id,
+        ]);
+
+        // Cannot upload proof against an invoice that's already paid.
+        $this->actingAs($customer)
+            ->postJson(route('pemesanan.invoice-evidence.upload', [$project, $firstInvoice]), [
+                'bukti_pembayaran' => UploadedFile::fake()->image('bukti.jpg'),
+            ])
+            ->assertStatus(422);
+
+        $this->actingAs($customer)
+            ->postJson(route('pemesanan.invoice-evidence.upload', [$project, $secondInvoice]), [
+                'bukti_pembayaran' => UploadedFile::fake()->image('bukti.jpg'),
+            ])
+            ->assertOk()->assertJson(['success' => true]);
+
+        $secondInvoice->refresh();
+        $this->assertSame('submitted', $secondInvoice->status);
+        $this->assertNotNull($secondInvoice->proof_path);
+        // Only the DP invoice (the first one created) drives the workflow stage;
+        // uploading proof for a later invoice doesn't touch it.
+        $this->assertSame('approved', $project->fresh()->workflow_stage);
     }
 }

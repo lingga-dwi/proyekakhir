@@ -55,7 +55,10 @@
                         <i class="fas fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
                     </a>
                     <a href="{{ route('designer.projects.index') }}" class="{{ $baseNav }} {{ request()->routeIs('designer.projects.*') ? $activeNav : $inactiveNav }}">
-                        <i class="fas fa-drafting-compass w-5 text-center"></i><span>Proyek Saya</span>
+                        <i class="fas fa-clipboard-list w-5 text-center"></i><span>Proyek Saya</span>
+                    </a>
+                    <a href="{{ route('admin.katalog.index') }}" class="{{ $baseNav }} {{ request()->routeIs('admin.katalog.*', 'admin.categories.*') ? $activeNav : $inactiveNav }}">
+                        <i class="fas fa-images w-5 text-center"></i><span>Kelola Katalog</span>
                     </a>
                 @endif
             </nav>
@@ -101,12 +104,6 @@
             </header>
 
             <main class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
-                @if(session('success'))
-                    <div class="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{{ session('success') }}</div>
-                @endif
-                @if(session('error'))
-                    <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ session('error') }}</div>
-                @endif
                 @if($errors->any())
                     <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
                         <p class="font-semibold">Periksa kembali data berikut:</p>
@@ -165,7 +162,7 @@
         x-show="open"
         @open-confirmation.window="show($event.detail)"
         @keydown.escape.window="close()"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+        class="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6"
         role="presentation"
     >
         <div
@@ -223,6 +220,8 @@
             </div>
         </section>
     </div>
+
+    @include('partials.notification-card')
 
     @stack('scripts')
 </body>

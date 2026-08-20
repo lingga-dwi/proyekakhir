@@ -1,12 +1,12 @@
-@extends($adminView ? 'layouts.dashboard' : 'layouts.main')
+@extends('layouts.main')
 
 @section('title', 'Detail Pesanan - Daiku Interior')
 @section('page-title', 'Detail Pesanan')
 @section('page-description', 'Tinjau kebutuhan pelanggan, pembayaran, dan progres proyek')
 
 @section('content')
-<div class="{{ $adminView ? '' : 'min-h-screen bg-gray-50 py-8' }}">
-    <div class="{{ $adminView ? 'mx-auto max-w-6xl' : 'mx-auto max-w-4xl px-4 sm:px-6 lg:px-8' }}">
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         @if(session('success'))
             <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
         @endif
@@ -93,10 +93,10 @@
                     @csrf
                     <button
                         class="w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-                        @disabled(! $hasDesign || ! $hasRab || ($activeDocumentStage === 'draft' && (float) $pemesanan->total_harga <= 0))
+                        @disabled(! $hasDesign || ! $hasRab)
                     >Kirim ke Pelanggan</button>
                     @if($activeDocumentStage === 'draft' && (float) $pemesanan->total_harga <= 0)
-                        <p class="mt-1.5 text-xs text-slate-500">Tetapkan nilai penawaran sebelum mengirim ke pelanggan.</p>
+                        <p class="mt-1.5 text-xs text-slate-500">Isi Nilai Penawaran sebelum pelanggan menyetujui desain ini, agar invoice DP 20% dapat dibuat.</p>
                     @endif
                 </form>
             </section>
@@ -137,45 +137,6 @@
                 @if(auth()->id() === $pemesanan->id_user && $pemesanan->workflow_stage === 'awaiting_dp')
                     <form method="POST" action="{{ route('pemesanan.dp-evidence.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 flex flex-col gap-3 sm:flex-row">
                         @csrf <input type="file" name="bukti_pembayaran" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="min-w-0 flex-1 rounded-lg border border-slate-300 p-2 text-sm"><button class="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950">Kirim bukti DP</button>
-                    </form>
-                @endif
-                @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'dp_verification')
-                    <form method="POST" action="{{ route('admin.pemesanan.dp.verify', $pemesanan) }}" class="mt-4">@csrf <button class="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white">Verifikasi DP</button></form>
-                @endif
-            </section>
-        @endif
-
-        @if(auth()->user()->isAdmin() && $pemesanan->workflow_stage === 'survey_pending')
-            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 class="font-semibold text-slate-950">Tugaskan desainer & jadwalkan survei</h2>
-                <form method="POST" action="{{ route('admin.pemesanan.survey.schedule', $pemesanan) }}" class="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_1.4fr_auto]">
-                    @csrf @method('PUT')
-                    <select name="designer_id" required class="rounded-lg border-slate-300">
-                        <option value="">Pilih desainer</option>
-                        @foreach($designers as $designer)
-                            <option value="{{ $designer->id }}" @selected(old('designer_id', $pemesanan->designer_id) == $designer->id)>{{ $designer->nama }}</option>
-                        @endforeach
-                    </select>
-                    <input type="datetime-local" name="survey_scheduled_at" min="{{ now()->format('Y-m-d\\TH:i') }}" required class="rounded-lg border-slate-300">
-                    <input type="text" name="survey_notes" maxlength="2000" placeholder="Catatan survei" class="rounded-lg border-slate-300">
-                    <button class="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white">Simpan jadwal</button>
-                </form>
-            </section>
-        @endif
-
-        @if($pemesanan->workflow_stage === 'survey_scheduled')
-            <section class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                <h2 class="font-semibold text-slate-950">Jadwal survei lokasi</h2>
-                <p class="mt-2 text-sm text-slate-700">{{ $pemesanan->survey_scheduled_at?->translatedFormat('j F Y, H:i') }}{{ $pemesanan->designer ? ' · '.$pemesanan->designer->nama : '' }}</p>
-                @if($pemesanan->survey_notes)<p class="mt-1 text-sm leading-6 text-slate-600">{{ $pemesanan->survey_notes }}</p>@endif
-                @if($pemesanan->designer_id === auth()->id())
-                    <form method="POST" action="{{ route('designer.proyek.survey.complete', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3">
-                        @csrf
-                        <textarea name="survey_result" rows="4" maxlength="5000" required class="rounded-lg border-slate-300" placeholder="Catat ukuran aktual, kondisi lokasi, titik listrik/mekanikal, dan temuan survei.">{{ old('survey_result') }}</textarea>
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <input type="file" name="survey_document" accept=".jpg,.jpeg,.png,.webp,.pdf" class="min-w-0 rounded-lg border border-slate-300 bg-white p-2 text-sm">
-                            <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Selesaikan survei</button>
-                        </div>
                     </form>
                 @endif
             </section>

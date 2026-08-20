@@ -46,15 +46,15 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[850px] text-left">
+        <table class="w-full min-w-[1160px] text-left">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                    <th class="px-5 py-3">Proyek</th>
+                    <th class="px-5 py-3">Referensi</th>
                     <th class="px-5 py-3">Pelanggan</th>
+                    <th class="px-5 py-3">Detail Proyek</th>
+                    <th class="px-5 py-3">Catatan Konsultasi</th>
                     <th class="px-5 py-3">Status</th>
-                    <th class="px-5 py-3">Target</th>
-                    <th class="px-5 py-3">Progres</th>
-                    <th class="px-5 py-3 text-right">Aksi</th>
+                    <th class="px-5 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -65,6 +65,7 @@
                             $project->status_pemesanan === 'dibatalkan' => 'bg-red-50 text-red-700',
                             $project->status_pemesanan === 'selesai' => 'bg-emerald-50 text-emerald-700',
                             $project->workflow_stage === 'approved' => 'bg-purple-50 text-purple-700',
+                            $project->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-50 text-orange-700',
                             default => 'bg-blue-50 text-blue-700',
                         };
                         $canUpdate = !in_array($project->status_pemesanan, ['selesai', 'dibatalkan'], true);
@@ -89,15 +90,15 @@
                             ];
                         })->filter(fn ($attachment) => $attachment['url'])->values()->all();
 
-                        $canManageDocuments = in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'final_design'], true);
-                        $isSendableStage = in_array($project->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true);
-                        $isAwaitingDecision = in_array($project->workflow_stage, ['awaiting_draft_approval', 'awaiting_final_approval'], true);
+                        $canManageDocuments = in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design'], true);
+                        $isSendableStage = in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design'], true);
+                        $isAwaitingDecision = in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_final_approval'], true);
                         $docStage = null;
                         $docRound = null;
-                        if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_draft_approval'], true)) {
+                        if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_admin_validation', 'awaiting_draft_approval'], true)) {
                             $docStage = 'draft';
                             $docRound = (int) $project->draft_round;
-                        } elseif (in_array($project->workflow_stage, ['final_design', 'awaiting_final_approval'], true)) {
+                        } elseif (in_array($project->workflow_stage, ['survey_scheduled', 'final_design', 'awaiting_final_approval'], true)) {
                             $docStage = 'final';
                             $docRound = (int) $project->final_round;
                         }
@@ -135,6 +136,7 @@
                             'reference' => 'DI-'.str_pad((string) $project->id, 3, '0', STR_PAD_LEFT),
                             'status' => $project->status_pemesanan,
                             'stageLabel' => \App\Support\ProjectStageLabel::forPemesanan($project),
+                            'docStage' => $docStage,
                             'target' => $project->target_selesai?->format('Y-m-d'),
                             'note' => $project->catatan_progres,
                             'customer' => $project->user?->nama,
@@ -162,31 +164,64 @@
                     <tr class="transition hover:bg-slate-50/80">
                         <td class="px-5 py-4">
                             <p class="text-xs font-semibold text-amber-700">DI-{{ str_pad($project->id, 3, '0', STR_PAD_LEFT) }}</p>
-                            <p class="mt-1 text-sm font-semibold text-slate-950">{{ $project->jenis_proyek ?: 'Proyek Interior' }}</p>
-                            <p class="mt-0.5 text-xs text-slate-500">{{ $project->jenis_bangunan ?: 'Jenis bangunan belum ditentukan' }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $project->created_at?->translatedFormat('d M Y') }}</p>
                         </td>
                         <td class="px-5 py-4">
-                            <p class="text-sm font-medium text-slate-700">{{ $project->user?->nama ?? 'Pelanggan tidak tersedia' }}</p>
-                            <p class="mt-0.5 text-xs text-slate-400">{{ $project->user?->email }}</p>
+                            <p class="text-sm font-medium text-slate-900">{{ $project->user?->nama ?? 'Pelanggan tidak tersedia' }}</p>
+                            <p class="max-w-[190px] truncate text-xs text-slate-500">{{ $project->user?->email }}</p>
+                            @if($konsultasi?->no_telp)<p class="mt-1 text-[11px] text-slate-400">{{ $konsultasi->no_telp }}</p>@endif
+                            <p class="mt-1 max-w-[240px] truncate text-[11px] text-slate-500" title="{{ $konsultasi?->alamat ?: 'Alamat proyek belum diisi' }}">
+                                <span class="font-medium text-slate-400">Alamat:</span> {{ $konsultasi?->alamat ?: 'Belum diisi' }}
+                            </p>
+                        </td>
+                        <td class="px-5 py-4">
+                            <p class="text-sm font-medium text-slate-900">{{ $project->jenis_proyek ?: 'Proyek Interior' }}</p>
+                            <p class="text-xs text-slate-500">{{ $project->jenis_bangunan ?: 'Jenis bangunan belum ditentukan' }}</p>
+                            @if($project->luas_area !== null)
+                                <p class="mt-1 text-[11px] text-slate-400">{{ rtrim(rtrim(number_format((float) $project->luas_area, 2, ',', '.'), '0'), ',') }} m&sup2;</p>
+                            @endif
+                            @if($budgetLabel)
+                                <p class="mt-0.5 text-[11px] text-slate-400">{{ $budgetLabel }}</p>
+                            @endif
+                        </td>
+                        <td class="px-5 py-4">
+                            <p class="max-w-[220px] truncate text-xs text-slate-600" title="{{ $project->deskripsi_keinginan_desain ?: 'Belum ada catatan' }}">{{ $project->deskripsi_keinginan_desain ?: 'Belum ada catatan' }}</p>
+                            @if(count($attachments))
+                                @php
+                                    $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                                    $firstAttachment = $attachments[0];
+                                    $firstIsImage = in_array(strtolower(pathinfo($firstAttachment['name'], PATHINFO_EXTENSION)), $imageExtensions, true);
+                                @endphp
+                                <button
+                                    type="button"
+                                    data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
+                                    onclick="openDpModal(this)"
+                                    class="mt-1.5 flex items-center gap-1.5 rounded-lg transition hover:opacity-80"
+                                    title="Lihat {{ count($attachments) }} lampiran"
+                                >
+                                    <span class="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                        @if($firstIsImage)
+                                            <img src="{{ $firstAttachment['url'] }}" alt="{{ $firstAttachment['name'] }}" class="h-full w-full object-cover">
+                                        @else
+                                            <span class="flex h-full w-full items-center justify-center text-slate-300"><i class="fas fa-file-lines" aria-hidden="true"></i></span>
+                                        @endif
+                                    </span>
+                                    @if(count($attachments) > 1)
+                                        <span class="text-[11px] font-semibold text-slate-500">+{{ count($attachments) - 1 }}</span>
+                                    @endif
+                                </button>
+                            @endif
                         </td>
                         <td class="px-5 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span></td>
-                        <td class="px-5 py-4 text-sm text-slate-600">{{ $project->target_selesai?->translatedFormat('d M Y') ?? 'Belum ditentukan' }}</td>
                         <td class="px-5 py-4">
                             <div class="flex items-center gap-2">
-                                <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full bg-blue-500" style="width: {{ $project->progress }}%"></div></div>
-                                <span class="text-xs font-semibold text-slate-500">{{ $project->progress }}%</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('pemesanan.show', $project) }}" class="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Detail</a>
                                 @if($canUpdate)
                                     <button
                                         type="button"
-                                        class="inline-flex h-9 items-center rounded-lg bg-slate-950 px-3 text-sm font-semibold text-white hover:bg-slate-800"
+                                        class="inline-flex h-9 items-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                         data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
                                         onclick="openDpModal(this)"
-                                    >Kelola</button>
+                                    >Unggah Desain &amp; RAB</button>
                                 @endif
                             </div>
                         </td>
@@ -222,75 +257,43 @@ function openDpModal(button) {
     currentDpModalData = project;
     currentDpModalButton = button;
 
-    document.getElementById('dpForm').action = `{{ url('/designer/proyek') }}/${project.id}`;
     document.getElementById('dpReferenceTitle').textContent = `#${project.reference}`;
     document.getElementById('dpReference').textContent = project.reference;
-    document.getElementById('dpCustomer').textContent = project.customer || 'Belum diisi';
-    document.getElementById('dpPhone').textContent = project.phone || 'Belum diisi';
-    document.getElementById('dpEmail').textContent = project.email || 'Belum diisi';
-    document.getElementById('dpAddress').textContent = project.address || 'Belum diisi';
-    document.getElementById('dpTitle').textContent = project.title || 'Belum ditentukan';
-    document.getElementById('dpBuilding').textContent = project.building || 'Belum ditentukan';
-    document.getElementById('dpArea').textContent = project.area !== null ? `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(project.area)} m²` : 'Belum diisi';
-    document.getElementById('dpBudgetLabel').textContent = project.budgetLabel || 'Belum ditentukan';
-    document.getElementById('dpDescription').textContent = project.description || 'Belum ada catatan kebutuhan.';
 
-    const attachmentSection = document.getElementById('dpAttachments');
-    const attachmentList = document.getElementById('dpAttachmentList');
-    attachmentList.replaceChildren();
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    (project.attachments || []).forEach(attachment => {
-        const extension = (attachment.name.split('.').pop() || '').toLowerCase();
-        const isImage = imageExtensions.includes(extension);
-        const link = document.createElement('a');
-        link.href = attachment.url;
-        link.className = 'group block overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:border-amber-300';
-        link.innerHTML = isImage
-            ? `<img src="${attachment.url}" alt="${attachment.name}" class="aspect-square w-full object-cover">`
-            : '<div class="flex aspect-square w-full items-center justify-center"><i class="fas fa-file-lines text-3xl text-slate-300" aria-hidden="true"></i></div>';
-        const caption = document.createElement('p');
-        caption.className = 'truncate px-2 py-1.5 text-[11px] font-medium text-slate-600 group-hover:text-amber-700';
-        caption.textContent = attachment.name;
-        link.appendChild(caption);
-        attachmentList.appendChild(link);
-    });
-    attachmentSection.classList.toggle('hidden', !project.attachments?.length);
-
-    document.getElementById('dpStageLabel').textContent = project.stageLabel || 'Proses Proyek';
-    document.getElementById('dpStatus').value = project.status;
-    document.getElementById('dpTarget').value = project.target || '';
-    document.getElementById('dpNote').value = project.note || '';
-    document.getElementById('dpDetailLink').href = project.showUrl;
-
-    document.getElementById('dpTotalHarga').textContent = project.totalHarga > 0
-        ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(project.totalHarga)
-        : 'Belum ditetapkan oleh admin';
+    const stageMeta = {
+        draft: {
+            pill: 'Tahap 1 dari 2',
+            title: 'Desain Awal & Draft RAB',
+            subtitle: 'Unggah desain awal dan draft RAB untuk dikirim ke pelanggan agar dapat divalidasi.',
+            designLabel: 'Desain Awal', designDrop: 'desain awal',
+            rabLabel: 'Draft RAB', rabDrop: 'draft RAB',
+        },
+        final: {
+            pill: 'Tahap 2 dari 2',
+            title: 'Desain Final & RAB Final',
+            subtitle: 'Unggah desain final dan RAB final untuk dikirim kepada pelanggan.',
+            designLabel: 'Desain Final', designDrop: 'desain final',
+            rabLabel: 'RAB Final', rabDrop: 'RAB final',
+        },
+    };
+    const currentStageMeta = stageMeta[project.docStage] || {
+        pill: 'Belum dimulai',
+        title: 'Desain & RAB',
+        subtitle: 'Desain dan RAB belum dapat diunggah pada tahap ini.',
+        designLabel: 'Desain', designDrop: 'desain',
+        rabLabel: 'RAB', rabDrop: 'RAB',
+    };
+    document.getElementById('dpStagePill').textContent = currentStageMeta.pill;
+    document.getElementById('dpStageTitle').textContent = currentStageMeta.title;
+    document.getElementById('dpStageSubtitle').textContent = currentStageMeta.subtitle;
+    document.getElementById('dpDesignFieldLabel').textContent = currentStageMeta.designLabel;
+    document.getElementById('dpDesignDropLabel').textContent = currentStageMeta.designDrop;
+    document.getElementById('dpRabFieldLabel').textContent = currentStageMeta.rabLabel;
+    document.getElementById('dpRabDropLabel').textContent = currentStageMeta.rabDrop;
 
     renderDpDocumentSlot('Design', 'design');
     renderDpDocumentSlot('Rab', 'rab');
-    updateDpDocStatus();
     updateDpSendButtonState();
-
-    const historyPanel = document.getElementById('dpHistoryPanel');
-    historyPanel.replaceChildren();
-    const decisionLabels = { approved: 'Disetujui', revision_requested: 'Minta revisi' };
-    const stageLabels = { draft: 'Desain awal', final: 'Desain final' };
-    (project.decisions || []).forEach(decision => {
-        const row = document.createElement('div');
-        row.className = 'rounded-lg bg-slate-50 p-2.5 text-xs';
-        row.innerHTML = `<p class="font-semibold text-slate-700">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
-            <p class="mt-0.5 text-slate-500">${decision.customer || 'Pelanggan'} · ${decision.date}</p>
-            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`;
-        historyPanel.appendChild(row);
-    });
-    if (!project.decisions?.length) {
-        historyPanel.innerHTML = '<p class="text-xs text-slate-400">Belum ada keputusan dari pelanggan.</p>';
-    }
-    historyPanel.classList.add('hidden');
-    document.getElementById('dpHistoryToggle').onclick = () => historyPanel.classList.toggle('hidden');
-
-    clearTimeout(dpToastTimer);
-    document.getElementById('dpToast').classList.add('hidden');
 
     const modal = document.getElementById('dpModal');
     modal.classList.remove('hidden');
@@ -303,53 +306,13 @@ function closeDpModal() {
     modal.classList.remove('flex');
 }
 
-function updateDpDocStatus() {
-    const project = currentDpModalData;
-    let docStatus = 'Belum ada desain & RAB pada tahap ini.';
-    if (project.isAwaitingDecision) {
-        docStatus = 'Terkirim ke pelanggan, menunggu keputusan.';
-    } else if (project.design && project.rab) {
-        docStatus = 'Desain & RAB lengkap. Belum dikirim ke pelanggan.';
-    } else if (project.design || project.rab) {
-        docStatus = `Belum dikirim ke pelanggan. Unggah ${project.design ? 'RAB' : 'desain'} untuk melengkapi.`;
-    } else if (!project.canManageDocuments) {
-        docStatus = 'Desain & RAB tidak dapat dikelola pada tahap ini.';
-    }
-    document.getElementById('dpDocStatus').textContent = docStatus;
-}
 
 function updateDpSendButtonState() {
     const project = currentDpModalData;
     const sendBtn = document.getElementById('dpSendBtn');
-    const infoBox = document.getElementById('dpSendInfo');
-    const infoText = document.getElementById('dpSendInfoText');
 
     sendBtn.classList.toggle('hidden', project.isAwaitingDecision || !project.canManageDocuments);
-
-    const isDraftStage = !project.stageLabel || project.stageLabel === 'Menunggu Desain Awal & Draft RAB';
-    const priceMissing = isDraftStage && !(project.totalHarga > 0);
-    sendBtn.disabled = !project.canSend || priceMissing;
-
-    if (project.isAwaitingDecision) {
-        infoBox.classList.add('hidden');
-        infoBox.classList.remove('flex');
-    } else if (project.stageLabel === 'Konsultasi') {
-        infoText.textContent = 'Selesaikan konsultasi terlebih dahulu (isi hasil konsultasi) sebelum dokumen dapat dikirim ke pelanggan. File yang diunggah di sini tetap tersimpan.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else if (!project.canSend) {
-        infoText.textContent = 'Unggah desain dan RAB terlebih dahulu sebelum mengirim ke pelanggan.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else if (priceMissing) {
-        infoText.textContent = 'Admin belum menetapkan nilai penawaran. Hubungi admin sebelum mengirim ke pelanggan.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else {
-        infoText.textContent = 'Setelah pelanggan menyetujui desain ini, sistem akan menampilkan pembayaran DP 20%.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    }
+    sendBtn.disabled = !project.canSend;
 }
 
 function sendDpDocuments() {
@@ -373,7 +336,7 @@ function sendDpDocuments() {
         .catch(() => showDpToast('Gagal mengirim ke pelanggan. Periksa koneksi Anda.', 'error'))
         .finally(() => {
             sendBtn.disabled = !project.canSend;
-            sendBtn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim ke Pelanggan';
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim';
             updateDpSendButtonState();
         });
 }
@@ -426,18 +389,11 @@ function renderDpDocumentSlot(cap, type) {
 }
 
 function dpCsrfToken() {
-    return document.querySelector('#dpForm input[name="_token"]').value;
+    return document.querySelector('#dpDesignUploadForm input[name="_token"]').value;
 }
 
-let dpToastTimer = null;
 function showDpToast(message, tone = 'success') {
-    const toast = document.getElementById('dpToast');
-    toast.textContent = message;
-    toast.className = tone === 'success'
-        ? 'absolute left-1/2 top-4 z-10 flex w-[min(90%,26rem)] -translate-x-1/2 items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-center text-sm font-semibold text-green-800 shadow-lg'
-        : 'absolute left-1/2 top-4 z-10 flex w-[min(90%,26rem)] -translate-x-1/2 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-center text-sm font-semibold text-red-800 shadow-lg';
-    clearTimeout(dpToastTimer);
-    dpToastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    showNotificationCard(message, tone);
 }
 
 function applyDpDocumentResponse(json) {
@@ -448,7 +404,6 @@ function applyDpDocumentResponse(json) {
     currentDpModalData.totalHarga = json.totalHarga;
     renderDpDocumentSlot('Design', 'design');
     renderDpDocumentSlot('Rab', 'rab');
-    updateDpDocStatus();
     updateDpSendButtonState();
     syncDpModalButton();
     showDpToast(json.message || 'Berhasil disimpan.');
@@ -492,47 +447,41 @@ function formatDpFileSize(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function saveDpChanges() {
-    const saveBtn = document.getElementById('dpSaveBtn');
-    const form = document.getElementById('dpForm');
-    const note = document.getElementById('dpNote').value.trim();
-    if (!note) {
-        showDpToast('Catatan progres wajib diisi.', 'error');
-        return;
-    }
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Menyimpan...';
-
-    fetch(form.action, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': dpCsrfToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            status_pemesanan: document.getElementById('dpStatus').value,
-            target_selesai: document.getElementById('dpTarget').value || null,
-            catatan_progres: note,
-        }),
-    })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
-            if (!ok) {
-                const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal menyimpan perubahan.');
-                showDpToast(errorMessage, 'error');
-                return;
-            }
-            currentDpModalData.target = document.getElementById('dpTarget').value || null;
-            currentDpModalData.note = note;
-            syncDpModalButton();
-            showDpToast(json.message || 'Perubahan berhasil disimpan.');
-        })
-        .catch(() => showDpToast('Gagal menyimpan perubahan. Periksa koneksi Anda.', 'error'))
-        .finally(() => {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Simpan Perubahan';
-        });
-}
-
 document.getElementById('dpModal').addEventListener('click', event => {
     if (event.target.id === 'dpModal') closeDpModal();
 });
+
+(function pollForUpdates() {
+    const heartbeatUrl = '{{ route('designer.projects.heartbeat') }}';
+    let lastSignal = null;
+    let isFirstCheck = true;
+
+    function anyModalOpen() {
+        const modal = document.getElementById('dpModal');
+        return modal && !modal.classList.contains('hidden');
+    }
+
+    function check() {
+        fetch(heartbeatUrl, { headers: { 'Accept': 'application/json' } })
+            .then(response => response.ok ? response.json() : null)
+            .then(payload => {
+                if (!payload) return;
+
+                if (isFirstCheck) {
+                    lastSignal = payload.signal;
+                    isFirstCheck = false;
+                    return;
+                }
+
+                if (payload.signal !== lastSignal && !anyModalOpen()) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => {});
+    }
+
+    check();
+    setInterval(check, 5000);
+})();
 </script>
 @endpush

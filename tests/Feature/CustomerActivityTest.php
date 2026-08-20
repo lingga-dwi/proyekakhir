@@ -143,6 +143,11 @@ class CustomerActivityTest extends TestCase
             'document' => UploadedFile::fake()->create('rab-awal.pdf', 100, 'application/pdf'),
         ]);
         $this->actingAs($admin)->post(route('admin.pemesanan.document.send', $project));
+        $this->assertSame('awaiting_admin_validation', $project->fresh()->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate.send', $project), [
+            'total_harga' => 10000000,
+        ]);
 
         $project->refresh();
         $this->assertSame('awaiting_draft_approval', $project->workflow_stage);
@@ -174,6 +179,11 @@ class CustomerActivityTest extends TestCase
             'jenis_bangunan' => 'Rumah tinggal',
         ]);
 
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.store', $project), [
+            'name' => 'DP',
+            'amount' => 2000000,
+        ])->assertOk();
+
         $response = $this->actingAs($customer)->postJson(route('pemesanan.document.decision', $project), [
             'stage' => 'draft',
             'decision' => 'approved',
@@ -181,6 +191,13 @@ class CustomerActivityTest extends TestCase
 
         $response->assertOk()->assertJson(['success' => true]);
         $this->assertSame('awaiting_dp', $project->fresh()->workflow_stage);
+
+        // The response carries a fresh review payload so the customer's already-open
+        // modal can switch straight into the payment view without a page reload, and
+        // each unpaid invoice carries its own upload URL.
+        $response->assertJsonPath('review.stage', 'payment');
+        $response->assertJsonStructure(['review' => ['invoices' => [['uploadUrl']], 'bankAccountNumber']]);
+        $response->assertJsonPath('review.invoices.0.uploadUrl', fn ($url) => str_contains($url, '/bukti-pembayaran'));
     }
 
     public function test_customer_can_request_revision_from_review_modal_via_ajax(): void

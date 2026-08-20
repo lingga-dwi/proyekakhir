@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pemesanan;
 use App\Models\Konsultasi;
+use App\Models\Pemesanan;
 use App\Models\StatusTracking;
 use App\Models\User;
 use Carbon\Carbon;
@@ -46,13 +46,13 @@ class DashboardController extends Controller
                 'title' => $tracking->catatan === 'Proyek dibuat dari permintaan konsultasi.'
                     ? 'Proyek baru dibuat'
                     : match ($tracking->status) {
-                    'pending' => 'Pesanan baru diterima',
-                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
-                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
-                    'selesai' => 'Proyek diselesaikan',
-                    'dibatalkan' => 'Proyek dibatalkan',
-                    default => 'Progres diperbarui',
-                },
+                        'pending' => 'Pesanan baru diterima',
+                        'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                        'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                        'selesai' => 'Proyek diselesaikan',
+                        'dibatalkan' => 'Proyek dibatalkan',
+                        default => 'Progres diperbarui',
+                    },
                 'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
                 'occurred_at' => $tracking->created_at,
                 'url' => route('admin.pemesanan.index', [
@@ -114,13 +114,38 @@ class DashboardController extends Controller
             'pending_reviews' => (clone $assignedProjects)->where('status_pemesanan', 'dikonfirmasi')->count(),
         ];
 
-        $my_projects = Pemesanan::with(['user', 'katalog'])
-            ->where('designer_id', $designer->id)
-            ->latest('updated_at')
-            ->take(8)
-            ->get();
+        $recentActivities = StatusTracking::with(['pemesanan.user'])
+            ->whereHas('pemesanan', fn ($query) => $query->where('designer_id', $designer->id))
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (StatusTracking $tracking) => [
+                'icon' => match ($tracking->status) {
+                    'pending' => 'fa-inbox',
+                    'dikonfirmasi' => 'fa-circle-check',
+                    'sedang_dikerjakan' => 'fa-drafting-compass',
+                    'selesai' => 'fa-flag-checkered',
+                    'dibatalkan' => 'fa-ban',
+                    default => 'fa-clock-rotate-left',
+                },
+                'title' => $tracking->catatan === 'Proyek dibuat dari permintaan konsultasi.'
+                    ? 'Proyek baru dibuat'
+                    : match ($tracking->status) {
+                        'pending' => 'Pesanan baru diterima',
+                        'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                        'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                        'selesai' => 'Proyek diselesaikan',
+                        'dibatalkan' => 'Proyek dibatalkan',
+                        default => 'Progres diperbarui',
+                    },
+                'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
+                'occurred_at' => $tracking->created_at,
+                'url' => route('designer.projects.index', [
+                    'search' => 'DI-'.$tracking->pemesanan->id,
+                ]),
+            ]);
 
-        return view('dashboard.designer', compact('stats', 'my_projects', 'assignedConsultations'));
+        return view('dashboard.designer', compact('stats', 'assignedConsultations', 'recentActivities'));
     }
 
     public function designerProjects(Request $request)
@@ -157,6 +182,18 @@ class DashboardController extends Controller
         return view('designer.projects.index', compact('projects'));
     }
 
+    public function designerProjectsHeartbeat(Request $request)
+    {
+        $designer = $request->user();
+
+        $latestPemesanan = Pemesanan::where('designer_id', $designer->id)->max('updated_at');
+        $latestKonsultasi = Konsultasi::where('designer_id', $designer->id)->max('updated_at');
+        $counts = Pemesanan::where('designer_id', $designer->id)->count()
+            .':'.Konsultasi::where('designer_id', $designer->id)->count();
+
+        return response()->json(['signal' => $counts.':'.$latestPemesanan.':'.$latestKonsultasi]);
+    }
+
     // Admin Pages
     public function pelanggan(Request $request)
     {
@@ -177,6 +214,7 @@ class DashboardController extends Controller
                     ->orWhere('no_telp', 'like', "%{$search}%"));
             })
             ->withCount('pemesanans')
+            ->withSum('pemesanans', 'total_harga')
             ->latest()
             ->paginate(10)
             ->withQueryString();

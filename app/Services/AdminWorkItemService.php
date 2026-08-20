@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\DB;
 
 class AdminWorkItemService
 {
+    public function heartbeat(): string
+    {
+        $latestPemesanan = Pemesanan::max('updated_at');
+        $latestKonsultasi = Konsultasi::max('updated_at');
+        $counts = Pemesanan::count().':'.Konsultasi::count();
+
+        return $counts.':'.$latestPemesanan.':'.$latestKonsultasi;
+    }
+
     public function stats(): array
     {
         return [

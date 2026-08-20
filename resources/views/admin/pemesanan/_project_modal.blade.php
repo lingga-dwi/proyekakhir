@@ -1,11 +1,9 @@
 <div id="projectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
-    <div class="relative max-h-[88vh] w-full max-w-[60rem] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
-        <div id="projectModalToast" class="absolute left-1/2 top-4 z-10 hidden w-[min(90%,26rem)] -translate-x-1/2 items-center justify-center rounded-xl px-5 py-3 text-center text-sm font-semibold shadow-lg"></div>
-
-        <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
+    <div id="projectModalPanel" class="relative max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-2">
             <div>
-                <h2 id="project-modal-title" class="text-lg font-semibold text-slate-950">Kelola Permintaan <span id="projectModalReferenceTitle" class="text-amber-700"></span></h2>
-                <p class="mt-0.5 text-xs text-slate-500">Kelola tahap proses, penugasan desainer, serta desain &amp; RAB.</p>
+                <h2 id="project-modal-title" class="text-lg font-semibold text-slate-950"><span id="projectModalTitleText">Tinjau Penawaran</span> <span id="projectModalReferenceTitle" class="text-amber-700"></span></h2>
+                <p id="projectModalSubtitle" class="mt-0.5 text-xs text-slate-500">Kelola tahap proses, penugasan desainer, serta desain &amp; RAB.</p>
             </div>
             <button type="button" onclick="closeProjectModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
         </div>
@@ -16,148 +14,217 @@
             @method('PUT')
         </form>
 
-        <div class="mt-4 grid gap-4 lg:grid-cols-2">
-            <section class="rounded-2xl border border-slate-200 p-5">
-                <h3 class="text-sm font-semibold text-slate-900">1. Informasi dari Pelanggan</h3>
-                <p id="projectModalReference" class="mt-2 text-xs font-bold uppercase tracking-[0.16em] text-amber-700"></p>
-
-                <h4 class="mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <i class="fas fa-user-circle text-amber-600" aria-hidden="true"></i> Informasi Pelanggan
-                </h4>
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Nama</dt><dd id="projectModalCustomer" class="mt-1 font-medium text-slate-800"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">No. WhatsApp</dt><dd id="projectModalPhone" class="mt-1 text-slate-700"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Email (opsional)</dt><dd id="projectModalEmail" class="mt-1 break-words text-slate-700"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Alamat</dt><dd id="projectModalAddress" class="mt-1 text-slate-700"></dd></div>
-                </dl>
-
-                <h4 class="mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <i class="fas fa-file-alt text-amber-600" aria-hidden="true"></i> Detail Proyek
-                </h4>
-                <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Jenis Proyek</dt><dd id="projectModalTitle" class="mt-1 font-medium text-slate-800"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Jenis Bangunan</dt><dd id="projectModalBuilding" class="mt-1 font-medium text-slate-800"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Luas Area</dt><dd id="projectModalArea" class="mt-1 text-slate-700"></dd></div>
-                    <div><dt class="text-xs uppercase tracking-wide text-slate-400">Kisaran Anggaran</dt><dd id="projectModalBudgetLabel" class="mt-1 text-slate-700"></dd></div>
-                </dl>
-                <p class="mt-2 text-[11px] text-slate-400">Anggaran awal dari pelanggan (tidak dapat diubah).</p>
-
-                <h4 class="mt-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    <i class="fas fa-comment-dots text-amber-600" aria-hidden="true"></i> Catatan Konsultasi
-                </h4>
-                <p id="projectModalDescription" class="mt-3 whitespace-pre-line rounded-xl bg-amber-50 p-3 text-sm leading-6 text-slate-700"></p>
-
-                <div id="projectModalAttachments" class="mt-5 hidden">
-                    <h4 class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        <i class="fas fa-paperclip text-amber-600" aria-hidden="true"></i> Lampiran dari Pelanggan
-                    </h4>
-                    <div id="projectModalAttachmentList" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"></div>
-                </div>
-            </section>
-
-            <section class="rounded-2xl border border-slate-200 p-4">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <h3 class="text-sm font-semibold text-slate-900">2. Pengelolaan (Internal)</h3>
-                    <span class="rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-semibold text-blue-800">Data dapat diubah oleh admin</span>
-                </div>
-
-                <div class="mt-3">
-                    <span class="text-sm font-medium text-slate-700">Tahap Saat Ini</span>
-                    <div class="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                        <span class="h-2 w-2 shrink-0 rounded-full bg-blue-500"></span>
-                        <span id="projectModalStageLabel" class="text-sm font-semibold text-slate-800"></span>
-                    </div>
-                    <p class="mt-1 text-[11px] text-slate-400">Tahap berubah otomatis berdasarkan aktivitas pelanggan, desainer, dan admin.</p>
-                </div>
-
-                <label id="projectFinalizeField" class="mt-3 hidden">
-                    <span class="text-sm font-medium text-slate-700">Selesaikan Pengerjaan</span>
-                    <select id="projectStatus" name="status_pemesanan" form="projectForm" class="mt-1.5 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500"></select>
-                    <p class="mt-1 text-[11px] text-slate-400">Desain final sudah disetujui pelanggan. Tandai progres pengerjaan di sini.</p>
-                </label>
-
-                <label class="mt-3 block">
-                    <span class="text-sm font-medium text-slate-700">Desainer yang Ditugaskan</span>
-                    <select id="projectDesigner" name="designer_id" form="projectForm" class="mt-1.5 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">
-                        <option value="">Belum ditetapkan</option>
-                        @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
-                    </select>
-                </label>
-
-                <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-semibold text-slate-900">Desain &amp; RAB</p>
-                    <p class="mt-1 text-xs text-slate-500">Unggah desain awal dan draft RAB untuk dikirim kepada pelanggan.</p>
-
-                    <div class="mt-3 grid grid-cols-2 gap-3">
-                        @foreach(['design' => ['Design', 'Desain', '.jpg,.jpeg,.png,.webp,.pdf', 'PDF/JPG/PNG'], 'rab' => ['Rab', 'RAB', '.pdf,.xlsx,.xls', 'PDF/XLSX']] as $type => [$cap, $label, $accept, $formats])
-                            <div>
-                                <p class="text-xs font-semibold text-slate-600">{{ $label }} ({{ $formats }})</p>
-
-                                <form id="project{{ $cap }}UploadForm" method="POST" enctype="multipart/form-data" class="mt-1.5">
-                                    @csrf
-                                    <input type="hidden" name="document_type" value="{{ $type }}">
-                                    <label id="project{{ $cap }}Dropzone" class="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-white p-3 text-center transition hover:border-amber-400">
-                                        <i class="fas fa-cloud-upload-alt text-xl text-slate-300" aria-hidden="true"></i>
-                                        <span class="mt-1.5 text-[11px] font-medium text-slate-600">Pilih atau drag &amp; drop file {{ strtolower($label) }}</span>
-                                        <span class="mt-0.5 text-[10px] text-slate-400">Maks. 10 MB</span>
-                                        <input type="file" name="document" id="project{{ $cap }}Input" accept="{{ $accept }}" class="hidden">
-                                    </label>
-                                </form>
-
-                                <div id="project{{ $cap }}FileRow" class="mt-2 hidden items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-2.5">
-                                    <div class="flex min-w-0 items-center gap-2">
-                                        <i class="fas fa-file-lines text-slate-400" aria-hidden="true"></i>
-                                        <div class="min-w-0">
-                                            <p id="project{{ $cap }}FileName" class="truncate text-[11px] font-semibold text-slate-700"></p>
-                                            <p id="project{{ $cap }}FileSize" class="text-[10px] text-slate-400"></p>
-                                        </div>
-                                    </div>
-                                    <div class="flex shrink-0 items-center gap-2">
-                                        <a id="project{{ $cap }}Download" href="#" class="text-slate-400 hover:text-amber-600" aria-label="Unduh {{ $label }}"><i class="fas fa-download" aria-hidden="true"></i></a>
-                                        <button type="button" id="project{{ $cap }}DeleteBtn" class="text-slate-400 hover:text-red-600" aria-label="Hapus {{ $label }}"><i class="fas fa-trash" aria-hidden="true"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div class="mt-4 rounded-xl bg-white p-4">
-                        <label class="flex items-center gap-1.5 text-sm font-semibold text-slate-900" for="projectTotalHarga">
-                            Nilai Penawaran
-                            <i class="fas fa-circle-info text-xs text-slate-400" title="Nilai berdasarkan draft RAB. Menjadi dasar perhitungan DP 20% setelah disetujui pelanggan." aria-hidden="true"></i>
-                        </label>
-                        <div class="mt-2 flex items-center rounded-xl border border-slate-300 focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
-                            <span class="pl-3 text-lg font-semibold text-slate-500">Rp</span>
-                            <input id="projectTotalHarga" type="text" inputmode="numeric" oninput="formatRupiahInput(this)" class="w-full border-0 bg-transparent py-2 pl-1 pr-3 text-lg font-semibold text-slate-900 focus:ring-0" placeholder="0">
-                        </div>
-                        <p class="mt-1.5 text-[11px] text-slate-400">Nilai ini menjadi dasar perhitungan DP 20% setelah desain awal disetujui pelanggan.</p>
-                    </div>
-
-                    <div id="projectModalSendInfo" class="mt-3 hidden items-start gap-2 rounded-xl bg-blue-50 p-3 text-xs leading-5 text-blue-800">
+        <div id="projectModalValidationView" class="mt-3 hidden">
+            <div class="grid gap-6 lg:grid-cols-3">
+                <section>
+                    <h4 class="font-semibold text-slate-950">Dokumen dari Desainer</h4>
+                    <div id="projectModalValidationDocuments" class="mt-3 space-y-2"></div>
+                    <div id="projectModalValidationInfoBanner" class="mt-3 flex items-start gap-2 rounded-xl bg-blue-50 p-2.5 text-xs leading-5 text-blue-800">
                         <i class="fas fa-circle-info mt-0.5" aria-hidden="true"></i>
-                        <span id="projectModalSendInfoText"></span>
+                        <span>Pastikan desain dan RAB sudah sesuai sebelum membuat penawaran.</span>
                     </div>
-                    <p id="projectModalDocStatus" class="mt-3 text-xs text-slate-500"></p>
+                </section>
 
-                    <button type="button" id="projectModalSendBtn" onclick="sendProjectDocuments()" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50">
-                        <i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim ke Pelanggan
+                <section>
+                    <h4 class="font-semibold text-slate-950">Penawaran</h4>
+
+                    <div class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200">
+                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
+                            <span class="text-slate-500">Total Sudah Ditagihkan</span>
+                            <span id="projectModalValidationBilled" class="font-semibold text-slate-800">Rp 0</span>
+                        </div>
+                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
+                            <span class="text-slate-500">Total Sudah Dibayar</span>
+                            <span id="projectModalValidationPaid" class="font-semibold text-slate-800">Rp 0</span>
+                        </div>
+                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
+                            <span class="text-slate-500">Sisa Pembayaran</span>
+                            <span id="projectModalValidationRemaining" class="font-semibold text-slate-800">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="openInvoiceModal('validation')" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-300 px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Buat Tagihan
                     </button>
-                </div>
+                    <p class="mt-1.5 text-xs text-slate-400">Buat tagihan baru secara fleksibel sesuai progres proyek dan kesepakatan.</p>
 
-                <button type="button" id="projectModalHistoryToggle" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800">
-                    <i class="fas fa-clock-rotate-left text-[10px]" aria-hidden="true"></i> Riwayat Pengiriman
+                    <form id="projectModalDpVerifyForm" method="POST" class="mt-4 hidden rounded-xl border border-emerald-200 bg-emerald-50 p-2.5">
+                        @csrf
+                        <p class="text-sm font-semibold text-slate-900">Verifikasi Pembayaran DP</p>
+                        <p id="projectModalDpInvoiceInfo" class="mt-0.5 text-xs text-slate-600"></p>
+                        <button type="submit" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                            <i class="fas fa-check" aria-hidden="true"></i> Verifikasi DP
+                        </button>
+                    </form>
+                </section>
+
+                <section>
+                    <h4 class="font-semibold text-slate-950">Riwayat Tagihan</h4>
+                    <div class="mt-3 overflow-hidden rounded-xl border border-slate-200">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 uppercase tracking-wide text-slate-500">
+                                <tr>
+                                    <th class="px-3 py-2 font-medium">Nama Tagihan</th>
+                                    <th class="px-3 py-2 font-medium">Nominal</th>
+                                    <th class="px-3 py-2 font-medium">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectModalValidationInvoiceList" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <textarea id="projectModalRevisionFeedback" rows="2" maxlength="2000" class="mt-4 hidden w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500" placeholder="Jelaskan apa yang perlu diperbaiki desainer..."></textarea>
+
+            <div id="projectModalValidationFooter" class="mt-4 hidden flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" id="projectModalRevisionBtn" onclick="requestProjectValidationRevision()" class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">
+                    <i class="fas fa-comment-dots" aria-hidden="true"></i> Minta Revisi
                 </button>
-                <div id="projectModalHistoryPanel" class="mt-2 hidden max-h-40 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3"></div>
-
-                <a id="projectModalDetailLink" href="#" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-700">
-                    Buka halaman detail proyek (pembayaran, survei, invoice) <i class="fas fa-arrow-right text-[10px]" aria-hidden="true"></i>
-                </a>
-            </section>
+                <button type="button" id="projectModalValidateBtn" onclick="validateProjectDraft()" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                    <i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim
+                </button>
+            </div>
         </div>
 
-        <div class="mt-4 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <button type="button" onclick="closeProjectModal()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Tutup</button>
-            <button type="button" id="projectModalSaveBtn" onclick="saveProjectChanges()" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Simpan Perubahan</button>
+        <div id="projectModalStandardView" class="mt-3">
+            <section class="rounded-2xl border border-slate-200 p-4">
+                <form id="projectCompleteConsultationForm" method="POST" action="" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-2.5">
+                    @csrf
+                    <p class="text-sm font-semibold text-slate-900">Selesaikan Konsultasi</p>
+                    <p class="mt-0.5 text-xs text-slate-600">Ringkas hasil konsultasi. Setelah disimpan, tahap otomatis pindah ke Menunggu Desain Awal &amp; Draft RAB.</p>
+                    <textarea id="projectConsultationResult" name="consultation_result" rows="2" maxlength="5000" required class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500" placeholder="Contoh: kebutuhan ruang, ukuran, preferensi, dan keputusan konsultasi."></textarea>
+                    <button type="submit" class="mt-1.5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                        <i class="fas fa-check" aria-hidden="true"></i> Selesaikan Konsultasi
+                    </button>
+                </form>
+
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <button type="button" id="projectModalHistoryToggle" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800">
+                        <i class="fas fa-clock-rotate-left text-[10px]" aria-hidden="true"></i> Riwayat Pengiriman
+                    </button>
+                </div>
+                <div id="projectModalHistoryPanel" class="mt-2 hidden max-h-32 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<div id="invoiceModal" class="fixed inset-0 z-70 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="invoice-modal-title">
+    <div class="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
+        <div class="flex items-start justify-between gap-4">
+            <h2 id="invoice-modal-title" class="text-lg font-semibold text-slate-950">Form Tagihan Baru</h2>
+            <button type="button" onclick="closeInvoiceModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="mt-4 space-y-4">
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Nama Tagihan</span>
+                <input type="text" id="invoiceModalName" maxlength="255" placeholder="Termin 2" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Nominal</span>
+                <div class="mt-1.5 flex items-center rounded-xl border border-slate-300 focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500">
+                    <span class="pl-3 text-sm text-slate-500">Rp</span>
+                    <input type="text" inputmode="numeric" id="invoiceModalAmount" oninput="formatRupiahInput(this)" placeholder="0" class="w-full border-0 bg-transparent py-2.5 pl-1 pr-3 text-sm focus:ring-0">
+                </div>
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Jatuh Tempo</span>
+                <input type="date" id="invoiceModalDueDate" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Metode Pembayaran</span>
+                <select disabled class="mt-1.5 w-full appearance-none rounded-xl border-slate-300 bg-slate-50 text-sm text-slate-600">
+                    <option>Transfer Bank</option>
+                </select>
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Bank Tujuan</span>
+                <select disabled id="invoiceModalBankSelect" class="mt-1.5 w-full appearance-none rounded-xl border-slate-300 bg-slate-50 text-sm text-slate-600"></select>
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Nomor Rekening</span>
+                <input type="text" readonly id="invoiceModalAccountNumber" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50 text-sm text-slate-700">
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Atas Nama</span>
+                <input type="text" readonly id="invoiceModalAccountHolder" class="mt-1.5 w-full rounded-xl border-slate-300 bg-slate-50 text-sm text-slate-700">
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Keterangan (opsional)</span>
+                <textarea id="invoiceModalNote" rows="3" maxlength="2000" placeholder="Contoh: Detail pembayaran, catatan tambahan untuk pelanggan, dll." class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"></textarea>
+            </label>
+
+            <div class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+                <i class="fas fa-circle-info mt-0.5 text-slate-400" aria-hidden="true"></i>
+                <span>Tagihan akan ditambahkan ke riwayat tagihan dan dapat dikirim ke pelanggan setelah penawaran divalidasi.</span>
+            </div>
+
+            <p id="invoiceModalError" class="hidden text-xs text-red-600"></p>
+        </div>
+
+        <div class="mt-5 flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+            <button type="button" onclick="closeInvoiceModal()" class="rounded-xl border border-orange-200 px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">Batal</button>
+            <button type="button" id="invoiceModalSubmitBtn" onclick="submitInvoiceModal()" class="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">Tambahkan Tagihan</button>
+        </div>
+    </div>
+</div>
+
+<div id="orderReviewModal" class="fixed inset-0 z-70 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="order-review-modal-title">
+    <form id="orderReviewCsrfForm">@csrf</form>
+    <div class="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
+        <div class="flex items-start justify-between gap-4">
+            <h2 id="order-review-modal-title" class="text-lg font-semibold text-slate-950">Tinjau Pemesanan <span id="orderReviewReference" class="text-amber-700"></span></h2>
+            <button type="button" onclick="closeOrderReviewModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="mt-4 space-y-4">
+            <div>
+                <span class="text-sm font-medium text-slate-700">Tahap Saat Ini</span>
+                <div class="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-blue-500"></span>
+                    <span id="orderReviewStageLabel" class="text-sm font-semibold text-slate-800"></span>
+                </div>
+                <p class="mt-1 text-[11px] text-slate-400">Tahap berubah otomatis berdasarkan aktivitas pelanggan, desainer, dan admin.</p>
+            </div>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Penanggung Jawab</span>
+                <select id="orderReviewDesigner" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                    <option value="">Belum ditetapkan</option>
+                    @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
+                </select>
+            </label>
+
+            <input type="hidden" id="orderReviewStatus">
+
+            <div id="orderReviewFinalizeField" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <span class="text-sm font-medium text-slate-700">Status Produksi</span>
+                <p class="mt-1 text-[11px] text-slate-400">Desain final sudah disetujui pelanggan dan pengerjaan sedang berjalan. Tandai selesai setelah produksi rampung.</p>
+                <button type="button" id="orderReviewCompleteBtn" onclick="setOrderReviewStatus('selesai')" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
+                    <i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek
+                </button>
+            </div>
+
+            <p id="orderReviewError" class="hidden text-xs text-red-600"></p>
+        </div>
+
+        <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <button type="button" onclick="confirmDeleteOrderReview()" class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">
+                <i class="fas fa-trash-can" aria-hidden="true"></i> Hapus
+            </button>
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="closeOrderReviewModal()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Tutup</button>
+                <button type="button" id="orderReviewSaveBtn" onclick="saveOrderReview()" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Simpan Perubahan</button>
+            </div>
         </div>
     </div>
 </div>

@@ -43,11 +43,11 @@ class ProjectStageLabel
         return match ($pemesanan->workflow_stage) {
             'konsultasi' => 'Konsultasi',
             'draft_design', 'revision_requested' => 'Menunggu Desain Awal & Draft RAB',
+            'awaiting_admin_validation' => 'Menunggu Validasi Admin',
             'awaiting_draft_approval' => 'Menunggu Persetujuan',
             'awaiting_dp' => 'Menunggu Pembayaran DP',
             'dp_verification' => 'Menunggu Verifikasi Pembayaran',
-            'survey_pending' => 'Menunggu Jadwal Survei',
-            'survey_scheduled' => 'Survei Terjadwal',
+            'survey_scheduled' => 'Survei',
             'final_design' => 'Desain Detail / 3D',
             'awaiting_final_approval' => 'Menunggu Persetujuan Final',
             default => 'Proses Proyek',

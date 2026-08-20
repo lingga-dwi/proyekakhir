@@ -48,119 +48,30 @@
     </section>
 @endif
 
-<section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="assigned-projects-title">
+<section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="activity-title">
     <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
         <div>
-            <h2 id="assigned-projects-title" class="font-semibold text-slate-950">Penugasan Terbaru</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Proyek terbaru yang ditugaskan kepada Anda.</p>
+            <h2 id="activity-title" class="font-semibold text-slate-950">Aktivitas Proyek Terbaru</h2>
+            <p class="mt-0.5 text-xs text-slate-500">Riwayat perubahan status dan progres proyek yang ditugaskan kepada Anda.</p>
         </div>
         <a href="{{ route('designer.projects.index') }}" class="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-800">Lihat semua proyek <i class="fas fa-arrow-right ml-1 text-xs" aria-hidden="true"></i></a>
     </div>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[720px] text-left">
-            <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                    <th class="px-5 py-3">Proyek</th>
-                    <th class="px-5 py-3">Pelanggan</th>
-                    <th class="px-5 py-3">Status</th>
-                    <th class="px-5 py-3">Target</th>
-                    <th class="px-5 py-3">Progres</th>
-                    <th class="px-5 py-3 text-right">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                @forelse($my_projects as $project)
-                    @php
-                        [$statusLabel, $statusClass] = match($project->status_pemesanan) {
-                            'pending' => ['Pesanan baru', 'bg-orange-50 text-orange-700'],
-                            'dikonfirmasi' => ['Persiapan', 'bg-blue-50 text-blue-700'],
-                            'sedang_dikerjakan' => ['Dikerjakan', 'bg-purple-50 text-purple-700'],
-                            'selesai' => ['Selesai', 'bg-emerald-50 text-emerald-700'],
-                            'dibatalkan' => ['Dibatalkan', 'bg-red-50 text-red-700'],
-                            default => [ucfirst($project->status_pemesanan), 'bg-slate-100 text-slate-600'],
-                        };
-                    @endphp
-                    <tr class="transition hover:bg-slate-50/80">
-                        <td class="px-5 py-4">
-                            <p class="text-sm font-semibold text-slate-950">{{ $project->jenis_proyek ?: 'Proyek Interior' }}</p>
-                            <p class="mt-0.5 text-xs text-slate-400">PRJ-{{ str_pad($project->id, 4, '0', STR_PAD_LEFT) }}</p>
-                        </td>
-                        <td class="px-5 py-4 text-sm text-slate-600">{{ $project->user?->nama ?? 'Pelanggan tidak tersedia' }}</td>
-                        <td class="px-5 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span></td>
-                        <td class="px-5 py-4 text-sm text-slate-600">{{ $project->target_selesai?->format('d M Y') ?? 'Belum ditentukan' }}</td>
-                        <td class="px-5 py-4">
-                            <div class="flex items-center gap-2">
-                                <div class="h-2 w-24 overflow-hidden rounded-full bg-slate-200"><div class="h-full rounded-full bg-blue-500" style="width: {{ $project->progress }}%"></div></div>
-                                <span class="text-xs text-slate-500">{{ $project->progress }}%</span>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 text-right">
-                            <div class="flex items-center justify-end gap-3">
-                                <a href="{{ route('pemesanan.show', $project) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-950">Detail</a>
-                                @if(!in_array($project->status_pemesanan, ['selesai', 'dibatalkan'], true))
-                                    <button type="button" onclick="document.getElementById('designer-project-{{ $project->id }}').showModal()" class="text-sm font-semibold text-amber-700 hover:text-amber-800">
-                                        Update
-                                    </button>
-                                @endif
-                            </div>
-                            @if(!in_array($project->status_pemesanan, ['selesai', 'dibatalkan'], true))
-                                <dialog id="designer-project-{{ $project->id }}" class="w-[min(92vw,32rem)] rounded-2xl p-0 shadow-2xl backdrop:bg-slate-950/50">
-                            <form action="{{ route('designer.proyek.update', $project) }}" method="POST" class="p-6 text-left">
-                                @csrf
-                                @method('PUT')
-                                <div class="flex items-start justify-between gap-4">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-slate-950">Update Progres</h3>
-                                        <p class="mt-1 text-sm text-slate-500">{{ $project->jenis_proyek ?: 'Proyek Interior' }}</p>
-                                    </div>
-                                    <button type="button" onclick="this.closest('dialog').close()" class="text-slate-400 hover:text-slate-700" aria-label="Tutup">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-
-                                <div class="mt-5 grid gap-4 sm:grid-cols-2">
-                                    <label class="text-sm font-medium text-slate-700">
-                                        Status
-                                        <select name="status_pemesanan" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">
-                                            @if($project->status_pemesanan === 'pending')
-                                                <option value="dikonfirmasi">Persiapan</option>
-                                            @elseif($project->status_pemesanan === 'dikonfirmasi')
-                                                <option value="dikonfirmasi">Persiapan</option>
-                                                <option value="sedang_dikerjakan">Sedang dikerjakan</option>
-                                            @else
-                                                <option value="sedang_dikerjakan">Sedang dikerjakan</option>
-                                                <option value="selesai">Selesai</option>
-                                            @endif
-                                        </select>
-                                    </label>
-                                    <label class="text-sm font-medium text-slate-700">
-                                        Progres (%)
-                                        <input type="number" name="progress" value="{{ $project->progress }}" min="0" max="100" required class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">
-                                    </label>
-                                    <label class="text-sm font-medium text-slate-700 sm:col-span-2">
-                                        Target selesai
-                                        <input type="date" name="target_selesai" value="{{ $project->target_selesai?->format('Y-m-d') }}" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">
-                                    </label>
-                                    <label class="text-sm font-medium text-slate-700 sm:col-span-2">
-                                        Catatan progres
-                                        <textarea name="catatan_progres" rows="3" required maxlength="2000" class="mt-2 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500" placeholder="Jelaskan pekerjaan yang sudah diselesaikan...">{{ $project->catatan_progres }}</textarea>
-                                    </label>
-                                </div>
-
-                                <div class="mt-6 flex justify-end gap-3">
-                                    <button type="button" onclick="this.closest('dialog').close()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Batal</button>
-                                    <button type="submit" class="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-400">Simpan Progres</button>
-                                </div>
-                            </form>
-                                </dialog>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="6" class="px-6 py-14 text-center text-sm text-slate-500">Belum ada proyek yang ditugaskan kepada Anda.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+    <div class="divide-y divide-slate-100 px-5">
+        @forelse($recentActivities as $activity)
+            <a href="{{ $activity['url'] }}" class="flex items-center gap-3 px-3 py-4 transition hover:bg-slate-50">
+                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                    <i class="fas {{ $activity['icon'] }} text-sm"></i>
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm font-semibold text-slate-900">{{ $activity['title'] }}</span>
+                    <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $activity['description'] }}</span>
+                    <span class="mt-1 block text-[11px] text-slate-400">{{ $activity['occurred_at']->diffForHumans() }}</span>
+                </span>
+                <i class="fas fa-chevron-right text-xs text-slate-300" aria-hidden="true"></i>
+            </a>
+        @empty
+            <div class="py-12 text-center text-sm text-slate-500">Belum ada perubahan status proyek.</div>
+        @endforelse
     </div>
 </section>
 @endsection

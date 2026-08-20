@@ -106,8 +106,13 @@ class Pemesanan extends Model
         return $this->hasMany(ProjectInvoice::class);
     }
 
+    /**
+     * The first invoice an admin creates for a project acts as the DP —
+     * the customer must pay and get it verified before production can
+     * move on to the survey stage.
+     */
     public function dpInvoice()
     {
-        return $this->hasOne(ProjectInvoice::class)->where('type', 'dp_20');
+        return $this->hasOne(ProjectInvoice::class)->oldestOfMany();
     }
 }

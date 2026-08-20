@@ -229,7 +229,7 @@ function selectDetailImage(image, alt) {
     </main>
 </div>
 
-<aside id="detailSidebar" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Detail desain" class="pointer-events-none fixed inset-x-0 bottom-0 top-16 z-[45] w-full scale-95 overflow-hidden bg-white opacity-0 shadow-2xl transition duration-200 ease-out">
+<aside id="detailSidebar" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Detail desain" class="pointer-events-none fixed inset-x-0 bottom-0 top-16 z-45 w-full scale-95 overflow-hidden bg-white opacity-0 shadow-2xl transition duration-200 ease-out">
     <div id="sidebarContent" class="flex h-full min-h-0 flex-col">
         <div class="flex min-h-80 items-center justify-center text-gray-500">Pilih desain untuk melihat detail.</div>
     </div>

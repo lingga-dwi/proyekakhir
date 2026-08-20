@@ -6,35 +6,20 @@
 
 @section('content')
 @php
-    $summaryCards = [
-        ['label' => 'Konsultasi Menunggu', 'value' => $stats['consultations_pending'], 'tone' => 'bg-violet-100 text-violet-700', 'icon' => 'fa-comments'],
-        ['label' => 'Pesanan Baru', 'value' => $stats['pending'], 'tone' => 'bg-orange-100 text-orange-700', 'icon' => 'fa-clock'],
-        ['label' => 'Proyek Aktif', 'value' => $stats['active'], 'tone' => 'bg-blue-100 text-blue-700', 'icon' => 'fa-drafting-compass'],
-        ['label' => 'Selesai', 'value' => $stats['completed'], 'tone' => 'bg-green-100 text-green-700', 'icon' => 'fa-check-double'],
-    ];
-
     $orderIds = $workItems->where('item_type', 'order')->pluck('id');
     $projectDocumentsById = \App\Models\Pemesanan::whereIn('id', $orderIds)
-        ->with(['documents' => fn ($query) => $query->orderByDesc('version'), 'documentDecisions' => fn ($query) => $query->with('customer')->orderByDesc('created_at')])
+        ->with([
+            'documents' => fn ($query) => $query->orderByDesc('version'),
+            'documentDecisions' => fn ($query) => $query->with('customer')->orderByDesc('created_at'),
+            'konsultasi:id,pemesanan_id',
+            'dpInvoice',
+            'invoices' => fn ($query) => $query->orderByDesc('created_at'),
+        ])
         ->get()
         ->keyBy('id');
 @endphp
 
-<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-    @foreach($summaryCards as $card)
-        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="flex items-center gap-4">
-                <span class="flex h-11 w-11 items-center justify-center rounded-xl {{ $card['tone'] }}"><i class="fas {{ $card['icon'] }}"></i></span>
-                <div>
-                    <p class="text-sm text-slate-500">{{ $card['label'] }}</p>
-                    <p class="text-2xl font-bold text-slate-950">{{ $card['value'] }}</p>
-                </div>
-            </div>
-        </article>
-    @endforeach
-</div>
-
-<section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="flex flex-col gap-4 border-b border-slate-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
             <h2 class="font-semibold text-slate-950">Daftar Permintaan &amp; Pesanan</h2>
@@ -83,14 +68,15 @@
         Menampilkan {{ $workItems->firstItem() ?? 0 }}-{{ $workItems->lastItem() ?? 0 }} dari {{ $workItems->total() }} data
     </div>
     <div class="overflow-x-auto">
-        <table class="w-full min-w-[1120px]">
+        <table class="w-full min-w-[1320px]">
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
                 <tr>
                     <th class="px-5 py-3 font-medium">Referensi</th>
                     <th class="px-5 py-3 font-medium">Pelanggan</th>
-                    <th class="px-5 py-3 font-medium">Kebutuhan</th>
+                    <th class="px-5 py-3 font-medium">Detail Proyek</th>
+                    <th class="px-5 py-3 font-medium">Catatan Konsultasi</th>
                     <th class="px-5 py-3 font-medium">Penanggung Jawab</th>
-                    <th class="px-5 py-3 font-medium">Tahap</th>
+                    <th class="px-5 py-3 font-medium">Status</th>
                     <th class="px-5 py-3 font-medium">Aksi</th>
                 </tr>
             </thead>
@@ -155,6 +141,7 @@
                                 $item->status === 'selesai' => 'bg-green-100 text-green-800',
                                 $item->workflow_stage === 'approved' => 'bg-purple-100 text-purple-800',
                                 $item->workflow_stage === 'konsultasi' => 'bg-violet-100 text-violet-700',
+                                $item->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-100 text-orange-800',
                                 default => 'bg-blue-100 text-blue-800',
                             };
                         }
@@ -210,7 +197,41 @@
                         </td>
                         <td class="px-5 py-4">
                             <p class="text-sm font-medium text-slate-900">{{ $title }}</p>
-                            <p class="max-w-xs truncate text-xs text-slate-500">{{ $item->detail ?: ($item->space ?: 'Belum ada catatan kebutuhan') }}</p>
+                            <p class="text-xs text-slate-500">{{ $building }}</p>
+                            @if($item->area !== null)
+                                <p class="mt-1 text-[11px] text-slate-400">{{ rtrim(rtrim(number_format((float) $item->area, 2, ',', '.'), '0'), ',') }} m&sup2;</p>
+                            @endif
+                            @if($budgetLabel)
+                                <p class="mt-0.5 text-[11px] text-slate-400">{{ $budgetLabel }}</p>
+                            @endif
+                        </td>
+                        <td class="px-5 py-4">
+                            <p class="max-w-[220px] truncate text-xs text-slate-600" title="{{ $item->detail ?: 'Belum ada catatan' }}">{{ $item->detail ?: 'Belum ada catatan' }}</p>
+                            @if(count($attachments))
+                                @php
+                                    $imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+                                    $firstAttachment = $attachments[0];
+                                    $firstIsImage = in_array(strtolower(pathinfo($firstAttachment['name'], PATHINFO_EXTENSION)), $imageExtensions, true);
+                                @endphp
+                                <button
+                                    type="button"
+                                    data-detail="{{ json_encode($detailPayload, JSON_THROW_ON_ERROR) }}"
+                                    onclick="openDetailModal(this)"
+                                    class="mt-1.5 flex items-center gap-1.5 rounded-lg transition hover:opacity-80"
+                                    title="Lihat {{ count($attachments) }} lampiran"
+                                >
+                                    <span class="block h-9 w-9 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                        @if($firstIsImage)
+                                            <img src="{{ $firstAttachment['url'] }}" alt="{{ $firstAttachment['name'] }}" class="h-full w-full object-cover">
+                                        @else
+                                            <span class="flex h-full w-full items-center justify-center text-slate-300"><i class="fas fa-file-lines" aria-hidden="true"></i></span>
+                                        @endif
+                                    </span>
+                                    @if(count($attachments) > 1)
+                                        <span class="text-[11px] font-semibold text-slate-500">+{{ count($attachments) - 1 }}</span>
+                                    @endif
+                                </button>
+                            @endif
                         </td>
                         <td class="px-5 py-4">
                             @if($isConsultation && $item->accepted_at && in_array($item->status, ['pending', 'confirmed'], true))
@@ -254,43 +275,39 @@
                                             >Terima</button>
                                         @endif
                                         @if(!$item->accepted_at)
-                                            <form
-                                                method="POST"
-                                                action="{{ route('admin.pemesanan.konsultasi.update', $item->id) }}"
-                                                @submit.prevent="$dispatch('open-confirmation', {
-                                                    form: $el,
-                                                    title: 'Tolak permintaan konsultasi?',
-                                                    message: 'Permintaan ini akan ditandai ditolak dan proses konsultasi tidak dapat dilanjutkan.',
-                                                    confirmLabel: 'Ya, tolak',
-                                                    tone: 'danger'
+                                            <button
+                                                type="button"
+                                                class="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3.5 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                                @click="$dispatch('open-reject-consultation', {
+                                                    action: '{{ route('admin.pemesanan.konsultasi.update', $item->id) }}',
+                                                    reference: '{{ $reference }}',
+                                                    customer: @js($item->customer_name),
+                                                    requirement: @js($title)
                                                 })"
-                                            >
-                                                @csrf @method('PUT')<input type="hidden" name="status" value="cancelled">
-                                                <button class="inline-flex h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-3.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">Tolak</button>
-                                            </form>
+                                            >Tolak</button>
                                         @endif
                                     @endif
                                     @if($item->status === 'confirmed')
                                         <span class="text-sm font-medium text-slate-500">Menunggu hasil konsultasi</span>
                                     @endif
-                                    @if($item->status === 'completed')
-                                        <form
-                                            method="POST"
-                                            action="{{ route('admin.pemesanan.konsultasi.convert', $item->id) }}"
-                                            @submit.prevent="$dispatch('open-confirmation', {
-                                                form: $el,
-                                                title: 'Lanjutkan menjadi pesanan?',
-                                                message: 'Data konsultasi akan diteruskan menjadi pesanan proyek dan dapat dikelola oleh admin.',
-                                                confirmLabel: 'Ya, lanjutkan',
-                                                tone: 'success'
+                                    @if(in_array($item->status, ['completed', 'cancelled'], true))
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                            @click="$dispatch('open-consultation-modal', {
+                                                reference: '{{ $reference }}',
+                                                customer: @js($item->customer_name),
+                                                email: @js($item->customer_email),
+                                                phone: @js($item->customer_phone),
+                                                address: @js($item->customer_address),
+                                                requirement: @js($title),
+                                                statusLabel: @js($statusLabel),
+                                                statusClass: @js($statusClass),
+                                                status: '{{ $item->status }}',
+                                                convertAction: '{{ route('admin.pemesanan.konsultasi.convert', $item->id) }}',
+                                                deleteAction: '{{ route('admin.pemesanan.konsultasi.destroy', $item->id) }}'
                                             })"
-                                        >
-                                            @csrf
-                                            <button class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800">Lanjutkan ke Pesanan</button>
-                                        </form>
-                                    @endif
-                                    @if($item->status === 'cancelled')
-                                        <span class="text-sm text-slate-400">Tidak dilanjutkan</span>
+                                        >Kelola Pesanan</button>
                                     @endif
                                 </div>
                             @else
@@ -299,7 +316,7 @@
                                     $docStage = null;
                                     $docRound = null;
                                     if ($project) {
-                                        if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_draft_approval'], true)) {
+                                        if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_admin_validation', 'awaiting_draft_approval'], true)) {
                                             $docStage = 'draft';
                                             $docRound = (int) $project->draft_round;
                                         } elseif (in_array($project->workflow_stage, ['final_design', 'awaiting_final_approval'], true)) {
@@ -308,14 +325,25 @@
                                         }
                                     }
                                     $canManageDocuments = $project && in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'final_design'], true);
-                                    $isSendableStage = $project && in_array($project->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true);
-                                    $isAwaitingDecision = $project && in_array($project->workflow_stage, ['awaiting_draft_approval', 'awaiting_final_approval'], true);
+                                    $isSendableStage = $project && in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'final_design'], true);
+                                    $isAwaitingDecision = $project && in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_final_approval'], true);
+                                    $needsAdminValidation = $project && $project->workflow_stage === 'awaiting_admin_validation';
                                     $roundDocuments = $project && $docStage
                                         ? $project->documents->where('stage', $docStage)->where('submission_round', $docRound)
                                         : collect();
                                     $currentDesign = $roundDocuments->firstWhere('document_type', 'design');
                                     $currentRab = $roundDocuments->firstWhere('document_type', 'rab');
                                     $canSend = $isSendableStage && $currentDesign && $currentRab;
+                                    $draftDocuments = $project
+                                        ? $project->documents->where('stage', 'draft')->where('submission_round', (int) $project->draft_round)
+                                        : collect();
+                                    $finalDocuments = $project
+                                        ? $project->documents->where('stage', 'final')->where('submission_round', (int) $project->final_round)
+                                        : collect();
+                                    $draftDesign = $draftDocuments->firstWhere('document_type', 'design');
+                                    $draftRab = $draftDocuments->firstWhere('document_type', 'rab');
+                                    $finalDesign = $finalDocuments->firstWhere('document_type', 'design');
+                                    $finalRab = $finalDocuments->firstWhere('document_type', 'rab');
                                     $formatDoc = function ($document) use ($item) {
                                         if (! $document) {
                                             return null;
@@ -342,47 +370,89 @@
                                         ])->values()->all()
                                         : [];
                                 @endphp
+                                @php
+                                    $projectPayload = [
+                                        'id' => $item->id,
+                                        'reference' => $reference,
+                                        'status' => $item->status,
+                                        'stageLabel' => $project ? \App\Support\ProjectStageLabel::forPemesanan($project) : null,
+                                        'workflowStage' => $project?->workflow_stage,
+                                        'needsValidation' => $needsAdminValidation,
+                                        'canFinalize' => $project && $project->workflow_stage === 'approved',
+                                        'completeConsultationUrl' => $project?->konsultasi
+                                            ? route('admin.pemesanan.konsultasi.complete', $project->konsultasi->id)
+                                            : null,
+                                        'dpInvoice' => $project?->dpInvoice ? [
+                                            'number' => $project->dpInvoice->number,
+                                            'amount' => (float) $project->dpInvoice->amount,
+                                            'status' => $project->dpInvoice->status,
+                                            'dueDate' => $project->dpInvoice->due_date?->translatedFormat('d M Y'),
+                                        ] : null,
+                                        'dpVerifyUrl' => route('admin.pemesanan.dp.verify', $item->id),
+                                        'validateUrl' => route('admin.pemesanan.validate.send', $item->id),
+                                        'revisionUrl' => route('admin.pemesanan.validate.revision', $item->id),
+                                        'bankDisplayName' => config('company.bank.display_name'),
+                                        'bankName' => config('company.bank.name'),
+                                        'bankAccountNumber' => config('company.bank.account_number'),
+                                        'bankAccountHolder' => config('company.bank.account_holder'),
+                                        'invoices' => $project ? $project->invoices->map(fn ($invoice) => [
+                                            'id' => $invoice->id,
+                                            'number' => $invoice->number,
+                                            'name' => $invoice->name,
+                                            'amount' => (float) $invoice->amount,
+                                            'status' => $invoice->status,
+                                            'dueDate' => $invoice->due_date?->translatedFormat('d M Y'),
+                                            'note' => $invoice->note,
+                                        ])->values()->all() : [],
+                                        'invoiceStoreUrl' => route('admin.pemesanan.invoice.store', $item->id),
+                                        'invoiceMarkPaidUrlBase' => url('/admin/pemesanan/'.$item->id.'/tagihan'),
+                                        'designer' => $item->designer_id,
+                                        'note' => $item->note,
+                                        'customer' => $item->customer_name,
+                                        'email' => $item->customer_email,
+                                        'phone' => $item->customer_phone,
+                                        'address' => $item->customer_address,
+                                        'title' => $title,
+                                        'building' => $building,
+                                        'area' => $item->area !== null ? (float) $item->area : null,
+                                        'budgetLabel' => $budgetLabel,
+                                        'description' => $item->detail,
+                                        'attachments' => $attachments,
+                                        'canManageDocuments' => $canManageDocuments,
+                                        'isAwaitingDecision' => $isAwaitingDecision,
+                                        'canSend' => $canSend,
+                                        'totalHarga' => $project ? (float) $project->total_harga : 0,
+                                        'design' => $formatDoc($currentDesign),
+                                        'rab' => $formatDoc($currentRab),
+                                        'draftDesign' => $formatDoc($draftDesign),
+                                        'draftRab' => $formatDoc($draftRab),
+                                        'finalDesign' => $formatDoc($finalDesign),
+                                        'finalRab' => $formatDoc($finalRab),
+                                        'uploadUrl' => route('admin.pemesanan.document.upload', $item->id),
+                                        'sendUrl' => route('admin.pemesanan.document.send', $item->id),
+                                        'decisions' => $decisionHistory,
+                                        'deleteUrl' => url('/admin/pemesanan/'.$item->id),
+                                    ];
+                                @endphp
                                 <div class="flex items-center gap-2">
                                     <button
                                         type="button"
                                         class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                        data-project="{{ json_encode([
-                                            'id' => $item->id,
-                                            'reference' => $reference,
-                                            'status' => $item->status,
-                                            'stageLabel' => $project ? \App\Support\ProjectStageLabel::forPemesanan($project) : null,
-                                            'canFinalize' => $project && $project->workflow_stage === 'approved',
-                                            'designer' => $item->designer_id,
-                                            'note' => $item->note,
-                                            'customer' => $item->customer_name,
-                                            'email' => $item->customer_email,
-                                            'phone' => $item->customer_phone,
-                                            'address' => $item->customer_address,
-                                            'title' => $title,
-                                            'building' => $building,
-                                            'area' => $item->area !== null ? (float) $item->area : null,
-                                            'budgetLabel' => $budgetLabel,
-                                            'description' => $item->detail,
-                                            'attachments' => $attachments,
-                                            'showUrl' => route('admin.pemesanan.show', $item->id),
-                                            'canManageDocuments' => $canManageDocuments,
-                                            'isAwaitingDecision' => $isAwaitingDecision,
-                                            'canSend' => $canSend,
-                                            'totalHarga' => $project ? (float) $project->total_harga : 0,
-                                            'design' => $formatDoc($currentDesign),
-                                            'rab' => $formatDoc($currentRab),
-                                            'uploadUrl' => route('admin.pemesanan.document.upload', $item->id),
-                                            'sendUrl' => route('admin.pemesanan.document.send', $item->id),
-                                            'decisions' => $decisionHistory,
-                                        ], JSON_THROW_ON_ERROR) }}"
+                                        data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
                                         onclick="openProjectModal(this)"
-                                    >Kelola Pesanan</button>
+                                    >Tinjau Penawaran</button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                        data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
+                                        onclick="openOrderReviewModal(this)"
+                                    >Tinjau Pemesanan</button>
                                 </div>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada permintaan atau pesanan yang sesuai filter.</td></tr>
+                    <tr><td colspan="7" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada permintaan atau pesanan yang sesuai filter.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -394,6 +464,8 @@
 @include('admin.pemesanan._project_modal')
 @include('admin.pemesanan._detail_modal')
 @include('admin.pemesanan._accept_consultation_modal')
+@include('admin.pemesanan._reject_consultation_modal')
+@include('admin.pemesanan._consultation_modal')
 @endsection
 
 @push('scripts')
@@ -477,6 +549,7 @@ function setRupiahInputValue(input, amount) {
     input.value = amount > 0 ? new Intl.NumberFormat('id-ID').format(amount) : '';
 }
 
+
 let currentProjectModalData = null;
 let currentProjectModalButton = null;
 
@@ -492,65 +565,56 @@ function openProjectModal(button) {
     currentProjectModalButton = button;
 
     document.getElementById('projectForm').action = `{{ url('/admin/proyek') }}/${project.id}`;
-    document.getElementById('projectModalReference').textContent = project.reference;
-    document.getElementById('projectModalCustomer').textContent = project.customer || 'Belum diisi';
-    document.getElementById('projectModalPhone').textContent = project.phone || 'Belum diisi';
-    document.getElementById('projectModalEmail').textContent = project.email || 'Belum diisi';
-    document.getElementById('projectModalAddress').textContent = project.address || 'Belum diisi';
-    document.getElementById('projectModalTitle').textContent = project.title || 'Belum ditentukan';
-    document.getElementById('projectModalBuilding').textContent = project.building || 'Belum ditentukan';
-    document.getElementById('projectModalArea').textContent = project.area !== null ? `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(project.area)} m²` : 'Belum diisi';
-    document.getElementById('projectModalBudgetLabel').textContent = project.budgetLabel || 'Belum ditentukan';
-    document.getElementById('projectModalDescription').textContent = project.description || 'Belum ada catatan kebutuhan.';
-
-    const attachmentSection = document.getElementById('projectModalAttachments');
-    const attachmentList = document.getElementById('projectModalAttachmentList');
-    attachmentList.replaceChildren();
-    const imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-    (project.attachments || []).forEach(attachment => {
-        const extension = (attachment.name.split('.').pop() || '').toLowerCase();
-        const isImage = imageExtensions.includes(extension);
-        const link = document.createElement('a');
-        link.href = attachment.url;
-        link.className = 'group block overflow-hidden rounded-xl border border-slate-200 bg-slate-50 transition hover:border-amber-300';
-        link.innerHTML = isImage
-            ? `<img src="${attachment.url}" alt="${attachment.name}" class="aspect-square w-full object-cover">`
-            : '<div class="flex aspect-square w-full items-center justify-center"><i class="fas fa-file-lines text-3xl text-slate-300" aria-hidden="true"></i></div>';
-        const caption = document.createElement('p');
-        caption.className = 'truncate px-2 py-1.5 text-[11px] font-medium text-slate-600 group-hover:text-amber-700';
-        caption.textContent = attachment.name;
-        link.appendChild(caption);
-        attachmentList.appendChild(link);
-    });
-    attachmentSection.classList.toggle('hidden', !project.attachments?.length);
-
-    document.getElementById('projectModalStageLabel').textContent = project.stageLabel || 'Proses Proyek';
-    const finalizeOptions = { dikonfirmasi: 'Pengerjaan', sedang_dikerjakan: 'Sedang dikerjakan', selesai: 'Selesai' };
-    const finalizeField = document.getElementById('projectFinalizeField');
-    const statusSelect = document.getElementById('projectStatus');
-    finalizeField.classList.toggle('hidden', !project.canFinalize);
-    if (project.canFinalize) {
-        statusSelect.replaceChildren();
-        Object.entries(finalizeOptions).forEach(([value, label]) => {
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = label;
-            statusSelect.appendChild(option);
-        });
-        statusSelect.value = project.status;
-    } else {
-        statusSelect.replaceChildren(new Option('', project.status));
-        statusSelect.value = project.status;
-    }
-    document.getElementById('projectDesigner').value = project.designer || '';
     document.getElementById('projectModalReferenceTitle').textContent = `#${project.reference}`;
-    document.getElementById('projectModalDetailLink').href = project.showUrl;
-    setRupiahInputValue(document.getElementById('projectTotalHarga'), project.totalHarga);
 
-    renderDocumentSlot('Design', 'design');
-    renderDocumentSlot('Rab', 'rab');
-    updateDocStatus();
-    updateSendButtonState();
+    const useCardLayout = project.workflowStage && project.workflowStage !== 'konsultasi';
+    const needsValidation = project.workflowStage === 'awaiting_admin_validation';
+    const canVerifyDp = project.workflowStage === 'dp_verification' && project.dpInvoice;
+
+    const validationView = document.getElementById('projectModalValidationView');
+    const standardView = document.getElementById('projectModalStandardView');
+    const panel = document.getElementById('projectModalPanel');
+    validationView.classList.toggle('hidden', !useCardLayout);
+    panel.classList.toggle('max-w-2xl', !useCardLayout);
+    panel.classList.toggle('max-w-5xl', useCardLayout);
+    document.getElementById('projectModalSubtitle').textContent = needsValidation
+        ? 'Tinjau desain awal dan draft RAB, tetapkan penawaran dan kirim ke pelanggan.'
+        : useCardLayout
+            ? 'Tinjau dokumen, penawaran, dan tagihan proyek.'
+            : 'Kelola tahap proses, penugasan desainer, serta desain & RAB.';
+
+    document.getElementById('projectModalValidationInfoBanner').classList.toggle('hidden', !needsValidation);
+
+    const dpVerifyForm = document.getElementById('projectModalDpVerifyForm');
+    dpVerifyForm.classList.toggle('hidden', !canVerifyDp);
+    if (canVerifyDp) {
+        dpVerifyForm.action = project.dpVerifyUrl;
+        document.getElementById('projectModalDpInvoiceInfo').textContent =
+            `${project.dpInvoice.number} · Rp ${new Intl.NumberFormat('id-ID').format(project.dpInvoice.amount)}${project.dpInvoice.dueDate ? ' · Jatuh tempo ' + project.dpInvoice.dueDate : ''}`;
+    }
+
+    const validationFooter = document.getElementById('projectModalValidationFooter');
+    validationFooter.classList.toggle('hidden', !needsValidation);
+    validationFooter.classList.toggle('flex', needsValidation);
+
+    if (useCardLayout) {
+        renderProjectValidationDocuments(project);
+
+        const revisionFeedback = document.getElementById('projectModalRevisionFeedback');
+        const revisionBtn = document.getElementById('projectModalRevisionBtn');
+        revisionFeedback.value = '';
+        revisionFeedback.classList.add('hidden');
+        revisionBtn.dataset.armed = 'false';
+        revisionBtn.innerHTML = '<i class="fas fa-comment-dots" aria-hidden="true"></i> Minta Revisi';
+    }
+
+    renderProjectBilling();
+
+    const completeForm = document.getElementById('projectCompleteConsultationForm');
+    const canCompleteConsultation = project.stageLabel === 'Konsultasi' && project.completeConsultationUrl;
+    completeForm.classList.toggle('hidden', !canCompleteConsultation);
+    if (canCompleteConsultation) completeForm.action = project.completeConsultationUrl;
+    document.getElementById('projectConsultationResult').value = '';
 
     const historyPanel = document.getElementById('projectModalHistoryPanel');
     historyPanel.replaceChildren();
@@ -570,133 +634,303 @@ function openProjectModal(button) {
     historyPanel.classList.add('hidden');
     document.getElementById('projectModalHistoryToggle').onclick = () => historyPanel.classList.toggle('hidden');
 
-    clearTimeout(projectModalToastTimer);
-    document.getElementById('projectModalToast').classList.add('hidden');
-
     const modal = document.getElementById('projectModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
 
-function updateDocStatus() {
+function validateProjectDraft() {
     const project = currentProjectModalData;
-    let docStatus = 'Belum ada desain & RAB pada tahap ini.';
-    if (project.isAwaitingDecision) {
-        docStatus = 'Terkirim ke pelanggan, menunggu keputusan.';
-    } else if (project.design && project.rab) {
-        docStatus = 'Desain & RAB lengkap. Belum dikirim ke pelanggan.';
-    } else if (project.design || project.rab) {
-        docStatus = `Belum dikirim ke pelanggan. Unggah ${project.design ? 'RAB' : 'desain'} untuk melengkapi.`;
-    } else if (!project.canManageDocuments) {
-        docStatus = 'Desain & RAB tidak dapat dikelola pada tahap ini.';
+    const totalHarga = getCurrentTotalHarga();
+
+    if (totalHarga <= 0) {
+        showModalToast('Buat minimal satu tagihan terlebih dahulu sebelum memvalidasi.', 'error');
+        return;
     }
-    document.getElementById('projectModalDocStatus').textContent = docStatus;
+
+    const btn = document.getElementById('projectModalValidateBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Memvalidasi...';
+
+    fetch(project.validateUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total_harga: totalHarga }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal memvalidasi.');
+                showModalToast(errorMessage, 'error');
+                return;
+            }
+            showModalToast(json.message || 'Desain divalidasi dan berhasil dikirim.');
+            closeProjectModal();
+            setTimeout(() => window.location.reload(), 600);
+        })
+        .catch(() => showModalToast('Gagal memvalidasi. Periksa koneksi Anda.', 'error'))
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim';
+        });
 }
 
-function updateSendButtonState() {
+function requestProjectValidationRevision() {
     const project = currentProjectModalData;
-    const sendBtn = document.getElementById('projectModalSendBtn');
-    const infoBox = document.getElementById('projectModalSendInfo');
-    const infoText = document.getElementById('projectModalSendInfoText');
+    const textarea = document.getElementById('projectModalRevisionFeedback');
+    const btn = document.getElementById('projectModalRevisionBtn');
 
-    sendBtn.classList.toggle('hidden', project.isAwaitingDecision || !project.canManageDocuments);
-
-    const isDraftStage = !project.stageLabel || project.stageLabel === 'Menunggu Desain Awal & Draft RAB';
-    const priceMissing = isDraftStage && !(project.totalHarga > 0);
-    sendBtn.disabled = !project.canSend || priceMissing;
-
-    if (project.isAwaitingDecision) {
-        infoBox.classList.add('hidden');
-        infoBox.classList.remove('flex');
-    } else if (project.stageLabel === 'Konsultasi') {
-        infoText.textContent = 'Selesaikan konsultasi terlebih dahulu sebelum dokumen dapat dikirim ke pelanggan. File yang diunggah di sini tetap tersimpan sebagai cadangan untuk desainer.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else if (!project.canSend) {
-        infoText.textContent = 'Unggah desain dan RAB terlebih dahulu sebelum mengirim ke pelanggan.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else if (priceMissing) {
-        infoText.textContent = 'Isi Nilai Penawaran terlebih dahulu sebelum mengirim ke pelanggan.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
-    } else {
-        infoText.textContent = 'Setelah pelanggan menyetujui desain ini, sistem akan menampilkan pembayaran DP 20%.';
-        infoBox.classList.remove('hidden');
-        infoBox.classList.add('flex');
+    if (btn.dataset.armed !== 'true') {
+        textarea.classList.remove('hidden');
+        btn.dataset.armed = 'true';
+        btn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim Permintaan Revisi';
+        return;
     }
+
+    btn.disabled = true;
+    fetch(project.revisionUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: textarea.value }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                showModalToast(json.message || 'Gagal mengirim revisi.', 'error');
+                return;
+            }
+            showModalToast(json.message || 'Permintaan revisi terkirim.');
+            closeProjectModal();
+            setTimeout(() => window.location.reload(), 600);
+        })
+        .catch(() => showModalToast('Gagal mengirim revisi. Periksa koneksi Anda.', 'error'))
+        .finally(() => { btn.disabled = false; });
 }
 
-function sendProjectDocuments() {
-    const project = currentProjectModalData;
-    const sendBtn = document.getElementById('projectModalSendBtn');
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Mengirim...';
+let invoiceModalContext = 'standard';
 
-    fetch(project.sendUrl, {
+function openInvoiceModal(context) {
+    const project = currentProjectModalData;
+    invoiceModalContext = context;
+
+    document.getElementById('invoiceModalName').value = '';
+    document.getElementById('invoiceModalAmount').value = '';
+    document.getElementById('invoiceModalDueDate').value = '';
+    document.getElementById('invoiceModalNote').value = '';
+    document.getElementById('invoiceModalError').classList.add('hidden');
+
+    document.getElementById('invoiceModalBankSelect').innerHTML = `<option>${project.bankName || 'BSI'}</option>`;
+    document.getElementById('invoiceModalAccountNumber').value = project.bankAccountNumber || '';
+    document.getElementById('invoiceModalAccountHolder').value = project.bankAccountHolder || '';
+
+    const modal = document.getElementById('invoiceModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeInvoiceModal() {
+    const modal = document.getElementById('invoiceModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function submitInvoiceModal() {
+    const project = currentProjectModalData;
+    const name = document.getElementById('invoiceModalName').value.trim();
+    const amount = parseInt(getRupiahInputValue(document.getElementById('invoiceModalAmount')), 10) || 0;
+    const dueDate = document.getElementById('invoiceModalDueDate').value;
+    const note = document.getElementById('invoiceModalNote').value;
+    const errorEl = document.getElementById('invoiceModalError');
+    errorEl.classList.add('hidden');
+
+    if (!name) {
+        errorEl.textContent = 'Nama tagihan wajib diisi.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    if (amount <= 0) {
+        errorEl.textContent = 'Nominal tagihan wajib diisi.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    const btn = document.getElementById('invoiceModalSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    fetch(project.invoiceStoreUrl, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, amount, due_date: dueDate || null, note: note || null }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                errorEl.textContent = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal membuat tagihan.');
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            project.invoices = [json.invoice, ...(project.invoices || [])];
+            if (project.needsValidation) {
+                project.totalHarga = project.invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+            }
+            syncProjectModalButton();
+            closeInvoiceModal();
+            renderProjectBilling();
+            showModalToast(json.message || 'Tagihan berhasil dibuat.');
+        })
+        .catch(() => { errorEl.textContent = 'Gagal membuat tagihan. Periksa koneksi Anda.'; errorEl.classList.remove('hidden'); })
+        .finally(() => {
+            btn.disabled = false;
+            btn.textContent = 'Tambahkan Tagihan';
+        });
+}
+
+function markProjectInvoicePaid(invoiceId) {
+    const project = currentProjectModalData;
+
+    fetch(`${project.invoiceMarkPaidUrlBase}/${invoiceId}/lunas`, {
         method: 'POST',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
     })
         .then(response => response.json().then(json => ({ ok: response.ok, json })))
         .then(({ ok, json }) => {
             if (!ok) {
-                showModalToast(json.message || 'Gagal mengirim ke pelanggan.', 'error');
+                showModalToast(json.message || 'Gagal menandai tagihan lunas.', 'error');
                 return;
             }
-            applyDocumentResponse(json);
+            const invoice = (project.invoices || []).find(item => item.id === invoiceId);
+            if (invoice) invoice.status = 'paid';
+            syncProjectModalButton();
+            renderProjectBilling();
+            showModalToast(json.message || 'Tagihan ditandai lunas.');
         })
-        .catch(() => showModalToast('Gagal mengirim ke pelanggan. Periksa koneksi Anda.', 'error'))
-        .finally(() => {
-            sendBtn.disabled = !project.canSend;
-            sendBtn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim ke Pelanggan';
-            updateSendButtonState();
-        });
+        .catch(() => showModalToast('Gagal menandai tagihan lunas. Periksa koneksi Anda.', 'error'));
 }
 
-function renderDocumentSlot(cap, type) {
-    const uploadForm = document.getElementById(`project${cap}UploadForm`);
-    const dropzone = document.getElementById(`project${cap}Dropzone`);
-    const input = document.getElementById(`project${cap}Input`);
-    const fileRow = document.getElementById(`project${cap}FileRow`);
-    const deleteBtn = document.getElementById(`project${cap}DeleteBtn`);
+function getCurrentTotalHarga() {
     const project = currentProjectModalData;
+    if (project.needsValidation) {
+        return (project.invoices || []).reduce((sum, invoice) => sum + invoice.amount, 0);
+    }
+    return project.totalHarga || 0;
+}
 
-    uploadForm.action = project.uploadUrl;
-    input.onchange = () => { if (input.files.length) submitDocument(uploadForm, input.files[0], type); };
-    dropzone.ondragover = event => { event.preventDefault(); dropzone.classList.add('border-amber-400', 'bg-amber-50'); };
-    dropzone.ondragleave = () => dropzone.classList.remove('border-amber-400', 'bg-amber-50');
-    dropzone.ondrop = event => {
-        event.preventDefault();
-        dropzone.classList.remove('border-amber-400', 'bg-amber-50');
-        if (event.dataTransfer.files.length) submitDocument(uploadForm, event.dataTransfer.files[0], type);
+function invoiceStatusMeta(status) {
+    const labels = { pending: 'Belum Dibayar', submitted: 'Menunggu Verifikasi', paid: 'Lunas' };
+    const classes = { pending: 'bg-slate-100 text-slate-600', submitted: 'bg-amber-100 text-amber-700', paid: 'bg-emerald-100 text-emerald-700' };
+    return { label: labels[status] || status, tone: classes[status] || 'bg-slate-100 text-slate-600' };
+}
+
+function renderInvoiceListInto(containerId, invoices, mode) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.replaceChildren();
+
+    if (!invoices.length) {
+        container.innerHTML = mode === 'table'
+            ? '<tr><td colspan="3" class="px-3 py-4 text-center text-slate-400">Belum ada tagihan.</td></tr>'
+            : '<p class="text-xs text-slate-400">Belum ada tagihan untuk proyek ini.</p>';
+        return;
+    }
+
+    invoices.forEach(invoice => {
+        const { label, tone } = invoiceStatusMeta(invoice.status);
+        const amountFormatted = new Intl.NumberFormat('id-ID').format(invoice.amount);
+
+        if (mode === 'table') {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-3 py-2">
+                    <p class="font-semibold text-slate-800">${invoice.name}</p>
+                    <p class="mt-0.5 text-[10px] text-slate-400">${invoice.number}${invoice.dueDate ? ' &middot; ' + invoice.dueDate : ''}</p>
+                </td>
+                <td class="px-3 py-2 font-semibold text-slate-800">Rp ${amountFormatted}</td>
+                <td class="px-3 py-2">
+                    <span class="inline-flex rounded-full px-2 py-0.5 font-semibold ${tone}">${label}</span>
+                </td>`;
+            if (invoice.status !== 'paid') {
+                const payBtn = document.createElement('button');
+                payBtn.type = 'button';
+                payBtn.className = 'mt-1 block text-[10px] font-semibold text-emerald-700 hover:underline';
+                payBtn.textContent = 'Tandai Lunas';
+                payBtn.onclick = () => markProjectInvoicePaid(invoice.id);
+                row.lastElementChild.appendChild(payBtn);
+            }
+            container.appendChild(row);
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'rounded-lg border border-slate-200 p-2.5 text-xs';
+        row.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                    <p class="truncate font-semibold text-slate-800">${invoice.name}</p>
+                    <p class="mt-0.5 text-slate-400">${invoice.number}${invoice.dueDate ? ' &middot; Jatuh tempo ' + invoice.dueDate : ''}</p>
+                    ${invoice.note ? `<p class="mt-1 text-slate-600">${invoice.note}</p>` : ''}
+                </div>
+                <div class="shrink-0 text-right">
+                    <p class="font-semibold text-slate-800">Rp ${amountFormatted}</p>
+                    <span class="mt-1 inline-flex rounded-full px-2 py-0.5 font-semibold ${tone}">${label}</span>
+                </div>
+            </div>`;
+        if (invoice.status !== 'paid') {
+            const payBtn = document.createElement('button');
+            payBtn.type = 'button';
+            payBtn.className = 'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50';
+            payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
+            payBtn.onclick = () => markProjectInvoicePaid(invoice.id);
+            row.appendChild(payBtn);
+        }
+        container.appendChild(row);
+    });
+}
+
+function renderProjectValidationDocuments(project) {
+    const docTypeMeta = {
+        draftDesign: { label: 'Desain Awal', icon: 'fa-file-image', color: 'bg-red-50 text-red-500' },
+        draftRab: { label: 'Draft RAB', icon: 'fa-file-lines', color: 'bg-emerald-50 text-emerald-600' },
+        finalDesign: { label: 'Desain Final', icon: 'fa-file-image', color: 'bg-red-50 text-red-500' },
+        finalRab: { label: 'RAB Final', icon: 'fa-file-lines', color: 'bg-emerald-50 text-emerald-600' },
     };
+    const container = document.getElementById('projectModalValidationDocuments');
+    container.replaceChildren();
 
-    const document_ = project[type];
-    const canUpload = project.canManageDocuments;
-    const canDelete = project.canManageDocuments || project.isAwaitingDecision;
-    dropzone.parentElement.classList.toggle('hidden', !canUpload);
+    const entries = Object.entries(docTypeMeta).filter(([key]) => project[key]);
+    if (!entries.length) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Belum ada dokumen yang diunggah.</p>';
+        return;
+    }
 
-    if (document_) {
-        document.getElementById(`project${cap}FileName`).textContent = document_.name;
-        document.getElementById(`project${cap}FileSize`).textContent = formatFileSize(document_.size);
-        document.getElementById(`project${cap}Download`).href = document_.downloadUrl;
-        deleteBtn.classList.toggle('hidden', !canDelete);
-        deleteBtn.onclick = () => {
-            window.dispatchEvent(new CustomEvent('open-confirmation', {
-                detail: {
-                    title: 'Hapus dokumen ini?',
-                    message: `File "${document_.name}" akan dihapus permanen dan tidak dapat dikembalikan.`,
-                    confirmLabel: 'Ya, hapus',
-                    tone: 'danger',
-                    onConfirm: () => deleteDocumentRequest(document_.deleteUrl, cap, type),
-                },
-            }));
-        };
-        fileRow.classList.remove('hidden');
-        fileRow.classList.add('flex');
-    } else {
-        fileRow.classList.add('hidden');
-        fileRow.classList.remove('flex');
+    entries.forEach(([key, meta]) => {
+        const document_ = project[key];
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2';
+        row.innerHTML = `
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${meta.color}"><i class="fas ${meta.icon} text-xs" aria-hidden="true"></i></span>
+            <p class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">${meta.label}</p>
+            <a href="${document_.downloadUrl}" target="_blank" rel="noopener" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Unduh ${meta.label}">
+                <i class="fas fa-download text-xs" aria-hidden="true"></i>
+            </a>`;
+        container.appendChild(row);
+    });
+}
+
+function renderProjectBilling() {
+    const project = currentProjectModalData;
+    const invoices = project.invoices || [];
+    const totalHarga = getCurrentTotalHarga();
+    const totalBilled = invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
+    const totalPaid = invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0);
+    const remaining = Math.max(totalHarga - totalPaid, 0);
+    const fmt = amount => new Intl.NumberFormat('id-ID').format(amount);
+
+    if (document.getElementById('projectModalValidationBilled')) {
+        document.getElementById('projectModalValidationBilled').textContent = 'Rp ' + fmt(totalBilled);
+        document.getElementById('projectModalValidationPaid').textContent = 'Rp ' + fmt(totalPaid);
+        document.getElementById('projectModalValidationRemaining').textContent = 'Rp ' + fmt(remaining);
+        renderInvoiceListInto('projectModalValidationInvoiceList', invoices, 'table');
     }
 }
 
@@ -704,109 +938,126 @@ function csrfToken() {
     return document.querySelector('#projectForm input[name="_token"]').value;
 }
 
-let projectModalToastTimer = null;
 function showModalToast(message, tone = 'success') {
-    const toast = document.getElementById('projectModalToast');
-    toast.textContent = message;
-    toast.className = tone === 'success'
-        ? 'absolute left-1/2 top-4 z-10 flex w-[min(90%,26rem)] -translate-x-1/2 items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-center text-sm font-semibold text-green-800 shadow-lg'
-        : 'absolute left-1/2 top-4 z-10 flex w-[min(90%,26rem)] -translate-x-1/2 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-center text-sm font-semibold text-red-800 shadow-lg';
-    clearTimeout(projectModalToastTimer);
-    projectModalToastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
-}
-
-function applyDocumentResponse(json) {
-    currentProjectModalData[json.documentType] = json.document;
-    currentProjectModalData.canManageDocuments = json.canManageDocuments;
-    currentProjectModalData.isAwaitingDecision = json.isAwaitingDecision;
-    currentProjectModalData.canSend = json.canSend;
-    currentProjectModalData.totalHarga = json.totalHarga;
-    renderDocumentSlot('Design', 'design');
-    renderDocumentSlot('Rab', 'rab');
-    updateDocStatus();
-    updateSendButtonState();
-    syncProjectModalButton();
-    showModalToast(json.message || 'Berhasil disimpan.');
-}
-
-function submitDocument(form, file, type) {
-    const formData = new FormData();
-    formData.append('_token', csrfToken());
-    formData.append('document_type', type);
-    formData.append('document', file);
-
-    fetch(form.action, { method: 'POST', body: formData, headers: { 'Accept': 'application/json' } })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
-            if (!ok) {
-                showModalToast(json.message || 'Gagal mengunggah dokumen.', 'error');
-                return;
-            }
-            applyDocumentResponse(json);
-        })
-        .catch(() => showModalToast('Gagal mengunggah dokumen. Periksa koneksi Anda.', 'error'));
-}
-
-function deleteDocumentRequest(url, cap, type) {
-    return fetch(url, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() } })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
-            if (!ok) {
-                showModalToast(json.message || 'Gagal menghapus dokumen.', 'error');
-                return;
-            }
-            applyDocumentResponse(json);
-        })
-        .catch(() => showModalToast('Gagal menghapus dokumen. Periksa koneksi Anda.', 'error'));
-}
-
-function saveProjectChanges() {
-    const saveBtn = document.getElementById('projectModalSaveBtn');
-    const form = document.getElementById('projectForm');
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Menyimpan...';
-
-    fetch(form.action, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            status_pemesanan: document.getElementById('projectStatus').value,
-            designer_id: document.getElementById('projectDesigner').value || null,
-            total_harga: getRupiahInputValue(document.getElementById('projectTotalHarga')),
-        }),
-    })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
-            if (!ok) {
-                const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal menyimpan perubahan.');
-                showModalToast(errorMessage, 'error');
-                return;
-            }
-            currentProjectModalData.status = document.getElementById('projectStatus').value;
-            currentProjectModalData.designer = document.getElementById('projectDesigner').value || null;
-            currentProjectModalData.totalHarga = parseInt(getRupiahInputValue(document.getElementById('projectTotalHarga')), 10) || 0;
-            updateSendButtonState();
-            syncProjectModalButton();
-            showModalToast(json.message || 'Perubahan berhasil disimpan.');
-        })
-        .catch(() => showModalToast('Gagal menyimpan perubahan. Periksa koneksi Anda.', 'error'))
-        .finally(() => {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Simpan Perubahan';
-        });
-}
-
-function formatFileSize(bytes) {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    showNotificationCard(message, tone);
 }
 
 function closeProjectModal() {
     const modal = document.getElementById('projectModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    closeInvoiceModal();
+}
+
+let currentOrderReviewData = null;
+
+function orderReviewCsrfToken() {
+    return document.querySelector('#orderReviewCsrfForm input[name="_token"]').value;
+}
+
+function openOrderReviewModal(button) {
+    const project = JSON.parse(button.dataset.project);
+    currentOrderReviewData = project;
+
+    document.getElementById('orderReviewReference').textContent = `#${project.reference}`;
+    document.getElementById('orderReviewStageLabel').textContent = project.stageLabel || 'Proses Proyek';
+    document.getElementById('orderReviewDesigner').value = project.designer || '';
+    document.getElementById('orderReviewError').classList.add('hidden');
+
+    const finalizeField = document.getElementById('orderReviewFinalizeField');
+    document.getElementById('orderReviewStatus').value = project.status;
+    finalizeField.classList.toggle('hidden', !project.canFinalize);
+
+    const completeBtn = document.getElementById('orderReviewCompleteBtn');
+    completeBtn.disabled = project.status === 'selesai';
+    completeBtn.innerHTML = project.status === 'selesai'
+        ? '<i class="fas fa-circle-check" aria-hidden="true"></i> Proyek Selesai'
+        : '<i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek';
+
+    const modal = document.getElementById('orderReviewModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeOrderReviewModal() {
+    const modal = document.getElementById('orderReviewModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function setOrderReviewStatus(status) {
+    document.getElementById('orderReviewStatus').value = status;
+
+    if (status === 'selesai') {
+        const reference = currentOrderReviewData?.reference || '';
+        window.dispatchEvent(new CustomEvent('open-confirmation', {
+            detail: {
+                title: 'Selesaikan proyek ini?',
+                message: `Proyek ${reference} akan ditandai selesai. Pastikan seluruh pengerjaan dan pembayaran sudah rampung sebelum melanjutkan.`,
+                confirmLabel: 'Ya, selesaikan',
+                tone: 'success',
+                onConfirm: () => saveOrderReview(),
+            },
+        }));
+        return;
+    }
+
+    saveOrderReview();
+}
+
+function saveOrderReview() {
+    const project = currentOrderReviewData;
+    const errorEl = document.getElementById('orderReviewError');
+    errorEl.classList.add('hidden');
+
+    const saveBtn = document.getElementById('orderReviewSaveBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Menyimpan...';
+
+    fetch(`{{ url('/admin/proyek') }}/${project.id}`, {
+        method: 'PUT',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': orderReviewCsrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            status_pemesanan: document.getElementById('orderReviewStatus').value,
+            designer_id: document.getElementById('orderReviewDesigner').value || null,
+        }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                errorEl.textContent = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal menyimpan perubahan.');
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            showModalToast(json.message || 'Perubahan berhasil disimpan.');
+            closeOrderReviewModal();
+            setTimeout(() => window.location.reload(), 600);
+        })
+        .catch(() => { errorEl.textContent = 'Gagal menyimpan perubahan. Periksa koneksi Anda.'; errorEl.classList.remove('hidden'); })
+        .finally(() => {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Simpan Perubahan';
+        });
+}
+
+function confirmDeleteOrderReview() {
+    const project = currentOrderReviewData;
+    const reference = project?.reference || '';
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Hapus pesanan ini?',
+            message: `Seluruh data proyek ${reference}, dokumen, dan riwayat konsultasi terkait akan dihapus permanen dan tidak dapat dikembalikan.`,
+            confirmLabel: 'Ya, hapus',
+            tone: 'danger',
+            onConfirm: () => {
+                fetch(project.deleteUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': orderReviewCsrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: '_method=DELETE',
+                }).then(() => window.location.reload());
+            },
+        },
+    }));
 }
 
 function openDetailModal(button) {
@@ -870,12 +1121,49 @@ document.getElementById('detailModal').addEventListener('click', event => {
     if (event.target.id === 'detailModal') closeDetailModal();
 });
 
-document.getElementById('projectStatus').addEventListener('change', event => {
-    if (event.target.value === 'selesai') document.getElementById('projectProgress').value = 100;
-});
-
 @if($errors->manualOrder->any())
 openOrderModal();
 @endif
+
+(function pollForUpdates() {
+    const heartbeatUrl = '{{ route('admin.pemesanan.heartbeat') }}';
+    let lastSignal = null;
+    let isFirstCheck = true;
+
+    function anyModalOpen() {
+        const jsModals = ['projectModal', 'orderModal', 'detailModal', 'invoiceModal', 'orderReviewModal'];
+        if (jsModals.some(id => {
+            const el = document.getElementById(id);
+            return el && !el.classList.contains('hidden');
+        })) {
+            return true;
+        }
+
+        return Array.from(document.querySelectorAll('[x-data]')).some(el => {
+            return el._x_dataStack && el._x_dataStack.some(data => data.open === true);
+        });
+    }
+
+    function check() {
+        fetch(heartbeatUrl, { headers: { 'Accept': 'application/json' } })
+            .then(response => response.ok ? response.json() : null)
+            .then(payload => {
+                if (!payload) return;
+
+                if (isFirstCheck) {
+                    lastSignal = payload.signal;
+                    isFirstCheck = false;
+                    return;
+                }
+
+                if (payload.signal !== lastSignal && !anyModalOpen()) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => {});
+    }
+
+    setInterval(check, 15000);
+})();
 </script>
 @endpush

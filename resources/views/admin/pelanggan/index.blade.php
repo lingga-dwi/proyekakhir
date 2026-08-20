@@ -28,19 +28,20 @@
 
 <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <div class="border-b border-slate-100 px-5 py-4"><h2 class="font-semibold text-slate-950">Daftar Pelanggan</h2><p class="text-xs text-slate-500">Menampilkan {{ $pelanggan->firstItem() ?? 0 }}-{{ $pelanggan->lastItem() ?? 0 }} dari {{ $pelanggan->total() }} pelanggan</p></div>
-    <div class="overflow-x-auto"><table class="w-full min-w-[900px]">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-5 py-3 font-medium">Pelanggan</th><th class="px-5 py-3 font-medium">Kontak</th><th class="px-5 py-3 font-medium">Proyek</th><th class="px-5 py-3 font-medium">Terdaftar</th><th class="px-5 py-3 font-medium">Aktivitas</th></tr></thead>
+    <div class="overflow-x-auto"><table class="w-full min-w-[1080px]">
+        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500"><tr><th class="px-5 py-3 font-medium">Pelanggan</th><th class="px-5 py-3 font-medium">Kontak</th><th class="px-5 py-3 font-medium">Total Proyek</th><th class="px-5 py-3 font-medium">Total Belanja</th><th class="px-5 py-3 font-medium">Terdaftar</th><th class="px-5 py-3 font-medium">Aktivitas</th></tr></thead>
         <tbody class="divide-y divide-slate-100">
             @forelse($pelanggan as $customer)
                 <tr class="hover:bg-slate-50">
                     <td class="px-5 py-4"><div class="flex items-center gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-800">{{ strtoupper(substr($customer->nama, 0, 1)) }}</span><p class="text-sm font-semibold text-slate-900">{{ $customer->nama }}</p></div></td>
                     <td class="px-5 py-4"><p class="text-sm text-slate-700">{{ $customer->email }}</p><p class="text-xs text-slate-500">{{ $customer->no_telp ?: 'Telepon belum diisi' }}</p></td>
-                    <td class="px-5 py-4 text-sm font-semibold text-slate-700">{{ $customer->pemesanans_count }}</td>
+                    <td class="px-5 py-4"><span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">{{ $customer->pemesanans_count }} Proyek</span></td>
+                    <td class="px-5 py-4 text-sm font-bold text-slate-900">Rp {{ number_format((float) $customer->pemesanans_sum_total_harga, 0, ',', '.') }}</td>
                     <td class="px-5 py-4 text-sm text-slate-600">{{ $customer->created_at->translatedFormat('d M Y') }}</td>
                     <td class="px-5 py-4"><a href="{{ route('admin.pemesanan.index', ['search' => $customer->email]) }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800">Lihat Pesanan</a></td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada pelanggan yang sesuai pencarian.</td></tr>
+                <tr><td colspan="6" class="px-5 py-14 text-center text-sm text-slate-500">Tidak ada pelanggan yang sesuai pencarian.</td></tr>
             @endforelse
         </tbody>
     </table></div>

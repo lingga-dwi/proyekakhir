@@ -294,6 +294,37 @@ class AdminCatalogManagementTest extends TestCase
         $this->assertLessThanOrEqual(1920, max($width, $height));
     }
 
+    public function test_designer_can_manage_catalog(): void
+    {
+        $designer = User::factory()->create(['role' => 'designer']);
+        $category = $this->category('Kamar Tidur');
+        $this->catalog($category, ['nama_desain' => 'Desain Draft', 'status' => 'draft']);
+
+        $this->actingAs($designer)
+            ->get(route('admin.katalog.index'))
+            ->assertOk()
+            ->assertSee('Kelola Katalog')
+            ->assertSee('Desain Draft');
+
+        $this->actingAs($designer)->post(route('admin.katalog.store'), [
+            'nama_desain' => 'Katalog Buatan Desainer',
+            'category_id' => $category->id,
+            'deskripsi' => 'Ditambahkan oleh desainer.',
+            'status' => 'draft',
+        ])->assertRedirect(route('admin.katalog.index'));
+
+        $this->assertDatabaseHas('katalog', ['nama_desain' => 'Katalog Buatan Desainer']);
+    }
+
+    public function test_customer_cannot_manage_catalog(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+
+        $this->actingAs($customer)
+            ->get(route('admin.katalog.index'))
+            ->assertForbidden();
+    }
+
     private function category(string $name): Category
     {
         return Category::create([

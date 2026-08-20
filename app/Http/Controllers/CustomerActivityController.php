@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ReviewPayloadBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ class CustomerActivityController extends Controller
     {
         $user = $request->user();
         $activities = $user->pemesanans()
-            ->with(['katalog', 'konsultasi', 'documents'])
+            ->with(['katalog', 'konsultasi', 'documents', 'dpInvoice', 'invoices' => fn ($query) => $query->orderBy('created_at')])
             ->get()
             ->map(function ($pemesanan) {
                 $reference = 'PRY-'.str_pad((string) $pemesanan->id, 4, '0', STR_PAD_LEFT);
@@ -26,52 +27,16 @@ class CustomerActivityController extends Controller
                     ? number_format((float) $pemesanan->luas_area, 2, ',', '.').' m²'
                     : null;
                 $meta = implode(' · ', array_filter([$building, $area]));
-
-                $reviewStage = match ($pemesanan->workflow_stage) {
-                    'awaiting_draft_approval' => 'draft',
-                    'awaiting_final_approval' => 'final',
+                $budgetLabel = match ($pemesanan->konsultasi?->budget_range) {
+                    'under_10m' => 'Di bawah Rp 10 Juta',
+                    '10m_25m' => 'Rp 10 - 25 Juta',
+                    '25m_50m' => 'Rp 25 - 50 Juta',
+                    '50m_100m' => 'Rp 50 - 100 Juta',
+                    'above_100m' => 'Di atas Rp 100 Juta',
                     default => null,
                 };
-                $reviewPayload = null;
-                if ($reviewStage) {
-                    $round = $reviewStage === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
-                    $documents = $pemesanan->documents
-                        ->where('stage', $reviewStage)
-                        ->where('submission_round', $round)
-                        ->whereIn('document_type', ['design', 'rab'])
-                        ->groupBy('document_type')
-                        ->map(fn ($group) => $group->sortByDesc('version')->first())
-                        ->map(fn ($document) => [
-                            'type' => $document->document_type,
-                            'name' => $document->original_name,
-                            'size' => \Illuminate\Support\Facades\Storage::disk('local')->exists($document->path)
-                                ? \Illuminate\Support\Facades\Storage::disk('local')->size($document->path)
-                                : null,
-                            'downloadUrl' => route('pemesanan.document.download', [$pemesanan->id, $document->id]),
-                        ])
-                        ->values()->all();
-                    $budgetLabel = match ($pemesanan->konsultasi?->budget_range) {
-                        'under_10m' => 'Di bawah Rp 10 Juta',
-                        '10m_25m' => 'Rp 10 - 25 Juta',
-                        '25m_50m' => 'Rp 25 - 50 Juta',
-                        '50m_100m' => 'Rp 50 - 100 Juta',
-                        'above_100m' => 'Di atas Rp 100 Juta',
-                        default => null,
-                    };
 
-                    $reviewPayload = [
-                        'id' => $pemesanan->id,
-                        'reference' => $reference,
-                        'stage' => $reviewStage,
-                        'title' => $title ?: 'Pesanan desain',
-                        'building' => $building,
-                        'area' => $area,
-                        'budgetLabel' => $budgetLabel,
-                        'requirementNote' => $pemesanan->deskripsi_keinginan_desain,
-                        'documents' => $documents,
-                        'decisionUrl' => route('pemesanan.document.decision', $pemesanan),
-                    ];
-                }
+                $reviewPayload = ReviewPayloadBuilder::build($pemesanan);
 
                 return (object) [
                     'type' => 'pemesanan',
@@ -79,6 +44,10 @@ class CustomerActivityController extends Controller
                     'reference' => $reference,
                     'title' => $title ?: 'Pesanan desain',
                     'meta' => $meta ?: 'Detail proyek tersedia',
+                    'building' => $building,
+                    'area' => $area,
+                    'budgetLabel' => $budgetLabel,
+                    'requirementNote' => $pemesanan->deskripsi_keinginan_desain,
                     'normalized_status' => match ($pemesanan->status_pemesanan) {
                         'pending' => 'pending',
                         'dikonfirmasi' => 'confirmed',
@@ -101,42 +70,46 @@ class CustomerActivityController extends Controller
                 ];
             })
             ->concat($user->konsultasis()
-            ->whereNull('pemesanan_id')
-            ->get()
-            ->map(function ($konsultasi) {
-                $reference = 'KON-'.str_pad((string) $konsultasi->id, 4, '0', STR_PAD_LEFT);
-                $title = $konsultasi->getJenisKonsultasiLabel();
-                $room = $konsultasi->getJenisRuanganLabel();
-                $summary = trim((string) $konsultasi->deskripsi_kebutuhan);
-                if (in_array(mb_strtolower($summary), ['', '-', 'gaada', 'tidak ada', 'n/a'], true)) {
-                    $summary = null;
-                }
+                ->whereNull('pemesanan_id')
+                ->get()
+                ->map(function ($konsultasi) {
+                    $reference = 'KON-'.str_pad((string) $konsultasi->id, 4, '0', STR_PAD_LEFT);
+                    $title = $konsultasi->getJenisKonsultasiLabel();
+                    $room = $konsultasi->getJenisRuanganLabel();
+                    $summary = trim((string) $konsultasi->deskripsi_kebutuhan);
+                    if (in_array(mb_strtolower($summary), ['', '-', 'gaada', 'tidak ada', 'n/a'], true)) {
+                        $summary = null;
+                    }
 
-                return (object) [
-                    'type' => 'konsultasi',
-                    'type_label' => 'Konsultasi',
-                    'reference' => $reference,
-                    'title' => $title,
-                    'meta' => implode(' · ', array_filter([$room, $summary ? Str::limit($summary, 70) : null])),
-                    'normalized_status' => match ($konsultasi->status) {
-                        'pending' => 'pending',
-                        'confirmed' => 'confirmed',
-                        'completed' => 'completed',
-                        'cancelled' => 'cancelled',
-                        default => 'pending',
-                    },
-                    'progress' => null,
-                    'created_at' => $konsultasi->created_at,
-                    'detail_url' => route('konsultasi.show', $konsultasi),
-                    'review' => null,
-                    'searchable' => mb_strtolower(implode(' ', [
-                        $reference,
-                        $title,
-                        $room,
-                        $summary,
-                    ])),
-                ];
-            }))
+                    return (object) [
+                        'type' => 'konsultasi',
+                        'type_label' => 'Konsultasi',
+                        'reference' => $reference,
+                        'title' => $title,
+                        'meta' => implode(' · ', array_filter([$room, $summary ? Str::limit($summary, 70) : null])),
+                        'building' => $room,
+                        'area' => null,
+                        'budgetLabel' => null,
+                        'requirementNote' => $summary,
+                        'normalized_status' => match ($konsultasi->status) {
+                            'pending' => 'pending',
+                            'confirmed' => 'confirmed',
+                            'completed' => 'completed',
+                            'cancelled' => 'cancelled',
+                            default => 'pending',
+                        },
+                        'progress' => null,
+                        'created_at' => $konsultasi->created_at,
+                        'detail_url' => route('konsultasi.show', $konsultasi),
+                        'review' => null,
+                        'searchable' => mb_strtolower(implode(' ', [
+                            $reference,
+                            $title,
+                            $room,
+                            $summary,
+                        ])),
+                    ];
+                }))
             ->values();
 
         $allowedStatuses = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'];

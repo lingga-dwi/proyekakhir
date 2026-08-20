@@ -9,9 +9,9 @@
         <span x-cloak x-show="unreadCount > 0" class="absolute -right-1.5 -top-1.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white" x-text="unreadCount > 99 ? '99+' : unreadCount"></span>
     </button>
 
-    <div x-cloak x-show="notificationOpen" x-transition.origin.top.right class="absolute right-0 top-12 z-[80] w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+    <div x-cloak x-show="notificationOpen" x-transition.origin.top.right class="absolute right-0 top-12 z-80 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <div><p class="font-bold text-slate-950">Notifikasi</p><p class="text-xs text-slate-500" x-text="unreadCount + ' belum dibaca'"></p></div>
+            <div><p class="font-bold text-slate-950">Notifikasi</p></div>
         </div>
         <div class="max-h-96 divide-y divide-slate-100 overflow-y-auto">
             @forelse($headerNotifications as $notification)
