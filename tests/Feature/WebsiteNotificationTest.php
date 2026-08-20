@@ -5,7 +5,10 @@ namespace Tests\Feature;
 use App\Models\Konsultasi;
 use App\Models\User;
 use App\Notifications\DaikuNotification;
+use App\Services\DaikuNotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class WebsiteNotificationTest extends TestCase
@@ -69,5 +72,45 @@ class WebsiteNotificationTest extends TestCase
 
         $this->assertSame(['database'], $databaseNotification->via(new \stdClass));
         $this->assertSame(['mail'], $mailNotification->via(new \stdClass));
+    }
+
+    public function test_admin_broadcast_also_emails_the_fixed_admin_notification_address(): void
+    {
+        config([
+            'services.daiku.email_notifications' => true,
+            'services.daiku.admin_notification_email' => 'daikuadmin@gmail.com',
+        ]);
+        Notification::fake();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        app(DaikuNotificationService::class)->admins(
+            'Pesanan baru masuk',
+            'Ada pesanan baru dari pelanggan.',
+            '/admin/pemesanan'
+        );
+
+        Notification::assertSentTo($admin, DaikuNotification::class);
+        Notification::assertSentOnDemand(
+            DaikuNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable instanceof AnonymousNotifiable
+                && $notifiable->routes['mail'] === 'daikuadmin@gmail.com'
+        );
+    }
+
+    public function test_admin_broadcast_skips_fixed_email_when_notifications_disabled(): void
+    {
+        config([
+            'services.daiku.email_notifications' => false,
+            'services.daiku.admin_notification_email' => 'daikuadmin@gmail.com',
+        ]);
+        Notification::fake();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        app(DaikuNotificationService::class)->admins('Judul', 'Pesan', '/');
+
+        Notification::assertSentTo($admin, DaikuNotification::class);
+        Notification::assertNotSentTo(new AnonymousNotifiable, DaikuNotification::class);
     }
 }

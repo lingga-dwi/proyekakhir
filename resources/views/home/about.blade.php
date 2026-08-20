@@ -116,47 +116,6 @@
     </div>
 </section>
 
-<section class="bg-white py-20 sm:py-28" aria-labelledby="approach-title">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-3xl text-center">
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">Pendekatan Daiku</p>
-            <h2 id="approach-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">
-                Perhatian yang menyeluruh, dari konsep sampai pemasangan.
-            </h2>
-        </div>
-
-        <div class="mt-16 grid gap-8 lg:grid-cols-2 lg:gap-10">
-            <article>
-                <figure class="overflow-hidden bg-stone-100">
-                    <img src="{{ asset('images/katalog/curated/dapur/2022-02-15_CZ_Zp2opU9r/daikuinterior_CZ_Zp2opU9r_0.jpg') }}"
-                         alt="Furniture custom pada area servis"
-                         class="h-[430px] w-full object-cover sm:h-[560px]"
-                         loading="lazy"
-                         decoding="async">
-                </figure>
-                <h3 class="mt-7 text-3xl text-slate-950">Memahami sebelum merancang</h3>
-                <p class="mt-4 max-w-xl leading-8 text-slate-600">
-                    Keterlibatan personal membantu tim memahami prioritas klien dan menjelaskan hubungan antara keputusan desain, proses pengerjaan, serta hasil akhir.
-                </p>
-            </article>
-
-            <article class="lg:pt-20">
-                <figure class="overflow-hidden bg-stone-100">
-                    <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_1.jpg') }}"
-                         alt="Furniture kamar tidur hasil pengerjaan Daiku"
-                         class="h-[430px] w-full object-cover sm:h-[560px]"
-                         loading="lazy"
-                         decoding="async">
-                </figure>
-                <h3 class="mt-7 text-3xl text-slate-950">Menjaga detail sampai akhir</h3>
-                <p class="mt-4 max-w-xl leading-8 text-slate-600">
-                    Perhatian pada ukuran, material, produksi, dan pemasangan dijaga agar pekerjaan yang terbangun tetap selaras dengan rencana dan anggaran.
-                </p>
-            </article>
-        </div>
-    </div>
-</section>
-
 <section class="bg-white py-20 sm:py-28" aria-labelledby="work-title">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-3xl text-center">
@@ -164,19 +123,49 @@
             <h2 id="work-title" class="mt-5 text-4xl leading-tight text-slate-950 sm:text-5xl">Ruang yang telah diwujudkan.</h2>
         </div>
 
-        <div class="mt-14 grid gap-5 sm:grid-cols-3">
-            <figure class="overflow-hidden bg-stone-100">
-                <img src="{{ asset('images/katalog/curated/dapur/2022-02-19_CaJABsOpCeJ/daikuinterior_CaJABsOpCeJ_0.jpg') }}" alt="Area dapur dan ruang makan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
-                <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Dapur & ruang makan</figcaption>
-            </figure>
-            <figure class="overflow-hidden bg-stone-100 sm:mt-12">
-                <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_1.jpg') }}" alt="Panel televisi dan penyimpanan hasil pengerjaan" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
-                <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Panel TV & penyimpanan</figcaption>
-            </figure>
-            <figure class="overflow-hidden bg-stone-100">
-                <img src="{{ asset('images/katalog/curated/ruang-keluarga/2022-04-04_Cb6kWZCBUST/daikuinterior_Cb6kWZCBUST_0.jpg') }}" alt="Ruang keluarga hasil pengerjaan Daiku" class="aspect-[3/4] h-full w-full object-cover" loading="lazy" decoding="async">
-                <figcaption class="px-1 pb-2 pt-5 text-center text-sm uppercase tracking-[0.14em] text-slate-500">Ruang keluarga</figcaption>
-            </figure>
+        @php
+            $workGalleryImages = collect([6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 20, 22, 23])
+                ->map(fn ($n) => asset('images/pekerjaan-kami/1787202465907-069acad7-c8e2-4dd7-ac9c-cd1e5cb94c07_'.$n.'.jpg'))
+                ->values();
+        @endphp
+
+        <div class="mt-14 grid gap-5 sm:grid-cols-3" x-data="{ open: false, activeIndex: 0, images: @js($workGalleryImages) }" @keydown.escape.window="open = false" @keydown.arrow-right.window="if (open) activeIndex = (activeIndex + 1) % images.length" @keydown.arrow-left.window="if (open) activeIndex = (activeIndex - 1 + images.length) % images.length">
+            @foreach($workGalleryImages as $index => $imageUrl)
+                <figure class="overflow-hidden bg-stone-100">
+                    <button type="button" class="block w-full cursor-zoom-in" @click="open = true; activeIndex = {{ $index }}" aria-label="Perbesar foto pekerjaan {{ $index + 1 }}">
+                        <img src="{{ $imageUrl }}" alt="Hasil pengerjaan Daiku Interior & Exterior {{ $index + 1 }}" class="aspect-3/4 h-full w-full object-cover transition duration-300 hover:scale-105" loading="lazy" decoding="async">
+                    </button>
+                </figure>
+            @endforeach
+
+            <div
+                x-show="open"
+                x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+                @click.self="open = false"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+            >
+                <button type="button" class="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20" @click="open = false" aria-label="Tutup">
+                    <i class="fas fa-times text-lg" aria-hidden="true"></i>
+                </button>
+
+                <button type="button" class="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:left-4" @click="activeIndex = (activeIndex - 1 + images.length) % images.length" aria-label="Foto sebelumnya">
+                    <i class="fas fa-chevron-left text-lg" aria-hidden="true"></i>
+                </button>
+
+                <img :src="images[activeIndex]" alt="Foto pekerjaan Daiku diperbesar" class="max-h-[85vh] max-w-full object-contain" @click.stop>
+
+                <button type="button" class="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 sm:right-4" @click="activeIndex = (activeIndex + 1) % images.length" aria-label="Foto berikutnya">
+                    <i class="fas fa-chevron-right text-lg" aria-hidden="true"></i>
+                </button>
+
+                <p class="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-white/70" x-text="`${activeIndex + 1} / ${images.length}`"></p>
+            </div>
         </div>
     </div>
 </section>

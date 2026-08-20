@@ -35,5 +35,21 @@ class DaikuNotificationService
         User::query()->where('role', 'admin')->each(
             fn (User $admin) => $this->send($admin, $title, $message, $url, $action)
         );
+
+        $fixedEmail = config('services.daiku.admin_notification_email');
+        if (! $fixedEmail || ! config('services.daiku.email_notifications', false)) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $fixedEmail)
+                ->notify(new DaikuNotification($title, $message, $url, $action, true));
+        } catch (\Throwable $exception) {
+            Log::warning('Admin notification email could not be delivered', [
+                'email' => $fixedEmail,
+                'title' => $title,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }
