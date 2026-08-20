@@ -133,7 +133,7 @@
             @foreach($workGalleryImages as $index => $imageUrl)
                 <figure class="overflow-hidden bg-stone-100">
                     <button type="button" class="block w-full cursor-zoom-in" @click="open = true; activeIndex = {{ $index }}" aria-label="Perbesar foto pekerjaan {{ $index + 1 }}">
-                        <img src="{{ $imageUrl }}" alt="Hasil pengerjaan Daiku Interior & Exterior {{ $index + 1 }}" class="aspect-3/4 h-full w-full object-cover transition duration-300 hover:scale-105" loading="lazy" decoding="async">
+                        <img src="{{ $imageUrl }}" alt="Hasil pengerjaan Daiku Interior & Exterior {{ $index + 1 }}" class="h-auto w-full object-contain transition duration-300 hover:scale-105" loading="lazy" decoding="async">
                     </button>
                 </figure>
             @endforeach
