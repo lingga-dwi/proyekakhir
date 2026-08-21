@@ -61,6 +61,7 @@
                 @forelse($projects as $project)
                     @php
                         $statusLabel = \App\Support\ProjectStageLabel::forPemesanan($project);
+                        $statusActor = \App\Support\ProjectStageLabel::actorFor($project);
                         $statusClass = match(true) {
                             $project->status_pemesanan === 'dibatalkan' => 'bg-red-50 text-red-700',
                             $project->status_pemesanan === 'selesai' => 'bg-emerald-50 text-emerald-700',
@@ -219,7 +220,12 @@
                                 </button>
                             @endif
                         </td>
-                        <td class="px-5 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span></td>
+                        <td class="px-5 py-4">
+                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+                            @if($statusActor)
+                                <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $statusActor }}</p>
+                            @endif
+                        </td>
                         <td class="px-5 py-4">
                             <div class="flex items-center gap-2">
                                 @if($canUpdate)

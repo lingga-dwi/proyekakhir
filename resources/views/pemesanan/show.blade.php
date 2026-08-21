@@ -25,6 +25,7 @@
                 <div class="text-right">
                     @php
                         $stageLabel = \App\Support\ProjectStageLabel::forPemesanan($pemesanan);
+                        $stageActor = \App\Support\ProjectStageLabel::actorFor($pemesanan);
                         $stageBadgeClass = match(true) {
                             $pemesanan->status_pemesanan === 'dibatalkan' => 'bg-red-100 text-red-800',
                             $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
@@ -54,6 +55,7 @@
         <section class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">Tahap proses saat ini</p>
             <h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $stageLabel }}</h2>
+            @if($stageActor)<p class="mt-1 text-xs font-medium text-amber-700">Oleh: {{ $stageActor }}</p>@endif
             @if($pemesanan->catatan_progres)<p class="mt-2 text-sm leading-6 text-slate-700">{{ $pemesanan->catatan_progres }}</p>@endif
         </section>
 
