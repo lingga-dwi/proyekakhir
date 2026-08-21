@@ -36,24 +36,15 @@ class DashboardController extends Controller
             ->take(6)
             ->get()
             ->map(fn (StatusTracking $tracking) => [
-                'icon' => match ($tracking->status) {
-                    'pending' => 'fa-inbox',
-                    'dikonfirmasi' => 'fa-circle-check',
-                    'sedang_dikerjakan' => 'fa-drafting-compass',
-                    'selesai' => 'fa-flag-checkered',
-                    'dibatalkan' => 'fa-ban',
-                    default => 'fa-clock-rotate-left',
+                'icon' => self::activityIcon($tracking),
+                'title' => $tracking->catatan ?: match ($tracking->status) {
+                    'pending' => 'Pesanan baru diterima',
+                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                    'selesai' => 'Proyek diselesaikan',
+                    'dibatalkan' => 'Proyek dibatalkan',
+                    default => 'Progres diperbarui',
                 },
-                'title' => $tracking->catatan === 'Proyek dibuat dari permintaan konsultasi.'
-                    ? 'Proyek baru dibuat'
-                    : match ($tracking->status) {
-                        'pending' => 'Pesanan baru diterima',
-                        'dikonfirmasi' => 'Pesanan dikonfirmasi',
-                        'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
-                        'selesai' => 'Proyek diselesaikan',
-                        'dibatalkan' => 'Proyek dibatalkan',
-                        default => 'Progres diperbarui',
-                    },
                 'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
                 'occurred_at' => $tracking->created_at,
                 'url' => route('admin.pemesanan.index', [
@@ -160,24 +151,15 @@ class DashboardController extends Controller
             ->take(6)
             ->get()
             ->map(fn (StatusTracking $tracking) => [
-                'icon' => match ($tracking->status) {
-                    'pending' => 'fa-inbox',
-                    'dikonfirmasi' => 'fa-circle-check',
-                    'sedang_dikerjakan' => 'fa-drafting-compass',
-                    'selesai' => 'fa-flag-checkered',
-                    'dibatalkan' => 'fa-ban',
-                    default => 'fa-clock-rotate-left',
+                'icon' => self::activityIcon($tracking),
+                'title' => $tracking->catatan ?: match ($tracking->status) {
+                    'pending' => 'Pesanan baru diterima',
+                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                    'selesai' => 'Proyek diselesaikan',
+                    'dibatalkan' => 'Proyek dibatalkan',
+                    default => 'Progres diperbarui',
                 },
-                'title' => $tracking->catatan === 'Proyek dibuat dari permintaan konsultasi.'
-                    ? 'Proyek baru dibuat'
-                    : match ($tracking->status) {
-                        'pending' => 'Pesanan baru diterima',
-                        'dikonfirmasi' => 'Pesanan dikonfirmasi',
-                        'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
-                        'selesai' => 'Proyek diselesaikan',
-                        'dibatalkan' => 'Proyek dibatalkan',
-                        default => 'Progres diperbarui',
-                    },
                 'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
                 'occurred_at' => $tracking->created_at,
                 'url' => route('designer.projects.index', [
@@ -303,5 +285,36 @@ class DashboardController extends Controller
             ->withQueryString();
 
         return view('admin.users.index', compact('users', 'userStats'));
+    }
+
+    /**
+     * Guess an activity icon from the tracking note's content, since
+     * status_tracking.status only ever holds the coarse order status
+     * (almost always "dikonfirmasi" throughout the whole design/payment
+     * workflow) and can't distinguish what actually happened.
+     */
+    private static function activityIcon(StatusTracking $tracking): string
+    {
+        $note = mb_strtolower((string) $tracking->catatan);
+
+        return match (true) {
+            $note === '' => match ($tracking->status) {
+                'pending' => 'fa-inbox',
+                'dikonfirmasi' => 'fa-circle-check',
+                'sedang_dikerjakan' => 'fa-drafting-compass',
+                'selesai' => 'fa-flag-checkered',
+                'dibatalkan' => 'fa-ban',
+                default => 'fa-clock-rotate-left',
+            },
+            str_contains($note, 'dibatalkan') || str_contains($note, 'ditolak') => 'fa-ban',
+            str_contains($note, 'diselesaikan') || str_contains($note, 'pengerjaan dapat dimulai') => 'fa-flag-checkered',
+            str_contains($note, 'bukti pembayaran') || str_contains($note, 'dp ') || str_contains($note, 'tagihan') || str_contains($note, 'pembayaran') => 'fa-money-check-dollar',
+            str_contains($note, 'revisi') => 'fa-comment-dots',
+            str_contains($note, 'survei') => 'fa-map-location-dot',
+            str_contains($note, 'desain') || str_contains($note, 'rab') || str_contains($note, 'validasi') || str_contains($note, 'ditinjau') => 'fa-file-signature',
+            str_contains($note, 'disetujui') => 'fa-circle-check',
+            str_contains($note, 'dibuat') || str_contains($note, 'diterima') || str_contains($note, 'dicatat') => 'fa-inbox',
+            default => 'fa-clock-rotate-left',
+        };
     }
 }

@@ -893,8 +893,43 @@ class AdminManagementTest extends TestCase
             ->assertSee('Pelanggan Baru')
             ->assertSee('Permintaan Baru')
             ->assertSee('Kitchen Set Prioritas')
-            ->assertSee('Pesanan baru diterima')
+            ->assertSee('Pesanan baru diajukan oleh pelanggan.')
             ->assertDontSee('Pendapatan Terbayar');
+    }
+
+    public function test_admin_dashboard_activity_feed_shows_distinct_titles_not_repeated_status(): void
+    {
+        $admin = $this->user('admin@example.com', 'admin');
+        $customer = $this->user('customer@example.com', 'pelanggan');
+
+        // status_pemesanan stays 'dikonfirmasi' across the entire design/payment
+        // workflow, so every entry used to render the same generic title. The
+        // activity feed must instead surface each tracking's own note.
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => 'dikonfirmasi',
+            'jenis_proyek' => 'Renovasi Dapur',
+        ]);
+
+        $project->statusTrackings()->create([
+            'status' => 'dikonfirmasi',
+            'tanggal_update' => now()->toDateString(),
+            'catatan' => 'Desain awal/RAB dikirim dan menunggu validasi admin.',
+            'created_at' => now()->subMinutes(2),
+        ]);
+        $project->statusTrackings()->create([
+            'status' => 'dikonfirmasi',
+            'tanggal_update' => now()->toDateString(),
+            'catatan' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.',
+            'created_at' => now()->subMinute(),
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('dashboard.admin'));
+
+        $response->assertOk()
+            ->assertSee('Desain awal/RAB dikirim dan menunggu validasi admin.')
+            ->assertSee('Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.');
     }
 
     public function test_designer_dashboard_only_shows_projects_assigned_to_that_designer(): void
