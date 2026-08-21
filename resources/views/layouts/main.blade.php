@@ -416,6 +416,76 @@
         </section>
     </div>
 
+    <div
+        x-data="{
+            open: false,
+            title: 'Informasi',
+            message: '',
+            show(detail) {
+                this.title = detail.title || 'Informasi';
+                this.message = detail.message || '';
+                this.open = true;
+                this.$nextTick(() => this.$refs.noticeCloseButton.focus());
+            },
+            close() {
+                this.open = false;
+            }
+        }"
+        x-cloak
+        x-show="open"
+        @open-notice.window="show($event.detail)"
+        @keydown.escape.window="close()"
+        class="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6"
+        role="presentation"
+    >
+        <div
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+            @click="close()"
+        ></div>
+
+        <section
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="translate-y-3 scale-95 opacity-0"
+            x-transition:enter-end="translate-y-0 scale-100 opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="translate-y-0 scale-100 opacity-100"
+            x-transition:leave-end="translate-y-2 scale-95 opacity-0"
+            class="relative w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="notice-dialog-title"
+            aria-describedby="notice-dialog-message"
+            @click.stop
+        >
+            <div class="px-6 pb-5 pt-6 text-center sm:px-7 sm:pt-7">
+                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                </span>
+                <h2 id="notice-dialog-title" class="mt-3 text-lg font-bold text-slate-950" x-text="title"></h2>
+                <p id="notice-dialog-message" class="mt-2 text-sm leading-6 text-slate-600" x-text="message"></p>
+            </div>
+
+            <div class="border-t border-slate-100 bg-slate-50 px-6 py-4 sm:px-7">
+                <button
+                    x-ref="noticeCloseButton"
+                    type="button"
+                    class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2"
+                    @click="close()"
+                >
+                    Mengerti
+                </button>
+            </div>
+        </section>
+    </div>
+
     @stack('scripts')
 </body>
 </html>

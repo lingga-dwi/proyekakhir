@@ -6,6 +6,7 @@
 @push('head-scripts')
 <script>
 const canConsult = {{ (! auth()->check() || auth()->user()->isPelanggan()) ? 'true' : 'false' }};
+const loggedInRoleLabel = {{ auth()->check() ? (auth()->user()->isAdmin() ? "'admin'" : "'desainer'") : "''" }};
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -133,14 +134,17 @@ async function loadSidebarContent(katalogId) {
                             ${data.inspiration_story ? `<p class="${data.room_size ? 'mt-3 border-t border-gray-200 pt-3' : ''} line-clamp-3 text-sm leading-relaxed text-gray-600">${escapeHtml(data.inspiration_story)}</p>` : ''}
                         </div>` : ''}
 
-                    ${canConsult ? `
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
                         <h3 class="font-bold text-slate-900">Tertarik dengan arah desain ini?</h3>
                         <p class="mt-1 text-sm leading-relaxed text-gray-600">Gunakan sebagai referensi awal untuk membahas kebutuhan ruang Anda.</p>
-                        <a href="{{ route('konsultasi.create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
-                            Konsultasikan Desain Ini
-                        </a>
-                    </div>` : ''}
+                        ${canConsult
+                            ? `<a href="{{ route('konsultasi.create') }}?katalog_id=${encodeURIComponent(katalogId)}" class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Konsultasikan Desain Ini
+                            </a>`
+                            : `<button type="button" onclick="window.dispatchEvent(new CustomEvent('open-notice', { detail: { title: 'Tidak dapat diakses', message: 'Konsultasi desain hanya dapat diajukan oleh akun pelanggan. Anda login sebagai ${loggedInRoleLabel}.' } }))" class="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Konsultasikan Desain Ini
+                            </button>`}
+                    </div>
                 </div>
             </div>`;
     } catch (error) {

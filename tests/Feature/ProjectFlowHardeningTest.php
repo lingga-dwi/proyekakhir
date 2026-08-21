@@ -51,7 +51,7 @@ class ProjectFlowHardeningTest extends TestCase
             ->assertDontSee('href="'.route('konsultasi.create').'"', false);
     }
 
-    public function test_catalog_detail_hides_consultation_cta_for_admin_and_designer(): void
+    public function test_catalog_detail_shows_notice_instead_of_consultation_link_for_admin_and_designer(): void
     {
         $category = \App\Models\Category::create(['name' => 'Ruang Tamu', 'slug' => 'ruang-tamu']);
         $katalog = \App\Models\Katalog::create([
@@ -67,17 +67,25 @@ class ProjectFlowHardeningTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $designer = User::factory()->create(['role' => 'designer']);
 
+        // Customers keep the real link that navigates to the consultation form.
         $this->actingAs($customer)->get(route('katalog.detail', $katalog))
             ->assertOk()
-            ->assertSee('Konsultasikan Desain Ini');
+            ->assertSee('Konsultasikan Desain Ini')
+            ->assertSee('href="'.route('konsultasi.create', ['katalog_id' => $katalog->id]).'"', false);
 
+        // Admin/designer still see the button, but it's a notice trigger, not a link
+        // to the customer-only route (avoids the confusing blank 403 page).
         $this->actingAs($admin)->get(route('katalog.detail', $katalog))
             ->assertOk()
-            ->assertDontSee('Konsultasikan Desain Ini');
+            ->assertSee('Konsultasikan Desain Ini')
+            ->assertSee('open-notice')
+            ->assertDontSee('href="'.route('konsultasi.create', ['katalog_id' => $katalog->id]).'"', false);
 
         $this->actingAs($designer)->get(route('katalog.detail', $katalog))
             ->assertOk()
-            ->assertDontSee('Konsultasikan Desain Ini');
+            ->assertSee('Konsultasikan Desain Ini')
+            ->assertSee('open-notice')
+            ->assertDontSee('href="'.route('konsultasi.create', ['katalog_id' => $katalog->id]).'"', false);
     }
 
     public function test_direct_pemesanan_redirects_to_consultation_without_mutating_profile(): void
