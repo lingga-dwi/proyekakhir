@@ -609,7 +609,7 @@ function openProjectModal(button) {
     const panel = document.getElementById('projectModalPanel');
     validationView.classList.toggle('hidden', !useCardLayout);
     panel.classList.toggle('max-w-2xl', !useCardLayout);
-    panel.classList.toggle('max-w-5xl', useCardLayout);
+    panel.classList.toggle('max-w-6xl', useCardLayout);
     document.getElementById('projectModalSubtitle').textContent = needsValidation
         ? 'Tinjau desain awal dan draft RAB, tetapkan penawaran dan kirim ke pelanggan.'
         : useCardLayout

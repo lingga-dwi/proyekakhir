@@ -15,7 +15,7 @@
         </form>
 
         <div id="projectModalValidationView" class="mt-3 hidden">
-            <div class="grid gap-6 lg:grid-cols-3">
+            <div class="grid gap-6 lg:grid-cols-[1fr_1fr_1.4fr]">
                 <section>
                     <h4 class="font-semibold text-slate-950">Dokumen dari Desainer</h4>
                     <div id="projectModalValidationDocuments" class="mt-3 space-y-2"></div>
@@ -63,8 +63,8 @@
 
                 <section>
                     <h4 class="font-semibold text-slate-950">Riwayat Tagihan</h4>
-                    <div class="mt-3 overflow-hidden rounded-xl border border-slate-200">
-                        <table class="w-full text-left text-xs">
+                    <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full min-w-105 text-left text-xs">
                             <thead class="bg-slate-50 uppercase tracking-wide text-slate-500">
                                 <tr>
                                     <th class="px-3 py-2 font-medium">Nama Tagihan</th>
