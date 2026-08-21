@@ -198,7 +198,7 @@
                                                 <button class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50"><i class="fas fa-undo-alt w-4 text-slate-400"></i>Pulihkan sebagai draft</button>
                                             </form>
                                         @elseif($isComplete)
-                                            <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
+                                            <form action="{{ route('admin.katalog.bulk-action') }}" method="POST" onsubmit="return confirm('Publikasikan katalog ini? Katalog akan langsung tampil kepada pengunjung.')">
                                                 @csrf
                                                 <input type="hidden" name="ids[]" value="{{ $katalog->id }}">
                                                 <input type="hidden" name="action" value="publish">

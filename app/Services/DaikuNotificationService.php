@@ -30,11 +30,42 @@ class DaikuNotificationService
         }
     }
 
-    public function admins(string $title, string $message, string $url, string $action = 'Lihat detail'): void
+    /**
+     * Categories that are important enough to justify emailing the admin
+     * inbox. Every other admin event still appears in-app only, so the
+     * inbox is not flooded with routine workflow updates.
+     */
+    private const EMAILABLE_CATEGORIES = ['order', 'payment'];
+
+    public function admins(string $title, string $message, string $url, string $action = 'Lihat detail', string $category = 'general', array $details = []): void
     {
-        User::query()->where('role', 'admin')->each(
-            fn (User $admin) => $this->send($admin, $title, $message, $url, $action)
-        );
+        $shouldEmail = in_array($category, self::EMAILABLE_CATEGORIES, true);
+
+        User::query()->where('role', 'admin')->each(function (User $admin) use ($title, $message, $url, $action, $category, $details, $shouldEmail): void {
+            // In-app notification always fires; the per-admin email only
+            // goes out for categories important enough to justify an inbox
+            // interruption (order/payment), matching the fixed-address rule below.
+            $admin->notify(new DaikuNotification($title, $message, $url, $action));
+
+            if (! $shouldEmail || ! config('services.daiku.email_notifications', false) || ! $admin->email) {
+                return;
+            }
+
+            try {
+                Notification::route('mail', $admin->email)
+                    ->notify(new DaikuNotification($title, $message, $url, $action, true, $category, $details));
+            } catch (\Throwable $exception) {
+                Log::warning('Email notification could not be delivered', [
+                    'user_id' => $admin->id,
+                    'title' => $title,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        });
+
+        if (! $shouldEmail) {
+            return;
+        }
 
         $fixedEmail = config('services.daiku.admin_notification_email');
         if (! $fixedEmail || ! config('services.daiku.email_notifications', false)) {
@@ -43,7 +74,7 @@ class DaikuNotificationService
 
         try {
             Notification::route('mail', $fixedEmail)
-                ->notify(new DaikuNotification($title, $message, $url, $action, true));
+                ->notify(new DaikuNotification($title, $message, $url, $action, true, $category, $details));
         } catch (\Throwable $exception) {
             Log::warning('Admin notification email could not be delivered', [
                 'email' => $fixedEmail,

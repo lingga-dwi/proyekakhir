@@ -129,6 +129,12 @@
                             'feedback' => $decision->feedback,
                             'customer' => $decision->customer?->nama,
                             'date' => $decision->created_at->translatedFormat('d M Y, H:i'),
+                            'timestamp' => $decision->created_at->toIso8601String(),
+                        ])->values()->all();
+                        $statusHistory = $project->statusTrackings->map(fn ($tracking) => [
+                            'note' => $tracking->catatan,
+                            'date' => $tracking->created_at->translatedFormat('d M Y, H:i'),
+                            'timestamp' => $tracking->created_at->toIso8601String(),
                         ])->values()->all();
 
                         $projectPayload = [
@@ -159,12 +165,13 @@
                             'uploadUrl' => route('designer.proyek.document.upload', $project->id),
                             'sendUrl' => route('designer.proyek.document.send', $project->id),
                             'decisions' => $decisionHistory,
+                            'statusHistory' => $statusHistory,
                         ];
                     @endphp
                     <tr class="transition hover:bg-slate-50/80">
                         <td class="px-5 py-4">
                             <p class="text-xs font-semibold text-amber-700">DI-{{ str_pad($project->id, 3, '0', STR_PAD_LEFT) }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ $project->created_at?->translatedFormat('d M Y') }}</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ $project->created_at?->translatedFormat('d M Y, H:i') }} WIB</p>
                         </td>
                         <td class="px-5 py-4">
                             <p class="text-sm font-medium text-slate-900">{{ $project->user?->nama ?? 'Pelanggan tidak tersedia' }}</p>
@@ -294,10 +301,43 @@ function openDpModal(button) {
     renderDpDocumentSlot('Design', 'design');
     renderDpDocumentSlot('Rab', 'rab');
     updateDpSendButtonState();
+    renderDpHistoryPanel(project);
 
     const modal = document.getElementById('dpModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+}
+
+function renderDpHistoryPanel(project) {
+    const decisionLabels = { approved: 'Disetujui', revision_requested: 'Minta revisi' };
+    const stageLabels = { draft: 'Desain awal', final: 'Desain final' };
+
+    const decisionRows = (project.decisions || []).map(decision => ({
+        timestamp: decision.timestamp,
+        html: `<p class="font-semibold text-slate-700">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
+            <p class="mt-0.5 text-slate-500">${decision.customer || 'Pelanggan'} · ${decision.date}</p>
+            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`,
+    }));
+    const statusRows = (project.statusHistory || []).map(entry => ({
+        timestamp: entry.timestamp,
+        html: `<p class="font-semibold text-slate-700">${entry.note || 'Status diperbarui'}</p>
+            <p class="mt-0.5 text-slate-500">${entry.date}</p>`,
+    }));
+
+    const historyPanel = document.getElementById('dpHistoryPanel');
+    historyPanel.replaceChildren();
+    const allRows = decisionRows.concat(statusRows).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    allRows.forEach(row => {
+        const el = document.createElement('div');
+        el.className = 'rounded-lg bg-slate-50 p-2.5 text-xs';
+        el.innerHTML = row.html;
+        historyPanel.appendChild(el);
+    });
+    if (!allRows.length) {
+        historyPanel.innerHTML = '<p class="text-xs text-slate-400">Belum ada riwayat tercatat.</p>';
+    }
+    historyPanel.classList.add('hidden');
+    document.getElementById('dpHistoryToggle').onclick = () => historyPanel.classList.toggle('hidden');
 }
 
 function closeDpModal() {
@@ -313,6 +353,18 @@ function updateDpSendButtonState() {
 
     sendBtn.classList.toggle('hidden', project.isAwaitingDecision || !project.canManageDocuments);
     sendBtn.disabled = !project.canSend;
+}
+
+function confirmSendDpDocuments() {
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Kirim dokumen ke pelanggan?',
+            message: 'Desain dan RAB akan dikirim ke pelanggan untuk ditinjau. Pastikan berkas sudah benar sebelum melanjutkan.',
+            confirmLabel: 'Ya, kirim',
+            tone: 'primary',
+            onConfirm: () => sendDpDocuments(),
+        },
+    }));
 }
 
 function sendDpDocuments() {
@@ -331,7 +383,7 @@ function sendDpDocuments() {
                 showDpToast(json.message || 'Gagal mengirim ke pelanggan.', 'error');
                 return;
             }
-            applyDpDocumentResponse(json);
+            applyDpDocumentResponse(json, true);
         })
         .catch(() => showDpToast('Gagal mengirim ke pelanggan. Periksa koneksi Anda.', 'error'))
         .finally(() => {
@@ -396,7 +448,7 @@ function showDpToast(message, tone = 'success') {
     showNotificationCard(message, tone);
 }
 
-function applyDpDocumentResponse(json) {
+function applyDpDocumentResponse(json, showToast = false) {
     currentDpModalData[json.documentType] = json.document;
     currentDpModalData.canManageDocuments = json.canManageDocuments;
     currentDpModalData.isAwaitingDecision = json.isAwaitingDecision;
@@ -406,7 +458,7 @@ function applyDpDocumentResponse(json) {
     renderDpDocumentSlot('Rab', 'rab');
     updateDpSendButtonState();
     syncDpModalButton();
-    showDpToast(json.message || 'Berhasil disimpan.');
+    if (showToast) showDpToast(json.message || 'Berhasil disimpan.');
 }
 
 function submitDpDocument(form, file, type) {

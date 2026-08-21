@@ -934,7 +934,7 @@ class AdminManagementTest extends TestCase
         $this->actingAs($designer)
             ->get(route('dashboard.designer'))
             ->assertOk()
-            ->assertSee('Aktivitas Proyek Terbaru')
+            ->assertSee('Riwayat Aktivitas')
             ->assertSee('Proyek Milik Desainer')
             ->assertDontSee('Proyek Desainer Lain');
     }

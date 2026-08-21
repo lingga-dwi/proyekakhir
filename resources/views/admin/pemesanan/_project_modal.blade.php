@@ -52,6 +52,9 @@
                         @csrf
                         <p class="text-sm font-semibold text-slate-900">Verifikasi Pembayaran DP</p>
                         <p id="projectModalDpInvoiceInfo" class="mt-0.5 text-xs text-slate-600"></p>
+                        <a id="projectModalDpEvidenceLink" href="#" target="_blank" rel="noopener" class="mt-2 hidden items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800">
+                            <i class="fas fa-paperclip" aria-hidden="true"></i> Lihat Bukti Pembayaran
+                        </a>
                         <button type="submit" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
                             <i class="fas fa-check" aria-hidden="true"></i> Verifikasi DP
                         </button>
@@ -67,6 +70,7 @@
                                     <th class="px-3 py-2 font-medium">Nama Tagihan</th>
                                     <th class="px-3 py-2 font-medium">Nominal</th>
                                     <th class="px-3 py-2 font-medium">Status</th>
+                                    <th class="px-3 py-2 font-medium">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="projectModalValidationInvoiceList" class="divide-y divide-slate-100"></tbody>
@@ -81,7 +85,7 @@
                 <button type="button" id="projectModalRevisionBtn" onclick="requestProjectValidationRevision()" class="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">
                     <i class="fas fa-comment-dots" aria-hidden="true"></i> Minta Revisi
                 </button>
-                <button type="button" id="projectModalValidateBtn" onclick="validateProjectDraft()" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+                <button type="button" id="projectModalValidateBtn" onclick="confirmValidateProjectDraft()" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
                     <i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim
                 </button>
             </div>
@@ -202,6 +206,12 @@
                     <option value="">Belum ditetapkan</option>
                     @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
                 </select>
+            </label>
+
+            <label class="block">
+                <span class="text-sm font-medium text-slate-700">Target Selesai</span>
+                <input type="date" id="orderReviewTargetSelesai" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
             </label>
 
             <input type="hidden" id="orderReviewStatus">

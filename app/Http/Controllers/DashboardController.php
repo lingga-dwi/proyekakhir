@@ -6,6 +6,7 @@ use App\Models\Konsultasi;
 use App\Models\Pemesanan;
 use App\Models\StatusTracking;
 use App\Models\User;
+use App\Support\ProjectStageLabel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -90,7 +91,46 @@ class DashboardController extends Controller
             ->take(6)
             ->values();
 
-        return view('dashboard.admin', compact('stats', 'recentActivities'));
+        $latestOrderStatuses = collect()
+            ->concat(
+                Konsultasi::with('user')
+                    ->where('status', Konsultasi::STATUS_PENDING)
+                    ->latest('created_at')
+                    ->take(6)
+                    ->get()
+                    ->map(fn (Konsultasi $konsultasi) => [
+                        'reference' => 'KS-'.$konsultasi->id,
+                        'stage' => ProjectStageLabel::forKonsultasi($konsultasi) ?? 'Menunggu Konfirmasi',
+                        'tone' => 'bg-orange-50 text-orange-700',
+                        'customer' => $konsultasi->nama ?: ($konsultasi->user?->nama ?? 'Pelanggan'),
+                        'project_type' => $konsultasi->getJenisKonsultasiLabel(),
+                        'occurred_at' => $konsultasi->created_at,
+                        'url' => route('admin.pemesanan.index', ['search' => 'KS-'.$konsultasi->id]),
+                    ])
+            )
+            ->concat(
+                Pemesanan::with('user')
+                    ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+                    ->latest('updated_at')
+                    ->take(6)
+                    ->get()
+                    ->map(fn (Pemesanan $pemesanan) => [
+                        'reference' => 'DI-'.$pemesanan->id,
+                        'stage' => $pemesanan->workflow_stage === 'awaiting_admin_validation'
+                            ? 'Perlu Ditinjau'
+                            : ProjectStageLabel::forPemesanan($pemesanan),
+                        'tone' => 'bg-blue-50 text-blue-700',
+                        'customer' => $pemesanan->user?->nama ?? 'Pelanggan',
+                        'project_type' => $pemesanan->jenis_proyek ?: 'Proyek interior',
+                        'occurred_at' => $pemesanan->updated_at,
+                        'url' => route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id]),
+                    ])
+            )
+            ->sortByDesc('occurred_at')
+            ->take(6)
+            ->values();
+
+        return view('dashboard.admin', compact('stats', 'recentActivities', 'latestOrderStatuses'));
     }
 
     public function designer()
@@ -145,7 +185,23 @@ class DashboardController extends Controller
                 ]),
             ]);
 
-        return view('dashboard.designer', compact('stats', 'assignedConsultations', 'recentActivities'));
+        $latestOrderStatuses = (clone $assignedProjects)->with('user')
+            ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+            ->latest('updated_at')
+            ->take(6)
+            ->get()
+            ->map(fn (Pemesanan $pemesanan) => [
+                'reference' => 'DI-'.$pemesanan->id,
+                'stage' => ProjectStageLabel::forPemesanan($pemesanan),
+                'tone' => 'bg-blue-50 text-blue-700',
+                'customer' => $pemesanan->user?->nama ?? 'Pelanggan',
+                'project_type' => $pemesanan->jenis_proyek ?: 'Proyek interior',
+                'occurred_at' => $pemesanan->updated_at,
+                'url' => route('designer.projects.index', ['search' => 'DI-'.$pemesanan->id]),
+            ])
+            ->values();
+
+        return view('dashboard.designer', compact('stats', 'assignedConsultations', 'recentActivities', 'latestOrderStatuses'));
     }
 
     public function designerProjects(Request $request)
@@ -153,7 +209,10 @@ class DashboardController extends Controller
         $designer = $request->user();
         $allowedStatuses = Pemesanan::STATUSES;
 
-        $projects = Pemesanan::with(['user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer'])
+        $projects = Pemesanan::with([
+            'user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer',
+            'statusTrackings' => fn ($query) => $query->orderByDesc('created_at'),
+        ])
             ->where('designer_id', $designer->id)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = trim((string) $request->string('search'));

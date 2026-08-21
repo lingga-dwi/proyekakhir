@@ -124,12 +124,6 @@ class AdminWorkItemService
         }
 
         return $query
-            ->orderByRaw("CASE
-                WHEN item_type = 'consultation' AND status = 'pending' THEN 0
-                WHEN item_type = 'consultation' AND status = 'confirmed' THEN 1
-                WHEN item_type = 'order' AND status = 'pending' THEN 2
-                WHEN item_type = 'order' AND status IN ('dikonfirmasi', 'sedang_dikerjakan') THEN 3
-                ELSE 4 END")
             ->orderByDesc('created_at')
             ->paginate(12)
             ->withQueryString();

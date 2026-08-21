@@ -119,6 +119,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.invoice.store');
         Route::post('/admin/pemesanan/{pemesanan}/tagihan/{invoice}/lunas', [PemesananController::class, 'markInvoicePaid'])
             ->name('admin.pemesanan.invoice.paid');
+        Route::get('/admin/pemesanan/{pemesanan}/tagihan/{invoice}/bukti-pembayaran', [PemesananController::class, 'downloadInvoiceEvidence'])
+            ->name('admin.pemesanan.invoice.evidence.download');
         Route::post('/admin/pemesanan/{pemesanan}/dokumen', [PemesananController::class, 'uploadDocument'])
             ->name('admin.pemesanan.document.upload');
         Route::delete('/admin/pemesanan/{pemesanan}/dokumen/{document}', [PemesananController::class, 'deleteDocument'])

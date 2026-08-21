@@ -48,30 +48,49 @@
     </section>
 @endif
 
-<section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="activity-title">
-    <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
-        <div>
-            <h2 id="activity-title" class="font-semibold text-slate-950">Aktivitas Proyek Terbaru</h2>
-            <p class="mt-0.5 text-xs text-slate-500">Riwayat perubahan status dan progres proyek yang ditugaskan kepada Anda.</p>
+<div class="mt-6 grid gap-6 xl:grid-cols-3">
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm xl:col-span-2" aria-labelledby="latest-status-title">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+                <h2 id="latest-status-title" class="font-semibold text-slate-950">Status Pesanan Terbaru</h2>
+                <p class="mt-0.5 text-xs text-slate-500">Tahap terkini dari proyek yang ditugaskan kepada Anda.</p>
+            </div>
+            <a href="{{ route('designer.projects.index') }}" class="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-800">Lihat semua proyek <i class="fas fa-arrow-right ml-1 text-xs" aria-hidden="true"></i></a>
         </div>
-        <a href="{{ route('designer.projects.index') }}" class="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-800">Lihat semua proyek <i class="fas fa-arrow-right ml-1 text-xs" aria-hidden="true"></i></a>
-    </div>
-    <div class="divide-y divide-slate-100 px-5">
-        @forelse($recentActivities as $activity)
-            <a href="{{ $activity['url'] }}" class="flex items-center gap-3 px-3 py-4 transition hover:bg-slate-50">
-                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <i class="fas {{ $activity['icon'] }} text-sm"></i>
-                </span>
-                <span class="min-w-0 flex-1">
+        <div class="space-y-3 px-5 py-4">
+            @forelse($latestOrderStatuses as $order)
+                <a href="{{ $order['url'] }}" class="block border-l-4 border-amber-400 bg-slate-50/70 py-2 pl-4 pr-3 transition hover:bg-amber-50">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <span class="shrink-0 text-xs font-bold text-slate-400">{{ $order['reference'] }}</span>
+                            <span class="truncate text-sm font-semibold text-slate-900">{{ $order['customer'] }}</span>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $order['tone'] }}">{{ $order['stage'] }}</span>
+                    </div>
+                    <p class="mt-1 truncate text-xs text-slate-500">{{ $order['project_type'] }}</p>
+                </a>
+            @empty
+                <div class="py-12 text-center text-sm text-slate-500">Belum ada pesanan aktif saat ini.</div>
+            @endforelse
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="activity-title">
+        <div class="border-b border-slate-100 px-5 py-4">
+            <h2 id="activity-title" class="font-semibold text-slate-950">Riwayat Aktivitas</h2>
+            <p class="mt-0.5 text-xs text-slate-500">Log kejadian terbaru pada proyek yang ditugaskan kepada Anda.</p>
+        </div>
+        <div class="space-y-3 px-5 py-4">
+            @forelse($recentActivities as $activity)
+                <a href="{{ $activity['url'] }}" class="block border-l-4 border-blue-400 bg-slate-50/70 py-2 pl-4 pr-3 transition hover:bg-blue-50">
                     <span class="block truncate text-sm font-semibold text-slate-900">{{ $activity['title'] }}</span>
                     <span class="mt-0.5 block truncate text-xs text-slate-500">{{ $activity['description'] }}</span>
-                    <span class="mt-1 block text-[11px] text-slate-400">{{ $activity['occurred_at']->diffForHumans() }}</span>
-                </span>
-                <i class="fas fa-chevron-right text-xs text-slate-300" aria-hidden="true"></i>
-            </a>
-        @empty
-            <div class="py-12 text-center text-sm text-slate-500">Belum ada perubahan status proyek.</div>
-        @endforelse
-    </div>
-</section>
+                    <span class="mt-1 block text-[11px] text-slate-400">{{ $activity['occurred_at']->translatedFormat('d M Y, H:i') }} WIB</span>
+                </a>
+            @empty
+                <div class="py-12 text-center text-sm text-slate-500">Belum ada aktivitas tercatat.</div>
+            @endforelse
+        </div>
+    </section>
+</div>
 @endsection

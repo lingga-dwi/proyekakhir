@@ -68,7 +68,7 @@
                 <button type="button" id="reviewModalRevisionBtn" onclick="showRevisionPanel()" class="rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50">Minta Revisi</button>
                 <button type="button" id="reviewModalCancelRevisionBtn" onclick="hideRevisionPanel()" class="hidden rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Batal</button>
                 <button type="button" id="reviewModalSubmitRevisionBtn" onclick="submitReviewDecision('revision_requested')" class="hidden rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">Kirim Permintaan Revisi</button>
-                <button type="button" id="reviewModalApproveBtn" onclick="submitReviewDecision('approved')" class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                <button type="button" id="reviewModalApproveBtn" onclick="confirmApproveReviewDecision()" class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
                     <i class="fas fa-check" aria-hidden="true"></i> Setujui
                 </button>
             </div>

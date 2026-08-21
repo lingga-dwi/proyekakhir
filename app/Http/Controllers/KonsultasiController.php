@@ -103,7 +103,24 @@ class KonsultasiController extends Controller
             'Permintaan konsultasi baru',
             $user->nama.' mengirim kebutuhan desain '.$konsultasi->getJenisRuanganLabel().'.',
             route('admin.pemesanan.index', ['search' => $user->email], false),
-            'Tinjau permintaan'
+            'Tinjau permintaan',
+            'order',
+            [
+                'Referensi' => 'KS-'.str_pad((string) $konsultasi->id, 3, '0', STR_PAD_LEFT),
+                'Nama Pelanggan' => $user->nama,
+                'Email' => $email,
+                'No. Telepon' => $data['no_telp'],
+                'Jenis Konsultasi' => $konsultasi->getJenisKonsultasiLabel(),
+                'Jenis Ruangan' => $konsultasi->getJenisRuanganLabel(),
+                'Estimasi Anggaran' => match ($data['budget_range']) {
+                    'under_10m' => 'Di bawah Rp 10 Juta',
+                    '10m_25m' => 'Rp 10 - 25 Juta',
+                    '25m_50m' => 'Rp 25 - 50 Juta',
+                    '50m_100m' => 'Rp 50 - 100 Juta',
+                    'above_100m' => 'Di atas Rp 100 Juta',
+                    default => null,
+                },
+            ]
         );
 
         return redirect()->route('pesanan.saya')

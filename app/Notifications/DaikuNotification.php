@@ -10,12 +10,17 @@ class DaikuNotification extends Notification
 {
     use Queueable;
 
+    /**
+     * @param  array<string, string>  $details  Key-value pairs rendered as a table in the email (e.g. Referensi, Pelanggan, Nominal).
+     */
     public function __construct(
         public readonly string $title,
         public readonly string $message,
         public readonly string $url,
         public readonly string $action = 'Lihat detail',
         private readonly bool $mailOnly = false,
+        private readonly string $category = 'general',
+        private readonly array $details = [],
     ) {}
 
     public function via(object $notifiable): array
@@ -35,11 +40,31 @@ class DaikuNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject($this->title.' - Daiku Interior')
-            ->greeting('Halo '.($notifiable->nama ?? 'Pelanggan').',')
-            ->line($this->message)
+        $greetingName = $notifiable->nama ?? ($this->category === 'general' ? 'Pelanggan' : 'Admin');
+
+        $mail = (new MailMessage)
+            ->subject($this->categoryPrefix().$this->title)
+            ->greeting('Halo '.$greetingName.',')
+            ->line($this->message);
+
+        foreach ($this->details as $label => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $mail->line('**'.$label.':** '.$value);
+        }
+
+        return $mail
             ->action($this->action, url($this->url))
-            ->line('Terima kasih telah menggunakan layanan Daiku Interior.');
+            ->line('Email ini dikirim otomatis oleh sistem Daiku Interior. Mohon tidak membalas email ini.');
+    }
+
+    private function categoryPrefix(): string
+    {
+        return match ($this->category) {
+            'order' => '[Pesanan Baru] ',
+            'payment' => '[Pembayaran] ',
+            default => '',
+        };
     }
 }

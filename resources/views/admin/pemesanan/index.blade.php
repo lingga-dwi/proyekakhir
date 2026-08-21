@@ -14,6 +14,7 @@
             'konsultasi:id,pemesanan_id',
             'dpInvoice',
             'invoices' => fn ($query) => $query->orderByDesc('created_at'),
+            'statusTrackings' => fn ($query) => $query->orderByDesc('created_at'),
         ])
         ->get()
         ->keyBy('id');
@@ -132,10 +133,12 @@
                                 default => ['Belum diketahui', 'bg-slate-100 text-slate-700'],
                             };
                         } else {
-                            $statusLabel = \App\Support\ProjectStageLabel::forPemesanan(new \App\Models\Pemesanan([
-                                'status_pemesanan' => $item->status,
-                                'workflow_stage' => $item->workflow_stage,
-                            ]));
+                            $statusLabel = $item->workflow_stage === 'awaiting_admin_validation'
+                                ? 'Perlu Ditinjau'
+                                : \App\Support\ProjectStageLabel::forPemesanan(new \App\Models\Pemesanan([
+                                    'status_pemesanan' => $item->status,
+                                    'workflow_stage' => $item->workflow_stage,
+                                ]));
                             $statusClass = match(true) {
                                 $item->status === 'dibatalkan' => 'bg-red-100 text-red-800',
                                 $item->status === 'selesai' => 'bg-green-100 text-green-800',
@@ -185,7 +188,7 @@
                                 class="text-left text-sm font-bold text-amber-700 underline-offset-4 transition hover:text-amber-800 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-amber-500"
                                 aria-label="Buka detail {{ $reference }}"
                             >{{ $reference }}</button>
-                            <p class="text-xs text-slate-500">{{ $itemDate->translatedFormat('d M Y') }}</p>
+                            <p class="text-xs text-slate-500">{{ \Illuminate\Support\Carbon::parse($item->created_at)->translatedFormat('d M Y, H:i') }} WIB</p>
                         </td>
                         <td class="px-5 py-4">
                             <p class="text-sm font-medium text-slate-900">{{ $item->customer_name }}</p>
@@ -367,6 +370,7 @@
                                             'feedback' => $decision->feedback,
                                             'customer' => $decision->customer?->nama,
                                             'date' => $decision->created_at->translatedFormat('d M Y, H:i'),
+                                            'timestamp' => $decision->created_at->toIso8601String(),
                                         ])->values()->all()
                                         : [];
                                 @endphp
@@ -375,7 +379,9 @@
                                         'id' => $item->id,
                                         'reference' => $reference,
                                         'status' => $item->status,
-                                        'stageLabel' => $project ? \App\Support\ProjectStageLabel::forPemesanan($project) : null,
+                                        'stageLabel' => $project
+                                            ? ($project->workflow_stage === 'awaiting_admin_validation' ? 'Perlu Ditinjau' : \App\Support\ProjectStageLabel::forPemesanan($project))
+                                            : null,
                                         'workflowStage' => $project?->workflow_stage,
                                         'needsValidation' => $needsAdminValidation,
                                         'canFinalize' => $project && $project->workflow_stage === 'approved',
@@ -387,6 +393,9 @@
                                             'amount' => (float) $project->dpInvoice->amount,
                                             'status' => $project->dpInvoice->status,
                                             'dueDate' => $project->dpInvoice->due_date?->translatedFormat('d M Y'),
+                                            'evidenceUrl' => $project->dpInvoice->proof_path
+                                                ? route('admin.pemesanan.invoice.evidence.download', [$item->id, $project->dpInvoice->id])
+                                                : null,
                                         ] : null,
                                         'dpVerifyUrl' => route('admin.pemesanan.dp.verify', $item->id),
                                         'validateUrl' => route('admin.pemesanan.validate.send', $item->id),
@@ -403,6 +412,9 @@
                                             'status' => $invoice->status,
                                             'dueDate' => $invoice->due_date?->translatedFormat('d M Y'),
                                             'note' => $invoice->note,
+                                            'evidenceUrl' => $invoice->proof_path
+                                                ? route('admin.pemesanan.invoice.evidence.download', [$item->id, $invoice->id])
+                                                : null,
                                         ])->values()->all() : [],
                                         'invoiceStoreUrl' => route('admin.pemesanan.invoice.store', $item->id),
                                         'invoiceMarkPaidUrlBase' => url('/admin/pemesanan/'.$item->id.'/tagihan'),
@@ -432,6 +444,14 @@
                                         'sendUrl' => route('admin.pemesanan.document.send', $item->id),
                                         'decisions' => $decisionHistory,
                                         'deleteUrl' => url('/admin/pemesanan/'.$item->id),
+                                        'targetSelesai' => $project?->target_selesai?->format('Y-m-d'),
+                                        'statusHistory' => $project
+                                            ? $project->statusTrackings->map(fn ($tracking) => [
+                                                'note' => $tracking->catatan,
+                                                'date' => $tracking->created_at->translatedFormat('d M Y, H:i'),
+                                                'timestamp' => $tracking->created_at->toIso8601String(),
+                                            ])->values()->all()
+                                            : [],
                                     ];
                                 @endphp
                                 <div class="flex items-center gap-2">
@@ -591,6 +611,11 @@ function openProjectModal(button) {
         dpVerifyForm.action = project.dpVerifyUrl;
         document.getElementById('projectModalDpInvoiceInfo').textContent =
             `${project.dpInvoice.number} · Rp ${new Intl.NumberFormat('id-ID').format(project.dpInvoice.amount)}${project.dpInvoice.dueDate ? ' · Jatuh tempo ' + project.dpInvoice.dueDate : ''}`;
+
+        const evidenceLink = document.getElementById('projectModalDpEvidenceLink');
+        evidenceLink.classList.toggle('hidden', !project.dpInvoice.evidenceUrl);
+        evidenceLink.classList.toggle('flex', !!project.dpInvoice.evidenceUrl);
+        if (project.dpInvoice.evidenceUrl) evidenceLink.href = project.dpInvoice.evidenceUrl;
     }
 
     const validationFooter = document.getElementById('projectModalValidationFooter');
@@ -620,16 +645,28 @@ function openProjectModal(button) {
     historyPanel.replaceChildren();
     const decisionLabels = { approved: 'Disetujui', revision_requested: 'Minta revisi' };
     const stageLabels = { draft: 'Desain awal', final: 'Desain final' };
-    (project.decisions || []).forEach(decision => {
-        const row = document.createElement('div');
-        row.className = 'rounded-lg bg-slate-50 p-2.5 text-xs';
-        row.innerHTML = `<p class="font-semibold text-slate-700">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
+
+    const decisionRows = (project.decisions || []).map(decision => ({
+        timestamp: decision.timestamp,
+        html: `<p class="font-semibold text-slate-700">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
             <p class="mt-0.5 text-slate-500">${decision.customer || 'Pelanggan'} · ${decision.date}</p>
-            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`;
-        historyPanel.appendChild(row);
+            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`,
+    }));
+    const statusRows = (project.statusHistory || []).map(entry => ({
+        timestamp: entry.timestamp,
+        html: `<p class="font-semibold text-slate-700">${entry.note || 'Status diperbarui'}</p>
+            <p class="mt-0.5 text-slate-500">${entry.date}</p>`,
+    }));
+
+    const allRows = decisionRows.concat(statusRows).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    allRows.forEach(row => {
+        const el = document.createElement('div');
+        el.className = 'rounded-lg bg-slate-50 p-2.5 text-xs';
+        el.innerHTML = row.html;
+        historyPanel.appendChild(el);
     });
-    if (!project.decisions?.length) {
-        historyPanel.innerHTML = '<p class="text-xs text-slate-400">Belum ada keputusan dari pelanggan.</p>';
+    if (!allRows.length) {
+        historyPanel.innerHTML = '<p class="text-xs text-slate-400">Belum ada riwayat tercatat.</p>';
     }
     historyPanel.classList.add('hidden');
     document.getElementById('projectModalHistoryToggle').onclick = () => historyPanel.classList.toggle('hidden');
@@ -637,6 +674,24 @@ function openProjectModal(button) {
     const modal = document.getElementById('projectModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+}
+
+function confirmValidateProjectDraft() {
+    const totalHarga = getCurrentTotalHarga();
+    if (totalHarga <= 0) {
+        showModalToast('Buat minimal satu tagihan terlebih dahulu sebelum memvalidasi.', 'error');
+        return;
+    }
+
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Validasi dan kirim ke pelanggan?',
+            message: 'Desain awal dan RAB akan dikirim ke pelanggan untuk ditinjau. Pastikan nilai penawaran dan dokumen sudah benar.',
+            confirmLabel: 'Ya, validasi & kirim',
+            tone: 'primary',
+            onConfirm: () => validateProjectDraft(),
+        },
+    }));
 }
 
 function validateProjectDraft() {
@@ -786,6 +841,18 @@ function submitInvoiceModal() {
         });
 }
 
+function confirmMarkProjectInvoicePaid(invoice) {
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Tandai tagihan lunas?',
+            message: `Tagihan "${invoice.name}" sebesar Rp ${new Intl.NumberFormat('id-ID').format(invoice.amount)} akan ditandai lunas. Pastikan pembayaran benar-benar sudah diterima.`,
+            confirmLabel: 'Ya, tandai lunas',
+            tone: 'success',
+            onConfirm: () => markProjectInvoicePaid(invoice.id),
+        },
+    }));
+}
+
 function markProjectInvoicePaid(invoiceId) {
     const project = currentProjectModalData;
 
@@ -829,7 +896,7 @@ function renderInvoiceListInto(containerId, invoices, mode) {
 
     if (!invoices.length) {
         container.innerHTML = mode === 'table'
-            ? '<tr><td colspan="3" class="px-3 py-4 text-center text-slate-400">Belum ada tagihan.</td></tr>'
+            ? '<tr><td colspan="4" class="px-3 py-4 text-center text-slate-400">Belum ada tagihan.</td></tr>'
             : '<p class="text-xs text-slate-400">Belum ada tagihan untuk proyek ini.</p>';
         return;
     }
@@ -848,14 +915,25 @@ function renderInvoiceListInto(containerId, invoices, mode) {
                 <td class="px-3 py-2 font-semibold text-slate-800">Rp ${amountFormatted}</td>
                 <td class="px-3 py-2">
                     <span class="inline-flex rounded-full px-2 py-0.5 font-semibold ${tone}">${label}</span>
-                </td>`;
+                </td>
+                <td class="px-3 py-2"></td>`;
+            const actionsCell = row.lastElementChild;
+            if (invoice.evidenceUrl) {
+                const evidenceLink = document.createElement('a');
+                evidenceLink.href = invoice.evidenceUrl;
+                evidenceLink.target = '_blank';
+                evidenceLink.rel = 'noopener';
+                evidenceLink.className = 'block whitespace-nowrap text-[11px] font-semibold text-slate-600 hover:underline';
+                evidenceLink.innerHTML = '<i class="fas fa-paperclip" aria-hidden="true"></i> Lihat Bukti';
+                actionsCell.appendChild(evidenceLink);
+            }
             if (invoice.status !== 'paid') {
                 const payBtn = document.createElement('button');
                 payBtn.type = 'button';
-                payBtn.className = 'mt-1 block text-[10px] font-semibold text-emerald-700 hover:underline';
+                payBtn.className = 'mt-1 block whitespace-nowrap text-[11px] font-semibold text-emerald-700 hover:underline';
                 payBtn.textContent = 'Tandai Lunas';
-                payBtn.onclick = () => markProjectInvoicePaid(invoice.id);
-                row.lastElementChild.appendChild(payBtn);
+                payBtn.onclick = () => confirmMarkProjectInvoicePaid(invoice);
+                actionsCell.appendChild(payBtn);
             }
             container.appendChild(row);
             return;
@@ -875,13 +953,27 @@ function renderInvoiceListInto(containerId, invoices, mode) {
                     <span class="mt-1 inline-flex rounded-full px-2 py-0.5 font-semibold ${tone}">${label}</span>
                 </div>
             </div>`;
-        if (invoice.status !== 'paid') {
-            const payBtn = document.createElement('button');
-            payBtn.type = 'button';
-            payBtn.className = 'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50';
-            payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
-            payBtn.onclick = () => markProjectInvoicePaid(invoice.id);
-            row.appendChild(payBtn);
+        if (invoice.evidenceUrl || invoice.status !== 'paid') {
+            const actionsRow = document.createElement('div');
+            actionsRow.className = 'mt-2 flex flex-wrap items-center gap-2';
+            if (invoice.evidenceUrl) {
+                const evidenceLink = document.createElement('a');
+                evidenceLink.href = invoice.evidenceUrl;
+                evidenceLink.target = '_blank';
+                evidenceLink.rel = 'noopener';
+                evidenceLink.className = 'inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50';
+                evidenceLink.innerHTML = '<i class="fas fa-paperclip" aria-hidden="true"></i> Lihat Bukti';
+                actionsRow.appendChild(evidenceLink);
+            }
+            if (invoice.status !== 'paid') {
+                const payBtn = document.createElement('button');
+                payBtn.type = 'button';
+                payBtn.className = 'inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50';
+                payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
+                payBtn.onclick = () => confirmMarkProjectInvoicePaid(invoice);
+                actionsRow.appendChild(payBtn);
+            }
+            row.appendChild(actionsRow);
         }
         container.appendChild(row);
     });
@@ -962,6 +1054,7 @@ function openOrderReviewModal(button) {
     document.getElementById('orderReviewReference').textContent = `#${project.reference}`;
     document.getElementById('orderReviewStageLabel').textContent = project.stageLabel || 'Proses Proyek';
     document.getElementById('orderReviewDesigner').value = project.designer || '';
+    document.getElementById('orderReviewTargetSelesai').value = project.targetSelesai || '';
     document.getElementById('orderReviewError').classList.add('hidden');
 
     const finalizeField = document.getElementById('orderReviewFinalizeField');
@@ -1020,6 +1113,7 @@ function saveOrderReview() {
         body: JSON.stringify({
             status_pemesanan: document.getElementById('orderReviewStatus').value,
             designer_id: document.getElementById('orderReviewDesigner').value || null,
+            target_selesai: document.getElementById('orderReviewTargetSelesai').value || null,
         }),
     })
         .then(response => response.json().then(json => ({ ok: response.ok, json })))

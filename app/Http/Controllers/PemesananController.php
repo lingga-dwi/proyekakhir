@@ -43,7 +43,7 @@ class PemesananController extends Controller
 
     public function show(Request $request, $id)
     {
-        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'documentDecisions.customer', 'dpInvoice'])->findOrFail($id);
+        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'documentDecisions.customer', 'dpInvoice', 'statusTrackings' => fn ($query) => $query->oldest()])->findOrFail($id);
         $this->authorizeOrderAccess($request, $pemesanan);
 
         return view('pemesanan.show', compact('pemesanan'));
@@ -463,7 +463,15 @@ class PemesananController extends Controller
             'Bukti pembayaran DP masuk',
             'Pelanggan mengunggah bukti DP untuk proyek DI-'.$pemesanan->id.'.',
             route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id], false),
-            'Verifikasi pembayaran'
+            'Verifikasi pembayaran',
+            'payment',
+            [
+                'Referensi' => 'DI-'.$pemesanan->id,
+                'Nama Pelanggan' => $pemesanan->user?->nama,
+                'Tagihan' => $invoice->name,
+                'Nomor Invoice' => $invoice->number,
+                'Nominal' => 'Rp '.number_format((float) $invoice->amount, 0, ',', '.'),
+            ]
         );
 
         $message = 'Bukti pembayaran DP berhasil dikirim.';
@@ -495,7 +503,15 @@ class PemesananController extends Controller
             'Bukti pembayaran masuk',
             'Pelanggan mengunggah bukti tagihan "'.$invoice->name.'" untuk proyek DI-'.$pemesanan->id.'.',
             route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id], false),
-            'Verifikasi pembayaran'
+            'Verifikasi pembayaran',
+            'payment',
+            [
+                'Referensi' => 'DI-'.$pemesanan->id,
+                'Nama Pelanggan' => $pemesanan->user?->nama,
+                'Tagihan' => $invoice->name,
+                'Nomor Invoice' => $invoice->number,
+                'Nominal' => 'Rp '.number_format((float) $invoice->amount, 0, ',', '.'),
+            ]
         );
 
         $message = 'Bukti pembayaran berhasil dikirim.';
@@ -592,6 +608,15 @@ class PemesananController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function downloadInvoiceEvidence(Request $request, Pemesanan $pemesanan, ProjectInvoice $invoice)
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($invoice->pemesanan_id === $pemesanan->id, 404);
+        abort_unless($invoice->proof_path, 404);
+
+        return Storage::disk('payment_evidence')->download($invoice->proof_path);
     }
 
     public function uploadPaymentEvidence(Request $request, Pemesanan $pemesanan)

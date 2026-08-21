@@ -309,7 +309,113 @@
             if (event.key === 'Escape') closeImageLightbox();
         });
     </script>
-    
+
+    <div
+        x-data="{
+            open: false,
+            pendingForm: null,
+            onConfirm: null,
+            title: 'Konfirmasi tindakan',
+            message: 'Apakah Anda yakin ingin melanjutkan?',
+            confirmLabel: 'Konfirmasi',
+            tone: 'primary',
+            submitting: false,
+            show(detail) {
+                this.pendingForm = detail.form || null;
+                this.onConfirm = detail.onConfirm || null;
+                this.title = detail.title || 'Konfirmasi tindakan';
+                this.message = detail.message || 'Apakah Anda yakin ingin melanjutkan?';
+                this.confirmLabel = detail.confirmLabel || 'Konfirmasi';
+                this.tone = detail.tone || 'primary';
+                this.submitting = false;
+                this.open = true;
+                this.$nextTick(() => this.$refs.cancelButton.focus());
+            },
+            close() {
+                if (this.submitting) return;
+                this.open = false;
+                this.pendingForm = null;
+                this.onConfirm = null;
+            },
+            confirm() {
+                if (this.submitting) return;
+                if (this.onConfirm) {
+                    this.submitting = true;
+                    Promise.resolve(this.onConfirm()).finally(() => {
+                        this.submitting = false;
+                        this.open = false;
+                        this.onConfirm = null;
+                    });
+                    return;
+                }
+                if (!this.pendingForm) return;
+                this.submitting = true;
+                this.pendingForm.submit();
+            }
+        }"
+        x-cloak
+        x-show="open"
+        @open-confirmation.window="show($event.detail)"
+        @keydown.escape.window="close()"
+        class="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6"
+        role="presentation"
+    >
+        <div
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+            @click="close()"
+        ></div>
+
+        <section
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="translate-y-3 scale-95 opacity-0"
+            x-transition:enter-end="translate-y-0 scale-100 opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="translate-y-0 scale-100 opacity-100"
+            x-transition:leave-end="translate-y-2 scale-95 opacity-0"
+            class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-dialog-title"
+            aria-describedby="confirmation-dialog-message"
+            @click.stop
+        >
+            <div class="px-6 pb-5 pt-6 sm:px-7 sm:pt-7">
+                <h2 id="confirmation-dialog-title" class="text-xl font-bold text-slate-950" x-text="title"></h2>
+                <p id="confirmation-dialog-message" class="mt-2 text-sm leading-6 text-slate-600" x-text="message"></p>
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+                <button
+                    x-ref="cancelButton"
+                    type="button"
+                    class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+                    @click="close()"
+                    :disabled="submitting"
+                >
+                    Batal
+                </button>
+                <button
+                    type="button"
+                    class="inline-flex h-11 min-w-32 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+                    :class="tone === 'danger' ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : (tone === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500' : 'bg-slate-950 hover:bg-slate-800 focus:ring-slate-700')"
+                    @click="confirm()"
+                    :disabled="submitting"
+                >
+                    <i x-show="submitting" class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+                    <span x-text="submitting ? 'Memproses...' : confirmLabel"></span>
+                </button>
+            </div>
+        </section>
+    </div>
+
     @stack('scripts')
 </body>
 </html>

@@ -118,7 +118,7 @@
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                                                 <span class="font-bold text-slate-700">#{{ $activity->reference }}</span>
-                                                <span class="text-slate-400">{{ $activity->created_at->translatedFormat('d M Y') }}</span>
+                                                <span class="text-slate-400">{{ $activity->created_at->translatedFormat('d M Y, H:i') }} WIB</span>
                                             </div>
                                             <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ $activity->type_label }}</p>
                                         </div>
@@ -172,7 +172,7 @@
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2 text-xs">
                                     <span class="font-bold text-slate-700">#{{ $activity->reference }}</span>
-                                    <span class="text-slate-400">{{ $activity->created_at->translatedFormat('d M Y') }}</span>
+                                    <span class="text-slate-400">{{ $activity->created_at->translatedFormat('d M Y, H:i') }} WIB</span>
                                 </div>
                                 <h3 class="mt-1 font-bold text-slate-950">{{ $activity->title }}</h3>
                                 <p class="mt-1 line-clamp-2 text-sm text-slate-500">{{ $activity->meta }}</p>
@@ -435,6 +435,19 @@ function hideRevisionPanel() {
 
 function showReviewToast(message, tone = 'success') {
     showNotificationCard(message, tone);
+}
+
+function confirmApproveReviewDecision() {
+    const stageLabel = currentReviewData.stage === 'draft' ? 'desain awal' : 'desain final';
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Setujui ' + stageLabel + '?',
+            message: 'Setelah disetujui, keputusan ini tidak dapat dibatalkan dan proyek akan lanjut ke tahap berikutnya.',
+            confirmLabel: 'Ya, setujui',
+            tone: 'success',
+            onConfirm: () => submitReviewDecision('approved'),
+        },
+    }));
 }
 
 function submitReviewDecision(decision) {

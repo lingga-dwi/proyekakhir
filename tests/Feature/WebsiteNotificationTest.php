@@ -87,7 +87,9 @@ class WebsiteNotificationTest extends TestCase
         app(DaikuNotificationService::class)->admins(
             'Pesanan baru masuk',
             'Ada pesanan baru dari pelanggan.',
-            '/admin/pemesanan'
+            '/admin/pemesanan',
+            'Lihat detail',
+            'order'
         );
 
         Notification::assertSentTo($admin, DaikuNotification::class);
@@ -112,5 +114,67 @@ class WebsiteNotificationTest extends TestCase
 
         Notification::assertSentTo($admin, DaikuNotification::class);
         Notification::assertNotSentTo(new AnonymousNotifiable, DaikuNotification::class);
+    }
+
+    public function test_admin_broadcast_only_emails_order_and_payment_categories(): void
+    {
+        config([
+            'services.daiku.email_notifications' => true,
+            'services.daiku.admin_notification_email' => 'daikuadmin@gmail.com',
+        ]);
+        Notification::fake();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $service = app(DaikuNotificationService::class);
+
+        $service->admins('Desain menunggu validasi', 'Pesan', '/', 'Lihat detail', 'general');
+        $service->admins('Pesanan baru masuk', 'Pesan', '/', 'Lihat detail', 'order');
+        $service->admins('Bukti pembayaran masuk', 'Pesan', '/', 'Lihat detail', 'payment');
+
+        // In-app (database) notification fires for every category.
+        Notification::assertSentTo($admin, DaikuNotification::class, 3);
+
+        // Only 'order' and 'payment' categories reach the admin's email inbox.
+        Notification::assertSentOnDemand(
+            DaikuNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable instanceof AnonymousNotifiable
+                && $notification->title === 'Pesanan baru masuk'
+        );
+        Notification::assertSentOnDemand(
+            DaikuNotification::class,
+            fn ($notification, $channels, $notifiable) => $notifiable instanceof AnonymousNotifiable
+                && $notification->title === 'Bukti pembayaran masuk'
+        );
+        Notification::assertNotSentTo(
+            new AnonymousNotifiable,
+            DaikuNotification::class,
+            fn ($notification) => $notification->title === 'Desain menunggu validasi'
+        );
+    }
+
+    public function test_admin_evidence_notification_email_includes_detail_table(): void
+    {
+        config([
+            'services.daiku.email_notifications' => true,
+            'services.daiku.admin_notification_email' => 'daikuadmin@gmail.com',
+        ]);
+
+        $notification = new DaikuNotification(
+            'Bukti pembayaran DP masuk',
+            'Pelanggan mengunggah bukti DP untuk proyek DI-1.',
+            '/admin/pemesanan',
+            'Verifikasi pembayaran',
+            true,
+            'payment',
+            ['Referensi' => 'DI-1', 'Nama Pelanggan' => 'Budi', 'Nominal' => 'Rp 2.000.000']
+        );
+
+        $mail = $notification->toMail((object) []);
+        $rendered = implode(' ', $mail->introLines);
+
+        $this->assertStringContainsString('Referensi', $rendered);
+        $this->assertStringContainsString('DI-1', $rendered);
+        $this->assertStringContainsString('Rp 2.000.000', $rendered);
+        $this->assertStringContainsString('[Pembayaran]', $mail->subject);
     }
 }
