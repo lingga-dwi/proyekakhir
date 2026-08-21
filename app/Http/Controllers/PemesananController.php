@@ -129,6 +129,7 @@ class PemesananController extends Controller
             'progress' => $isDraft ? 15 : 45,
             'catatan_progres' => $isDraft ? 'Desain awal/RAB dikirim dan menunggu validasi admin.' : 'Desain dan RAB final dikirim untuk persetujuan pelanggan.',
         ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         if ($isDraft) {
             $this->notifications->admins(
@@ -173,6 +174,7 @@ class PemesananController extends Controller
             'progress' => 20,
             'catatan_progres' => 'Desain awal/RAB divalidasi admin dan dikirim untuk ditinjau pelanggan.',
         ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         $this->notifications->send(
             $pemesanan->user,
@@ -205,6 +207,7 @@ class PemesananController extends Controller
             'draft_round' => $pemesanan->draft_round + 1,
             'catatan_progres' => 'Admin meminta revisi: '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
         ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         if ($pemesanan->designer) {
             $this->notifications->send(
@@ -264,6 +267,12 @@ class PemesananController extends Controller
                 $pemesanan->update([
                     'workflow_stage' => $stage === 'draft' ? 'draft_design' : 'final_design',
                 ]);
+                $this->recordStatusTracking(
+                    $pemesanan,
+                    $request->user(),
+                    'Dokumen '.($documentType === 'design' ? 'desain' : 'RAB').' dihapus. Menunggu kelengkapan dokumen kembali dikirim.',
+                    $pemesanan->status_pemesanan
+                );
             }
         }
 
@@ -367,6 +376,7 @@ class PemesananController extends Controller
             ];
             $changes[$data['stage'] === 'draft' ? 'draft_round' : 'final_round'] = $round + 1;
             $pemesanan->update($changes);
+            $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
             if ($pemesanan->designer) {
                 $this->notifications->send(
@@ -393,6 +403,7 @@ class PemesananController extends Controller
                 'progress' => 25,
                 'catatan_progres' => 'Desain awal disetujui. Menunggu pembayaran sesuai tagihan yang diterbitkan admin.',
             ]);
+            $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
             $this->notifications->send(
                 $pemesanan->user,
@@ -415,12 +426,14 @@ class PemesananController extends Controller
             return back()->with('success', $message);
         }
 
+        $previousStatus = $pemesanan->status_pemesanan;
         $pemesanan->update([
             'workflow_stage' => 'approved',
             'status_pemesanan' => Pemesanan::STATUS_IN_PROGRESS,
             'progress' => max(50, (int) $pemesanan->progress),
             'catatan_progres' => 'Desain dan RAB final disetujui pelanggan. Pengerjaan dapat dimulai.',
         ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $previousStatus);
 
         if ($pemesanan->designer) {
             $this->notifications->send(
@@ -458,6 +471,7 @@ class PemesananController extends Controller
 
         $invoice->update(['proof_path' => $path, 'status' => 'submitted']);
         $pemesanan->update(['workflow_stage' => 'dp_verification', 'catatan_progres' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.']);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         $this->notifications->admins(
             'Bukti pembayaran DP masuk',
@@ -497,6 +511,14 @@ class PemesananController extends Controller
         $isDpInvoice = $pemesanan->dpInvoice?->id === $invoice->id;
         if ($isDpInvoice && in_array($pemesanan->workflow_stage, ['awaiting_dp', 'dp_verification'], true)) {
             $pemesanan->update(['workflow_stage' => 'dp_verification', 'catatan_progres' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.']);
+            $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
+        } else {
+            $this->recordStatusTracking(
+                $pemesanan,
+                $request->user(),
+                'Bukti pembayaran tagihan "'.$invoice->name.'" diunggah dan menunggu verifikasi admin.',
+                $pemesanan->status_pemesanan
+            );
         }
 
         $this->notifications->admins(
@@ -530,6 +552,7 @@ class PemesananController extends Controller
 
         $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
         $pemesanan->update(['workflow_stage' => 'survey_scheduled', 'progress' => 30, 'catatan_progres' => 'DP telah diverifikasi. Menunggu survei lokasi oleh desainer.']);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         $this->notifications->send(
             $pemesanan->user,
@@ -809,6 +832,26 @@ class PemesananController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Record a status_tracking entry for a workflow transition that just
+     * happened via a direct $pemesanan->update([...]) call (as opposed to
+     * ProjectWorkflowService, which already records its own). Without this,
+     * every automatic transition in this controller — document sent,
+     * validated, approved, DP uploaded/verified, etc. — leaves no trace,
+     * and the timeline shown to admin/designer/customer stays empty.
+     */
+    private function recordStatusTracking(Pemesanan $pemesanan, ?User $actor, string $catatan, string $previousStatus): void
+    {
+        $pemesanan->statusTrackings()->create([
+            'actor_id' => $actor?->id,
+            'previous_status' => $previousStatus,
+            'status' => $pemesanan->status_pemesanan,
+            'progress' => $pemesanan->progress,
+            'tanggal_update' => now()->toDateString(),
+            'catatan' => $catatan,
+        ]);
     }
 
     private function authorizeOrderAccess(Request $request, Pemesanan $pemesanan): void
