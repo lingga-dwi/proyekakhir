@@ -859,4 +859,42 @@ class CustomDesignWorkflowTest extends TestCase
         // uploading proof for a later invoice doesn't touch it.
         $this->assertSame('approved', $project->fresh()->workflow_stage);
     }
+
+    public function test_uploading_evidence_for_a_custom_typed_dp_invoice_still_transitions_to_dp_verification(): void
+    {
+        Storage::fake('payment_evidence');
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'awaiting_dp',
+            'progress' => 25,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+
+        // The "DP invoice" is whichever invoice was created first for the
+        // project, regardless of its type column — admins can create it as
+        // 'custom' rather than 'dp_20'. Uploading proof for it must still
+        // move the project into dp_verification.
+        $invoice = $project->invoices()->create([
+            'number' => 'INV-2026-0001-'.$project->id,
+            'type' => 'custom',
+            'name' => 'Tagihan',
+            'amount' => 2000000,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($customer)
+            ->postJson(route('pemesanan.invoice-evidence.upload', [$project, $invoice]), [
+                'bukti_pembayaran' => UploadedFile::fake()->image('bukti.jpg'),
+            ])
+            ->assertOk()->assertJson(['success' => true]);
+
+        $invoice->refresh();
+        $this->assertSame('submitted', $invoice->status);
+        $this->assertSame('dp_verification', $project->fresh()->workflow_stage);
+    }
 }

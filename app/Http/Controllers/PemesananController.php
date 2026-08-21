@@ -451,7 +451,7 @@ class PemesananController extends Controller
     {
         abort_unless($pemesanan->id_user === $request->user()->id, 403);
         $invoice = $pemesanan->dpInvoice;
-        abort_unless($invoice && $pemesanan->workflow_stage === 'awaiting_dp', 422, 'Tidak ada invoice DP yang menunggu pembayaran.');
+        abort_unless($invoice && $invoice->status !== 'paid' && in_array($pemesanan->workflow_stage, ['awaiting_dp', 'dp_verification'], true), 422, 'Tidak ada invoice DP yang menunggu pembayaran.');
 
         $data = $request->validate(['bukti_pembayaran' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120']]);
         $path = $data['bukti_pembayaran']->store('dp-proofs/order-'.$pemesanan->id, 'payment_evidence');
@@ -495,7 +495,7 @@ class PemesananController extends Controller
         $invoice->update(['proof_path' => $path, 'status' => 'submitted']);
 
         $isDpInvoice = $pemesanan->dpInvoice?->id === $invoice->id;
-        if ($isDpInvoice && $pemesanan->workflow_stage === 'awaiting_dp') {
+        if ($isDpInvoice && in_array($pemesanan->workflow_stage, ['awaiting_dp', 'dp_verification'], true)) {
             $pemesanan->update(['workflow_stage' => 'dp_verification', 'catatan_progres' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.']);
         }
 
