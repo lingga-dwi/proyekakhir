@@ -138,8 +138,11 @@
                                     </td>
                                     <td class="px-5 py-5">
                                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
+                                        @if($activity->stage_label && $activity->stage_label !== $statusLabel)
+                                            <p class="mt-1 text-[11px] font-medium text-slate-600">{{ $activity->stage_label }}</p>
+                                        @endif
                                         @if($activity->actor)
-                                            <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
+                                            <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                         @endif
                                     </td>
                                     <td class="px-6 py-5 text-right">
@@ -181,8 +184,11 @@
                                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ $activity->type_label }}</span>
                                         <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                     </div>
+                                    @if($activity->stage_label && $activity->stage_label !== $statusLabel)
+                                        <p class="mt-1 text-[11px] font-medium text-slate-600">{{ $activity->stage_label }}</p>
+                                    @endif
                                     @if($activity->actor)
-                                        <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
+                                        <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                     @endif
                                 </div>
                                 <button

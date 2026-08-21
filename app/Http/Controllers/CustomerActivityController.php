@@ -57,6 +57,7 @@ class CustomerActivityController extends Controller
                         default => 'pending',
                     },
                     'progress' => (int) $pemesanan->progress,
+                    'stage_label' => \App\Support\ProjectStageLabel::forPemesanan($pemesanan),
                     'actor' => \App\Support\ProjectStageLabel::actorFor($pemesanan),
                     'created_at' => $pemesanan->created_at,
                     'detail_url' => route('pemesanan.show', $pemesanan),
@@ -100,6 +101,7 @@ class CustomerActivityController extends Controller
                             default => 'pending',
                         },
                         'progress' => null,
+                        'stage_label' => \App\Support\ProjectStageLabel::forKonsultasi($konsultasi),
                         'actor' => match ($konsultasi->status) {
                             'pending' => 'Admin',
                             'confirmed' => 'Desainer',
