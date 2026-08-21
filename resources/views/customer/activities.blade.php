@@ -140,22 +140,15 @@
                                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                     </td>
                                     <td class="px-6 py-5 text-right">
-                                        @if($activity->review)
-                                            <button
-                                                type="button"
-                                                class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                                data-review="{{ json_encode($activity->review, JSON_THROW_ON_ERROR) }}"
-                                                onclick="openReviewModal(this)"
-                                            >
-                                                Tinjau Penawaran
-                                                <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                            </button>
-                                        @else
-                                            <a href="{{ $activity->detail_url }}" class="inline-flex w-44 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
-                                                Tinjau Penawaran
-                                                <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                            </a>
-                                        @endif
+                                        <button
+                                            type="button"
+                                            class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                            data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
+                                            onclick="openReviewModal(this)"
+                                        >
+                                            Tinjau Penawaran
+                                            <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
@@ -184,22 +177,15 @@
                                     <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ $activity->type_label }}</span>
                                     <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                 </div>
-                                @if($activity->review)
-                                    <button
-                                        type="button"
-                                        class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white"
-                                        data-review="{{ json_encode($activity->review, JSON_THROW_ON_ERROR) }}"
-                                        onclick="openReviewModal(this)"
-                                    >
-                                        Tinjau Penawaran
-                                        <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                    </button>
-                                @else
-                                    <a href="{{ $activity->detail_url }}" class="inline-flex w-44 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700">
-                                        Tinjau Penawaran
-                                        <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                    </a>
-                                @endif
+                                <button
+                                    type="button"
+                                    class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white"
+                                    data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
+                                    onclick="openReviewModal(this)"
+                                >
+                                    Tinjau Penawaran
+                                    <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                </button>
                             </div>
                         </article>
                     @endforeach
@@ -249,6 +235,20 @@ function openReviewModal(button) {
 
 function renderReviewModal(review) {
     currentReviewData = review;
+
+    const hasReview = review !== null;
+    document.getElementById('reviewModalEmptyState').classList.toggle('hidden', hasReview);
+    document.getElementById('reviewModalContent').classList.toggle('hidden', !hasReview);
+    document.getElementById('reviewModalApprovalNotice').classList.add('hidden');
+    document.getElementById('reviewModalApprovalFooter').classList.add('hidden');
+    document.getElementById('reviewModalStatusFooter').classList.remove('hidden');
+    document.getElementById('reviewModalStatusFooter').classList.add('flex');
+
+    if (!hasReview) {
+        document.getElementById('reviewModalReference').textContent = '';
+        document.getElementById('reviewModalSubtitle').textContent = 'Belum ada penawaran untuk ditinjau.';
+        return;
+    }
 
     document.getElementById('reviewModalReference').textContent = `#${review.reference}`;
     document.getElementById('reviewModalReferenceValue').textContent = review.reference;

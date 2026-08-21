@@ -51,6 +51,35 @@ class ProjectFlowHardeningTest extends TestCase
             ->assertDontSee('href="'.route('konsultasi.create').'"', false);
     }
 
+    public function test_catalog_detail_hides_consultation_cta_for_admin_and_designer(): void
+    {
+        $category = \App\Models\Category::create(['name' => 'Ruang Tamu', 'slug' => 'ruang-tamu']);
+        $katalog = \App\Models\Katalog::create([
+            'category_id' => $category->id,
+            'nama_desain' => 'Desain Uji',
+            'deskripsi' => 'Deskripsi desain untuk pengujian.',
+            'gambar_utama' => 'images/katalog/rumah/contoh.jpg',
+            'galeri_gambar' => [],
+            'status' => 'published',
+        ]);
+
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $designer = User::factory()->create(['role' => 'designer']);
+
+        $this->actingAs($customer)->get(route('katalog.detail', $katalog))
+            ->assertOk()
+            ->assertSee('Konsultasikan Desain Ini');
+
+        $this->actingAs($admin)->get(route('katalog.detail', $katalog))
+            ->assertOk()
+            ->assertDontSee('Konsultasikan Desain Ini');
+
+        $this->actingAs($designer)->get(route('katalog.detail', $katalog))
+            ->assertOk()
+            ->assertDontSee('Konsultasikan Desain Ini');
+    }
+
     public function test_direct_pemesanan_redirects_to_consultation_without_mutating_profile(): void
     {
         $user = User::create([

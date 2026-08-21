@@ -124,6 +124,7 @@
                                     : null,
                             ];
                         })->filter(fn ($attachment) => $attachment['url'])->values()->all();
+                        $statusActor = null;
                         if ($isConsultation) {
                             [$statusLabel, $statusClass] = match($item->status) {
                                 'pending' => [\App\Support\ProjectStageLabel::forKonsultasi(new \App\Models\Konsultasi(['status' => 'pending'])), 'bg-violet-100 text-violet-700'],
@@ -132,13 +133,19 @@
                                 'cancelled' => ['Konsultasi ditolak', 'bg-red-100 text-red-700'],
                                 default => ['Belum diketahui', 'bg-slate-100 text-slate-700'],
                             };
+                            $statusActor = match($item->status) {
+                                'pending' => 'Admin',
+                                'confirmed' => 'Desainer',
+                                default => null,
+                            };
                         } else {
+                            $tempPemesanan = new \App\Models\Pemesanan([
+                                'status_pemesanan' => $item->status,
+                                'workflow_stage' => $item->workflow_stage,
+                            ]);
                             $statusLabel = $item->workflow_stage === 'awaiting_admin_validation'
                                 ? 'Perlu Ditinjau'
-                                : \App\Support\ProjectStageLabel::forPemesanan(new \App\Models\Pemesanan([
-                                    'status_pemesanan' => $item->status,
-                                    'workflow_stage' => $item->workflow_stage,
-                                ]));
+                                : \App\Support\ProjectStageLabel::forPemesanan($tempPemesanan);
                             $statusClass = match(true) {
                                 $item->status === 'dibatalkan' => 'bg-red-100 text-red-800',
                                 $item->status === 'selesai' => 'bg-green-100 text-green-800',
@@ -147,12 +154,15 @@
                                 $item->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-100 text-orange-800',
                                 default => 'bg-blue-100 text-blue-800',
                             };
+                            $statusActor = \App\Support\ProjectStageLabel::actorFor($tempPemesanan);
                         }
                         if ($isConsultation && $item->status === 'pending' && $item->accepted_at) {
                             [$statusLabel, $statusClass] = ['Diterima · pilih desainer', 'bg-amber-100 text-amber-800'];
+                            $statusActor = 'Admin';
                         }
                         if (! $isConsultation && ! $item->designer_id && ! in_array($item->status, ['selesai', 'dibatalkan'], true)) {
                             [$statusLabel, $statusClass] = ['Menunggu penugasan', 'bg-amber-100 text-amber-800'];
+                            $statusActor = 'Admin';
                         }
                         $itemDate = \Illuminate\Support\Carbon::parse($item->scheduled_date);
                         $detailPayload = [
@@ -258,6 +268,9 @@
                         </td>
                         <td class="px-5 py-4">
                             <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {{ $statusClass }}">{{ $statusLabel }}</span>
+                            @if($statusActor)
+                                <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $statusActor }}</p>
+                            @endif
                         </td>
                         <td class="px-5 py-4">
                             @if($isConsultation)

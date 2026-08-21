@@ -47,4 +47,34 @@ class ProjectStageLabelTest extends TestCase
             'cancelled overrides workflow stage' => [Pemesanan::STATUS_CANCELLED, 'draft_design', 'Dibatalkan'],
         ];
     }
+
+    #[DataProvider('actorForProvider')]
+    public function test_actor_for(string $statusPemesanan, ?string $workflowStage, ?string $expected): void
+    {
+        $pemesanan = new Pemesanan([
+            'status_pemesanan' => $statusPemesanan,
+            'workflow_stage' => $workflowStage,
+        ]);
+
+        $this->assertSame($expected, ProjectStageLabel::actorFor($pemesanan));
+    }
+
+    public static function actorForProvider(): array
+    {
+        return [
+            'konsultasi' => [Pemesanan::STATUS_CONFIRMED, 'konsultasi', 'Desainer'],
+            'draft design' => [Pemesanan::STATUS_CONFIRMED, 'draft_design', 'Desainer'],
+            'revision requested' => [Pemesanan::STATUS_CONFIRMED, 'revision_requested', 'Desainer'],
+            'survey scheduled' => [Pemesanan::STATUS_CONFIRMED, 'survey_scheduled', 'Desainer'],
+            'final design' => [Pemesanan::STATUS_CONFIRMED, 'final_design', 'Desainer'],
+            'approved / pengerjaan' => [Pemesanan::STATUS_IN_PROGRESS, 'approved', 'Desainer'],
+            'awaiting admin validation' => [Pemesanan::STATUS_CONFIRMED, 'awaiting_admin_validation', 'Admin'],
+            'dp verification' => [Pemesanan::STATUS_CONFIRMED, 'dp_verification', 'Admin'],
+            'awaiting draft approval' => [Pemesanan::STATUS_CONFIRMED, 'awaiting_draft_approval', 'Pelanggan'],
+            'awaiting dp' => [Pemesanan::STATUS_CONFIRMED, 'awaiting_dp', 'Pelanggan'],
+            'awaiting final approval' => [Pemesanan::STATUS_CONFIRMED, 'awaiting_final_approval', 'Pelanggan'],
+            'completed has no actor' => [Pemesanan::STATUS_COMPLETED, 'approved', null],
+            'cancelled has no actor' => [Pemesanan::STATUS_CANCELLED, 'draft_design', null],
+        ];
+    }
 }

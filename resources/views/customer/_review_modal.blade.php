@@ -9,7 +9,13 @@
             <button type="button" onclick="closeReviewModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="mt-4 grid gap-6 lg:grid-cols-3">
+        <div id="reviewModalEmptyState" class="mt-4 hidden rounded-xl border border-slate-200 bg-slate-50 p-6 text-center">
+            <i class="fas fa-file-circle-question text-2xl text-slate-300" aria-hidden="true"></i>
+            <p class="mt-2 text-sm font-semibold text-slate-700">Belum ada penawaran</p>
+            <p class="mt-1 text-xs text-slate-500">Permintaan konsultasi ini belum diproses menjadi proyek dengan penawaran. Anda akan menerima notifikasi begitu penawaran tersedia.</p>
+        </div>
+
+        <div id="reviewModalContent" class="mt-4 grid gap-6 lg:grid-cols-3">
             <section>
                 <h3 class="font-semibold text-slate-950">Dokumen dari Desainer</h3>
                 <div id="reviewModalDocuments" class="mt-3 space-y-2 [&>p.uppercase:not(:first-child)]:pt-2"></div>

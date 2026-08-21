@@ -53,4 +53,23 @@ class ProjectStageLabel
             default => 'Proses Proyek',
         };
     }
+
+    /**
+     * Which actor needs to act next for the project's current stage, shown
+     * to admin as "Oleh: ..." under the status badge so they know whose
+     * court the ball is in without opening the project.
+     */
+    public static function actorFor(Pemesanan $pemesanan): ?string
+    {
+        if (in_array($pemesanan->status_pemesanan, [Pemesanan::STATUS_CANCELLED, Pemesanan::STATUS_COMPLETED], true)) {
+            return null;
+        }
+
+        return match ($pemesanan->workflow_stage) {
+            'konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design', 'approved' => 'Desainer',
+            'awaiting_admin_validation', 'dp_verification' => 'Admin',
+            'awaiting_draft_approval', 'awaiting_dp', 'awaiting_final_approval' => 'Pelanggan',
+            default => null,
+        };
+    }
 }
