@@ -12,13 +12,6 @@
         'completed' => 'Selesai',
         'cancelled' => 'Dibatalkan',
     ];
-    $statusStyles = [
-        'pending' => ['Menunggu Konfirmasi', 'bg-amber-50 text-amber-700 ring-amber-200'],
-        'confirmed' => ['Dikonfirmasi', 'bg-blue-50 text-blue-700 ring-blue-200'],
-        'in_progress' => ['Sedang Dikerjakan', 'bg-violet-50 text-violet-700 ring-violet-200'],
-        'completed' => ['Selesai', 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
-        'cancelled' => ['Dibatalkan', 'bg-red-50 text-red-700 ring-red-200'],
-    ];
 @endphp
 
 <main class="min-h-screen bg-slate-50 py-8 sm:py-10">
@@ -110,9 +103,6 @@
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @foreach($activities as $activity)
-                                @php
-                                    [$statusLabel, $statusClass] = $statusStyles[$activity->normalized_status];
-                                @endphp
                                 <tr class="group transition hover:bg-slate-50/80">
                                     <td class="px-6 py-5">
                                         <div class="min-w-0">
@@ -137,12 +127,9 @@
                                         <p class="max-w-60 truncate text-xs text-slate-600" title="{{ $activity->requirementNote ?: 'Belum ada catatan' }}">{{ $activity->requirementNote ?: 'Belum ada catatan' }}</p>
                                     </td>
                                     <td class="px-5 py-5">
-                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
-                                        @if($activity->stage_label && $activity->stage_label !== $statusLabel)
-                                            <p class="mt-1.5 text-[11px] text-slate-500"><span class="font-semibold text-slate-600">Tahap:</span> {{ $activity->stage_label }}</p>
-                                        @endif
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $activity->stage_class }}">{{ $activity->stage_label }}</span>
                                         @if($activity->actor)
-                                            <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
+                                            <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                         @endif
                                     </td>
                                     <td class="px-6 py-5 text-right">
@@ -172,9 +159,6 @@
 
                 <div class="divide-y divide-slate-100 lg:hidden">
                     @foreach($activities as $activity)
-                        @php
-                            [$statusLabel, $statusClass] = $statusStyles[$activity->normalized_status];
-                        @endphp
                         <article class="p-4 sm:p-5">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2 text-xs">
@@ -190,13 +174,10 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ $activity->type_label }}</span>
-                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
+                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $activity->stage_class }}">{{ $activity->stage_label }}</span>
                                     </div>
-                                    @if($activity->stage_label && $activity->stage_label !== $statusLabel)
-                                        <p class="mt-1.5 text-[11px] text-slate-500"><span class="font-semibold text-slate-600">Tahap:</span> {{ $activity->stage_label }}</p>
-                                    @endif
                                     @if($activity->actor)
-                                        <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
+                                        <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                     @endif
                                 </div>
                                 <div class="flex items-center gap-2">

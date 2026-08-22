@@ -63,6 +63,14 @@ class CustomerActivityController extends Controller
                     },
                     'progress' => (int) $pemesanan->progress,
                     'stage_label' => \App\Support\ProjectStageLabel::forPemesanan($pemesanan),
+                    'stage_class' => match (true) {
+                        $pemesanan->status_pemesanan === 'dibatalkan' => 'bg-red-100 text-red-800',
+                        $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
+                        $pemesanan->workflow_stage === 'approved' => 'bg-purple-100 text-purple-800',
+                        $pemesanan->workflow_stage === 'konsultasi' => 'bg-violet-100 text-violet-700',
+                        $pemesanan->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-100 text-orange-800',
+                        default => 'bg-blue-100 text-blue-800',
+                    },
                     'actor' => \App\Support\ProjectStageLabel::actorFor($pemesanan),
                     'created_at' => $pemesanan->created_at,
                     'detail_url' => route('pemesanan.show', $pemesanan),
@@ -121,6 +129,13 @@ class CustomerActivityController extends Controller
                         },
                         'progress' => null,
                         'stage_label' => \App\Support\ProjectStageLabel::forKonsultasi($konsultasi),
+                        'stage_class' => match ($konsultasi->status) {
+                            'pending' => 'bg-violet-100 text-violet-700',
+                            'confirmed' => 'bg-blue-100 text-blue-800',
+                            'completed' => 'bg-green-100 text-green-800',
+                            'cancelled' => 'bg-red-100 text-red-800',
+                            default => 'bg-slate-100 text-slate-700',
+                        },
                         'actor' => match ($konsultasi->status) {
                             'pending' => 'Admin',
                             'confirmed' => 'Desainer',
