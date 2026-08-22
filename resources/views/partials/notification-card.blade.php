@@ -55,7 +55,7 @@ function showNotificationCard(message, tone = 'success', options = {}) {
     });
 
     clearTimeout(globalNotificationCardTimer);
-    const duration = options.duration ?? 4000;
+    const duration = options.duration ?? 2000;
     if (duration > 0) {
         globalNotificationCardTimer = setTimeout(hideNotificationCard, duration);
     }
