@@ -176,12 +176,9 @@
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-end gap-1.5" x-data="{ menuOpen: false }">
-                                @if($katalog->status === 'published')
-                                    <a href="{{ route('katalog.detail', $katalog) }}" target="_blank" rel="noopener" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700" title="Lihat di website" aria-label="Lihat {{ $katalog->nama_desain }} di website"><i class="fas fa-eye text-xs"></i></a>
-                                @endif
-                                <a href="{{ route('admin.katalog.edit', $katalog) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800" title="Edit katalog" aria-label="Edit {{ $katalog->nama_desain }}"><i class="fas fa-pencil-alt text-xs"></i></a>
+                                <a href="{{ route('admin.katalog.edit', $katalog) }}" class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800" aria-label="Edit {{ $katalog->nama_desain }}">Edit</a>
                                 <div class="relative">
-                                    <button type="button" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-100" aria-label="Tindakan lainnya untuk {{ $katalog->nama_desain }}"><i class="fas fa-ellipsis-v text-xs"></i></button>
+                                    <button type="button" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100" aria-label="Tindakan lainnya untuk {{ $katalog->nama_desain }}">Lainnya</button>
                                     <div x-cloak x-show="menuOpen" x-transition.origin.top.right @click.outside="menuOpen = false" class="absolute right-0 z-30 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
                                         @if($katalog->status === 'published')
                                             <form action="{{ route('admin.katalog.bulk-action') }}" method="POST">
