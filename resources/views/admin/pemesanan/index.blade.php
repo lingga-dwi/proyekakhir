@@ -340,12 +340,14 @@
                                             ]))
                                             ->values();
                                     @endphp
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
-                                        data-project="{{ json_encode(['reference' => $reference, 'statusHistory' => $consultationHistory, 'decisions' => []], JSON_THROW_ON_ERROR) }}"
-                                        onclick="openHistoryModal(this)"
-                                    >Riwayat</button>
+                                    @unless($item->status === 'pending' && !$item->accepted_at)
+                                        <button
+                                            type="button"
+                                            class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                            data-project="{{ json_encode(['reference' => $reference, 'statusHistory' => $consultationHistory, 'decisions' => []], JSON_THROW_ON_ERROR) }}"
+                                            onclick="openHistoryModal(this)"
+                                        >Riwayat</button>
+                                    @endunless
                                 </div>
                             @else
                                 @php
