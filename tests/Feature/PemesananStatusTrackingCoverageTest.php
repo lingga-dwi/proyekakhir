@@ -84,9 +84,9 @@ class PemesananStatusTrackingCoverageTest extends TestCase
         $expectCount(4, 'uploadInvoiceEvidence (DP)');
         $this->assertSame('dp_verification', $project->fresh()->workflow_stage);
 
-        // 5. Admin verifies the DP payment.
-        $this->actingAs($admin)->post(route('admin.pemesanan.dp.verify', $project))->assertRedirect();
-        $expectCount(5, 'verifyDp');
+        // 5. Admin confirms the DP payment.
+        $this->actingAs($admin)->post(route('admin.pemesanan.invoice.paid', [$project, $invoice]))->assertRedirect();
+        $expectCount(5, 'markInvoicePaid (DP)');
         $this->assertSame('survey_scheduled', $project->fresh()->workflow_stage);
 
         // Sanity: every recorded entry has a non-empty, distinct-ish catatan.

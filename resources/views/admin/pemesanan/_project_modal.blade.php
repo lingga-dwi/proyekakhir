@@ -47,29 +47,18 @@
                         <i class="fas fa-plus" aria-hidden="true"></i> Buat Tagihan
                     </button>
                     <p class="mt-1.5 text-xs text-slate-400">Buat tagihan baru secara fleksibel sesuai progres proyek dan kesepakatan.</p>
-
-                    <form id="projectModalDpVerifyForm" method="POST" class="mt-4 hidden rounded-xl border border-emerald-200 bg-emerald-50 p-2.5">
-                        @csrf
-                        <p class="text-sm font-semibold text-slate-900">Verifikasi Pembayaran DP</p>
-                        <p id="projectModalDpInvoiceInfo" class="mt-0.5 text-xs text-slate-600"></p>
-                        <a id="projectModalDpEvidenceLink" href="#" target="_blank" rel="noopener" class="mt-2 hidden items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800">
-                            <i class="fas fa-paperclip" aria-hidden="true"></i> Lihat Bukti Pembayaran
-                        </a>
-                        <button type="submit" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">
-                            <i class="fas fa-check" aria-hidden="true"></i> Verifikasi DP
-                        </button>
-                    </form>
                 </section>
 
                 <section>
                     <h4 class="font-semibold text-slate-950">Riwayat Tagihan</h4>
                     <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
-                        <table class="w-full min-w-105 text-left text-xs">
+                        <table class="w-full min-w-125 text-left text-xs">
                             <thead class="bg-slate-50 uppercase tracking-wide text-slate-500">
                                 <tr>
                                     <th class="px-3 py-2 font-medium">Nama Tagihan</th>
                                     <th class="px-3 py-2 font-medium">Nominal</th>
                                     <th class="px-3 py-2 font-medium">Status</th>
+                                    <th class="px-3 py-2 font-medium">Bukti Pembayaran</th>
                                     <th class="px-3 py-2 font-medium">Aksi</th>
                                 </tr>
                             </thead>

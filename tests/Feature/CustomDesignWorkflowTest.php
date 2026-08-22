@@ -168,7 +168,7 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($customer)->post(route('pemesanan.dp-evidence.upload', $project), [
             'bukti_pembayaran' => UploadedFile::fake()->image('dp.jpg'),
         ])->assertRedirect();
-        $this->actingAs($admin)->post(route('admin.pemesanan.dp.verify', $project))->assertRedirect();
+        $this->actingAs($admin)->post(route('admin.pemesanan.invoice.paid', [$project, $project->dpInvoice]))->assertRedirect();
 
         $project->refresh();
         $this->assertSame('survey_scheduled', $project->workflow_stage);
@@ -822,8 +822,7 @@ class CustomDesignWorkflowTest extends TestCase
             'jenis_proyek' => 'Desain interior',
         ]);
         // The DP invoice is whichever one was created first, regardless of
-        // its type column — mirrors the real "Tandai Lunas" button used
-        // instead of the dedicated verifyDp() flow.
+        // its type column — mirrors the real "Konfirmasi Pembayaran" button.
         $invoice = $project->invoices()->create([
             'number' => 'INV-2026-0001-'.$project->id,
             'type' => 'custom',

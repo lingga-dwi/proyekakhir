@@ -542,7 +542,7 @@ class AdminManagementTest extends TestCase
         route('admin.pemesanan.show', $project);
     }
 
-    public function test_admin_can_verify_dp_and_assign_designer_from_kelola_pesanan_card(): void
+    public function test_admin_can_confirm_dp_payment_and_assign_designer_from_kelola_pesanan_card(): void
     {
         $admin = $this->user('admin@example.com', 'admin');
         $customer = $this->user('customer@example.com', 'pelanggan');
@@ -569,10 +569,9 @@ class AdminManagementTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.pemesanan.index'))
             ->assertOk()
-            ->assertSee('Verifikasi Pembayaran DP')
             ->assertSee($invoice->number);
 
-        $this->actingAs($admin)->post(route('admin.pemesanan.dp.verify', $project))
+        $this->actingAs($admin)->post(route('admin.pemesanan.invoice.paid', [$project, $invoice]))
             ->assertRedirect();
 
         $project->refresh();

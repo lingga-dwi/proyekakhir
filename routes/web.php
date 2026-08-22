@@ -113,8 +113,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/admin/pemesanan/{id}/status', [PemesananController::class, 'updateStatus'])->name('admin.pemesanan.updateStatus');
         Route::post('/admin/pemesanan/{pemesanan}/verifikasi-pembayaran', [PemesananController::class, 'verifyPaymentEvidence'])
             ->name('admin.pemesanan.payment-evidence.verify');
-        Route::post('/admin/pemesanan/{pemesanan}/verifikasi-dp', [PemesananController::class, 'verifyDp'])
-            ->name('admin.pemesanan.dp.verify');
         Route::post('/admin/pemesanan/{pemesanan}/tagihan', [PemesananController::class, 'storeInvoice'])
             ->name('admin.pemesanan.invoice.store');
         Route::post('/admin/pemesanan/{pemesanan}/tagihan/{invoice}/lunas', [PemesananController::class, 'markInvoicePaid'])

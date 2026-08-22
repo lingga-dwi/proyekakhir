@@ -546,21 +546,9 @@ class PemesananController extends Controller
         return back()->with('success', $message);
     }
 
-    public function verifyDp(Request $request, Pemesanan $pemesanan)
-    {
-        $invoice = $pemesanan->dpInvoice;
-        abort_unless($invoice && $invoice->status === 'submitted', 422, 'Tidak ada pembayaran DP yang menunggu verifikasi.');
-
-        $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
-        $this->advanceToSurveyAfterDpVerified($pemesanan, $request->user());
-
-        return back()->with('success', 'DP berhasil diverifikasi. Proyek siap dijadwalkan untuk survei.');
-    }
-
     /**
-     * Move the project into the survey stage once its DP invoice is paid,
-     * whether that happened through the normal verifyDp() flow or by an
-     * admin marking the DP invoice paid directly from the invoice table.
+     * Move the project into the survey stage once its DP invoice is
+     * confirmed paid via the invoice table's "Konfirmasi Pembayaran" button.
      */
     private function advanceToSurveyAfterDpVerified(Pemesanan $pemesanan, User $actor): void
     {

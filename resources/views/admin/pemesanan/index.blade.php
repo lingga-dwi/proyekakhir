@@ -431,7 +431,6 @@
                                                 ? route('admin.pemesanan.invoice.evidence.download', [$item->id, $project->dpInvoice->id])
                                                 : null,
                                         ] : null,
-                                        'dpVerifyUrl' => route('admin.pemesanan.dp.verify', $item->id),
                                         'validateUrl' => route('admin.pemesanan.validate.send', $item->id),
                                         'revisionUrl' => route('admin.pemesanan.validate.revision', $item->id),
                                         'bankDisplayName' => config('company.bank.display_name'),
@@ -630,7 +629,6 @@ function openProjectModal(button) {
 
     const useCardLayout = project.workflowStage && project.workflowStage !== 'konsultasi';
     const needsValidation = project.workflowStage === 'awaiting_admin_validation';
-    const canVerifyDp = project.workflowStage === 'dp_verification' && project.dpInvoice;
 
     const validationView = document.getElementById('projectModalValidationView');
     const standardView = document.getElementById('projectModalStandardView');
@@ -645,19 +643,6 @@ function openProjectModal(button) {
             : 'Kelola tahap proses, penugasan desainer, serta desain & RAB.';
 
     document.getElementById('projectModalValidationInfoBanner').classList.toggle('hidden', !needsValidation);
-
-    const dpVerifyForm = document.getElementById('projectModalDpVerifyForm');
-    dpVerifyForm.classList.toggle('hidden', !canVerifyDp);
-    if (canVerifyDp) {
-        dpVerifyForm.action = project.dpVerifyUrl;
-        document.getElementById('projectModalDpInvoiceInfo').textContent =
-            `${project.dpInvoice.number} · Rp ${new Intl.NumberFormat('id-ID').format(project.dpInvoice.amount)}${project.dpInvoice.dueDate ? ' · Jatuh tempo ' + project.dpInvoice.dueDate : ''}`;
-
-        const evidenceLink = document.getElementById('projectModalDpEvidenceLink');
-        evidenceLink.classList.toggle('hidden', !project.dpInvoice.evidenceUrl);
-        evidenceLink.classList.toggle('flex', !!project.dpInvoice.evidenceUrl);
-        if (project.dpInvoice.evidenceUrl) evidenceLink.href = project.dpInvoice.evidenceUrl;
-    }
 
     const validationFooter = document.getElementById('projectModalValidationFooter');
     validationFooter.classList.toggle('hidden', !needsValidation);
@@ -885,9 +870,9 @@ function submitInvoiceModal() {
 function confirmMarkProjectInvoicePaid(invoice) {
     window.dispatchEvent(new CustomEvent('open-confirmation', {
         detail: {
-            title: 'Tandai tagihan lunas?',
+            title: 'Konfirmasi pembayaran tagihan?',
             message: `Tagihan "${invoice.name}" sebesar Rp ${new Intl.NumberFormat('id-ID').format(invoice.amount)} akan ditandai lunas. Pastikan pembayaran benar-benar sudah diterima.`,
-            confirmLabel: 'Ya, tandai lunas',
+            confirmLabel: 'Ya, konfirmasi',
             tone: 'success',
             onConfirm: () => markProjectInvoicePaid(invoice.id),
         },
@@ -937,7 +922,7 @@ function renderInvoiceListInto(containerId, invoices, mode) {
 
     if (!invoices.length) {
         container.innerHTML = mode === 'table'
-            ? '<tr><td colspan="4" class="px-3 py-4 text-center text-slate-400">Belum ada tagihan.</td></tr>'
+            ? '<tr><td colspan="5" class="px-3 py-4 text-center text-slate-400">Belum ada tagihan.</td></tr>'
             : '<p class="text-xs text-slate-400">Belum ada tagihan untuk proyek ini.</p>';
         return;
     }
@@ -957,22 +942,26 @@ function renderInvoiceListInto(containerId, invoices, mode) {
                 <td class="px-3 py-2">
                     <span class="inline-flex rounded-full px-2 py-0.5 font-semibold ${tone}">${label}</span>
                 </td>
+                <td class="px-3 py-2"></td>
                 <td class="px-3 py-2"></td>`;
-            const actionsCell = row.lastElementChild;
+            const evidenceCell = row.children[3];
+            const actionsCell = row.children[4];
             if (invoice.evidenceUrl) {
                 const evidenceLink = document.createElement('a');
                 evidenceLink.href = invoice.evidenceUrl;
                 evidenceLink.target = '_blank';
                 evidenceLink.rel = 'noopener';
-                evidenceLink.className = 'block whitespace-nowrap text-[11px] font-semibold text-slate-600 hover:underline';
+                evidenceLink.className = 'inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-slate-600 hover:underline';
                 evidenceLink.innerHTML = '<i class="fas fa-paperclip" aria-hidden="true"></i> Lihat Bukti';
-                actionsCell.appendChild(evidenceLink);
+                evidenceCell.appendChild(evidenceLink);
+            } else {
+                evidenceCell.innerHTML = '<span class="text-[11px] text-slate-400">Belum ada</span>';
             }
             if (invoice.status !== 'paid') {
                 const payBtn = document.createElement('button');
                 payBtn.type = 'button';
-                payBtn.className = 'mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700';
-                payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
+                payBtn.className = 'inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700';
+                payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Konfirmasi Pembayaran';
                 payBtn.onclick = () => confirmMarkProjectInvoicePaid(invoice);
                 actionsCell.appendChild(payBtn);
             }
