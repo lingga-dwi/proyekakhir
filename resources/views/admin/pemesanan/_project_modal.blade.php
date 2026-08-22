@@ -61,14 +61,14 @@
                     </div>
                 </section>
 
-                <section>
+                <section class="flex flex-col">
                     <div class="flex items-center justify-between gap-3">
                         <h4 class="font-semibold text-slate-950">Daftar Tagihan</h4>
                         <button type="button" onclick="openInvoiceModal('validation')" class="inline-flex items-center gap-2 rounded-lg border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50">
                             <i class="fas fa-plus" aria-hidden="true"></i> Buat Tagihan
                         </button>
                     </div>
-                    <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+                    <div class="mt-3 flex-1 overflow-x-auto rounded-xl border border-slate-200">
                         <table class="w-full min-w-125 text-left text-xs">
                             <thead class="bg-slate-50 uppercase tracking-wide text-slate-500">
                                 <tr>
