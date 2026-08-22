@@ -526,11 +526,16 @@ function submitReviewDecision(decision) {
             feedback: feedback || null,
         }),
     })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
+        .then(response => response.json().then(json => ({ ok: response.ok, status: response.status, json })))
+        .then(({ ok, status, json }) => {
             if (!ok) {
                 const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal mengirim keputusan.');
-                showReviewToast(errorMessage, 'error');
+                if (status === 422 && !json.errors) {
+                    showReviewToast('Tahap pesanan ini sudah berubah. Halaman akan dimuat ulang.', 'error');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showReviewToast(errorMessage, 'error');
+                }
                 return;
             }
             showReviewToast(json.message || 'Keputusan berhasil dikirim.');

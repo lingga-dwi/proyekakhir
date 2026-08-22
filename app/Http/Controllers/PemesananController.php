@@ -511,6 +511,15 @@ class PemesananController extends Controller
         $stagesPastDpVerification = ['survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved'];
         $isDpInvoice = $pemesanan->dpInvoice?->id === $invoice->id;
         if ($isDpInvoice && ! in_array($pemesanan->workflow_stage, $stagesPastDpVerification, true)) {
+            if ($pemesanan->workflow_stage === 'awaiting_draft_approval') {
+                $pemesanan->documentDecisions()->create([
+                    'decided_by' => $request->user()->id,
+                    'stage' => 'draft',
+                    'submission_round' => (int) $pemesanan->draft_round,
+                    'decision' => 'approved',
+                ]);
+            }
+
             $pemesanan->update(['workflow_stage' => 'dp_verification', 'catatan_progres' => 'Bukti pembayaran DP telah diunggah dan menunggu verifikasi admin.']);
             $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
         } else {
