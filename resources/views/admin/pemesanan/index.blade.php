@@ -750,12 +750,52 @@ function setProjectFinalStatus(status) {
                             return;
                         }
                         showModalToast(json.message || 'Proyek berhasil diselesaikan.');
-                        setTimeout(() => window.location.reload(), 600);
+                        celebrateProjectCompletion();
+                        setTimeout(() => window.location.reload(), 1800);
                     })
                     .catch(() => showModalToast('Gagal menyelesaikan proyek. Periksa koneksi Anda.', 'error'));
             },
         },
     }));
+}
+
+function celebrateProjectCompletion() {
+    const colors = ['#22c55e', '#facc15', '#fb923c', '#38bdf8', '#f472b6'];
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;overflow:hidden;';
+
+    for (let i = 0; i < 80; i++) {
+        const piece = document.createElement('span');
+        const size = 6 + Math.random() * 6;
+        const left = Math.random() * 100;
+        const duration = 2 + Math.random() * 1.5;
+        const delay = Math.random() * 0.4;
+        const rotateStart = Math.random() * 360;
+        const drift = (Math.random() - 0.5) * 200;
+        piece.style.cssText = `
+            position:absolute;top:-20px;left:${left}vw;width:${size}px;height:${size * 0.4}px;
+            background:${colors[i % colors.length]};opacity:${0.8 + Math.random() * 0.2};
+            transform:rotate(${rotateStart}deg);border-radius:1px;
+            animation:confetti-fall ${duration}s ease-in ${delay}s forwards;
+            --drift:${drift}px;
+        `;
+        container.appendChild(piece);
+    }
+
+    document.body.appendChild(container);
+    setTimeout(() => container.remove(), 4000);
+}
+
+if (!document.getElementById('confetti-keyframes')) {
+    const style = document.createElement('style');
+    style.id = 'confetti-keyframes';
+    style.textContent = `
+        @keyframes confetti-fall {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--drift), 105vh) rotate(720deg); opacity: 0.3; }
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 function confirmDeleteProject() {
