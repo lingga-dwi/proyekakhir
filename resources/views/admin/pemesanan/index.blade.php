@@ -1112,16 +1112,8 @@ function renderProjectValidationDocuments(project) {
 function renderProjectBilling() {
     const project = currentProjectModalData;
     const invoices = project.invoices || [];
-    const totalHarga = getCurrentTotalHarga();
-    const totalBilled = invoices.reduce((sum, invoice) => sum + invoice.amount, 0);
-    const totalPaid = invoices.filter(invoice => invoice.status === 'paid').reduce((sum, invoice) => sum + invoice.amount, 0);
-    const remaining = Math.max(totalHarga - totalPaid, 0);
-    const fmt = amount => new Intl.NumberFormat('id-ID').format(amount);
 
-    if (document.getElementById('projectModalValidationBilled')) {
-        document.getElementById('projectModalValidationBilled').textContent = 'Rp ' + fmt(totalBilled);
-        document.getElementById('projectModalValidationPaid').textContent = 'Rp ' + fmt(totalPaid);
-        document.getElementById('projectModalValidationRemaining').textContent = 'Rp ' + fmt(remaining);
+    if (document.getElementById('projectModalValidationInvoiceList')) {
         renderInvoiceListInto('projectModalValidationInvoiceList', invoices, 'table');
     }
 }

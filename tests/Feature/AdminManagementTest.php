@@ -483,10 +483,8 @@ class AdminManagementTest extends TestCase
             ->assertSee('Dokumen dari Desainer')
             ->assertSee('design-siap-validasi.pdf')
             ->assertSee('rab-siap-validasi.pdf')
-            ->assertSee('Riwayat Tagihan')
+            ->assertSee('Daftar Tagihan')
             ->assertSee('Buat Tagihan')
-            ->assertSee('Total Sudah Ditagihkan')
-            ->assertSee('Sisa Pembayaran')
             ->assertSee(config('company.bank.display_name'));
     }
 

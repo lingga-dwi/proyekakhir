@@ -15,7 +15,7 @@
         </form>
 
         <div id="projectModalValidationView" class="mt-3 hidden">
-            <div class="grid gap-6 lg:grid-cols-[1fr_1fr_1.4fr]">
+            <div class="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
                 <section>
                     <h4 class="font-semibold text-slate-950">Dokumen dari Desainer</h4>
                     <div id="projectModalValidationDocuments" class="mt-3 space-y-2"></div>
@@ -62,31 +62,12 @@
                 </section>
 
                 <section>
-                    <h4 class="font-semibold text-slate-950">Penawaran</h4>
-
-                    <div class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200">
-                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
-                            <span class="text-slate-500">Total Sudah Ditagihkan</span>
-                            <span id="projectModalValidationBilled" class="font-semibold text-slate-800">Rp 0</span>
-                        </div>
-                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
-                            <span class="text-slate-500">Total Sudah Dibayar</span>
-                            <span id="projectModalValidationPaid" class="font-semibold text-slate-800">Rp 0</span>
-                        </div>
-                        <div class="flex items-center justify-between px-3 py-2.5 text-sm">
-                            <span class="text-slate-500">Sisa Pembayaran</span>
-                            <span id="projectModalValidationRemaining" class="font-semibold text-slate-800">Rp 0</span>
-                        </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="font-semibold text-slate-950">Daftar Tagihan</h4>
+                        <button type="button" onclick="openInvoiceModal('validation')" class="inline-flex items-center gap-2 rounded-lg border border-orange-300 px-3 py-1.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-50">
+                            <i class="fas fa-plus" aria-hidden="true"></i> Buat Tagihan
+                        </button>
                     </div>
-
-                    <button type="button" onclick="openInvoiceModal('validation')" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-300 px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">
-                        <i class="fas fa-plus" aria-hidden="true"></i> Buat Tagihan
-                    </button>
-                    <p class="mt-1.5 text-xs text-slate-400">Buat tagihan baru secara fleksibel sesuai progres proyek dan kesepakatan.</p>
-                </section>
-
-                <section>
-                    <h4 class="font-semibold text-slate-950">Riwayat Tagihan</h4>
                     <div class="mt-3 overflow-x-auto rounded-xl border border-slate-200">
                         <table class="w-full min-w-125 text-left text-xs">
                             <thead class="bg-slate-50 uppercase tracking-wide text-slate-500">
@@ -215,7 +196,7 @@
 
             <div class="flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">
                 <i class="fas fa-circle-info mt-0.5 text-slate-400" aria-hidden="true"></i>
-                <span>Tagihan akan ditambahkan ke riwayat tagihan dan dapat dikirim ke pelanggan setelah penawaran divalidasi.</span>
+                <span>Tagihan akan ditambahkan ke daftar tagihan dan dapat dikirim ke pelanggan setelah penawaran divalidasi.</span>
             </div>
 
             <p id="invoiceModalError" class="hidden text-xs text-red-600"></p>
