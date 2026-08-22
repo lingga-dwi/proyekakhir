@@ -36,9 +36,14 @@
                         </label>
 
                         <label class="mt-3 block">
+                            <span class="text-xs font-medium text-slate-600">Target Mulai</span>
+                            <input type="date" id="projectModalTargetMulai" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        </label>
+
+                        <label class="mt-3 block">
                             <span class="text-xs font-medium text-slate-600">Target Selesai</span>
                             <input type="date" id="projectModalTargetSelesai" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-                            <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
+                            <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard dan estimasi waktu pelanggan.</p>
                         </label>
 
                         <button type="button" id="projectModalSaveAssignmentBtn" onclick="saveProjectAssignment()" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
@@ -122,9 +127,14 @@
                 </label>
 
                 <label class="mt-3 block">
+                    <span class="text-xs font-medium text-slate-600">Target Mulai</span>
+                    <input type="date" id="projectModalTargetMulaiStandard" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </label>
+
+                <label class="mt-3 block">
                     <span class="text-xs font-medium text-slate-600">Target Selesai</span>
                     <input type="date" id="projectModalTargetSelesaiStandard" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-                    <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
+                    <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard dan estimasi waktu pelanggan.</p>
                 </label>
 
                 <button type="button" onclick="saveProjectAssignment('Standard')" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">

@@ -785,7 +785,8 @@ class PemesananController extends Controller
         $data = $request->validate([
             'status_pemesanan' => ['required', Rule::in(Pemesanan::STATUSES)],
             'progress' => ['nullable', 'integer', 'between:0,100'],
-            'target_selesai' => ['nullable', 'date'],
+            'target_mulai' => ['nullable', 'date'],
+            'target_selesai' => ['nullable', 'date', 'after_or_equal:target_mulai'],
             'designer_id' => [
                 'nullable',
                 Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'designer')),
@@ -825,7 +826,8 @@ class PemesananController extends Controller
                 ]),
             ],
             'progress' => ['nullable', 'integer', 'between:0,100'],
-            'target_selesai' => ['nullable', 'date'],
+            'target_mulai' => ['nullable', 'date'],
+            'target_selesai' => ['nullable', 'date', 'after_or_equal:target_mulai'],
             'catatan_progres' => ['nullable', 'string', 'max:2000'],
         ]);
 

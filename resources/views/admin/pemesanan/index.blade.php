@@ -479,6 +479,7 @@
                                         'sendUrl' => route('admin.pemesanan.document.send', $item->id),
                                         'decisions' => $decisionHistory,
                                         'deleteUrl' => url('/admin/pemesanan/'.$item->id),
+                                        'targetMulai' => $project?->target_mulai?->format('Y-m-d'),
                                         'targetSelesai' => $project?->target_selesai?->format('Y-m-d'),
                                         'statusHistory' => $project
                                             ? $project->statusTrackings->map(fn ($tracking) => [
@@ -666,6 +667,7 @@ function openProjectModal(button) {
 
     const suffix = useCardLayout ? '' : 'Standard';
     document.getElementById('projectModalDesigner' + suffix).value = project.designer || '';
+    document.getElementById('projectModalTargetMulai' + suffix).value = project.targetMulai || '';
     document.getElementById('projectModalTargetSelesai' + suffix).value = project.targetSelesai || '';
     document.getElementById('projectModalAssignmentError' + suffix).classList.add('hidden');
 
@@ -690,6 +692,7 @@ function saveProjectAssignment(suffix = '') {
     errorEl.classList.add('hidden');
 
     const designerId = document.getElementById('projectModalDesigner' + suffix).value || null;
+    const targetMulai = document.getElementById('projectModalTargetMulai' + suffix).value || null;
     const targetSelesai = document.getElementById('projectModalTargetSelesai' + suffix).value || null;
 
     fetch(`{{ url('/admin/proyek') }}/${project.id}`, {
@@ -698,6 +701,7 @@ function saveProjectAssignment(suffix = '') {
         body: JSON.stringify({
             status_pemesanan: project.status,
             designer_id: designerId,
+            target_mulai: targetMulai,
             target_selesai: targetSelesai,
         }),
     })
@@ -709,6 +713,7 @@ function saveProjectAssignment(suffix = '') {
                 return;
             }
             project.designer = designerId;
+            project.targetMulai = targetMulai;
             project.targetSelesai = targetSelesai;
             syncProjectModalButton();
             showModalToast(json.message || 'Penugasan berhasil disimpan.');
@@ -734,6 +739,7 @@ function setProjectFinalStatus(status) {
                     body: JSON.stringify({
                         status_pemesanan: status,
                         designer_id: document.getElementById('projectModalDesigner').value || null,
+                        target_mulai: document.getElementById('projectModalTargetMulai').value || null,
                         target_selesai: document.getElementById('projectModalTargetSelesai').value || null,
                     }),
                 })

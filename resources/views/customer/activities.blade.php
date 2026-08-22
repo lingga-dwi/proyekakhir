@@ -131,6 +131,13 @@
                                         @if($activity->actor)
                                             <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                         @endif
+                                        @if($activity->target_mulai || $activity->target_selesai)
+                                            <p class="mt-1 text-[11px] text-slate-500">
+                                                <i class="fas fa-calendar-days mr-1 text-slate-400" aria-hidden="true"></i>
+                                                @if($activity->target_mulai){{ $activity->target_mulai }} –@endif
+                                                {{ $activity->target_selesai ?: 'Belum ditentukan' }}
+                                            </p>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-5 text-right">
                                         <div class="flex items-center justify-end gap-2">
@@ -178,6 +185,13 @@
                                     </div>
                                     @if($activity->actor)
                                         <p class="mt-1 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
+                                    @endif
+                                    @if($activity->target_mulai || $activity->target_selesai)
+                                        <p class="mt-1 text-[11px] text-slate-500">
+                                            <i class="fas fa-calendar-days mr-1 text-slate-400" aria-hidden="true"></i>
+                                            @if($activity->target_mulai){{ $activity->target_mulai }} –@endif
+                                            {{ $activity->target_selesai ?: 'Belum ditentukan' }}
+                                        </p>
                                     @endif
                                 </div>
                                 <div class="flex items-center gap-2">
@@ -354,7 +368,9 @@ function renderReviewModal(review) {
                 const uploadBtn = document.createElement('button');
                 uploadBtn.type = 'button';
                 uploadBtn.className = 'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800';
-                uploadBtn.innerHTML = '<i class="fas fa-upload" aria-hidden="true"></i> Upload Bukti Pembayaran';
+                uploadBtn.innerHTML = invoice.status === 'submitted'
+                    ? '<i class="fas fa-upload" aria-hidden="true"></i> Ganti Bukti Pembayaran'
+                    : '<i class="fas fa-upload" aria-hidden="true"></i> Upload Bukti Pembayaran';
                 uploadBtn.onclick = () => triggerInvoiceUpload(invoice);
                 card.appendChild(uploadBtn);
             }

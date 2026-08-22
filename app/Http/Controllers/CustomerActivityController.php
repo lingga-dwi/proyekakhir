@@ -73,6 +73,8 @@ class CustomerActivityController extends Controller
                     },
                     'actor' => \App\Support\ProjectStageLabel::actorFor($pemesanan),
                     'created_at' => $pemesanan->created_at,
+                    'target_mulai' => $pemesanan->target_mulai?->translatedFormat('d M Y'),
+                    'target_selesai' => $pemesanan->target_selesai?->translatedFormat('d M Y'),
                     'detail_url' => route('pemesanan.show', $pemesanan),
                     'review' => $reviewPayload,
                     'history' => $pemesanan->statusTrackings
@@ -142,6 +144,8 @@ class CustomerActivityController extends Controller
                             default => null,
                         },
                         'created_at' => $konsultasi->created_at,
+                        'target_mulai' => null,
+                        'target_selesai' => null,
                         'detail_url' => route('konsultasi.show', $konsultasi),
                         'review' => null,
                         'history' => collect([

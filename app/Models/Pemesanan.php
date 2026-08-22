@@ -40,6 +40,7 @@ class Pemesanan extends Model
         'draft_round',
         'final_round',
         'progress',
+        'target_mulai',
         'target_selesai',
         'survey_scheduled_at',
         'survey_notes',
@@ -55,6 +56,7 @@ class Pemesanan extends Model
 
     protected $casts = [
         'tanggal_pesan' => 'date',
+        'target_mulai' => 'date',
         'target_selesai' => 'date',
         'survey_scheduled_at' => 'datetime',
         'survey_completed_at' => 'datetime',

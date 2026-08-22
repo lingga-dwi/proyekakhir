@@ -21,6 +21,7 @@ class ProjectWorkflowService
     private const PROJECT_FIELDS = [
         'status_pemesanan',
         'progress',
+        'target_mulai',
         'target_selesai',
         'designer_id',
         'total_harga',
