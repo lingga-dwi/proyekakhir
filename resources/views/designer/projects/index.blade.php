@@ -238,12 +238,10 @@
                                 @endif
                                 <button
                                     type="button"
-                                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                    class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                                     data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
                                     onclick="openHistoryModal(this)"
-                                    aria-label="Riwayat tahapan"
-                                    title="Riwayat tahapan"
-                                ><i class="fas fa-clock-rotate-left" aria-hidden="true"></i></button>
+                                >Riwayat</button>
                             </div>
                         </td>
                     </tr>
