@@ -139,7 +139,7 @@
                                     <td class="px-5 py-5">
                                         <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                         @if($activity->stage_label && $activity->stage_label !== $statusLabel)
-                                            <p class="mt-1 text-[11px] font-medium text-slate-600">{{ $activity->stage_label }}</p>
+                                            <p class="mt-1.5 text-[11px] text-slate-500"><span class="font-semibold text-slate-600">Tahap:</span> {{ $activity->stage_label }}</p>
                                         @endif
                                         @if($activity->actor)
                                             <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
@@ -193,7 +193,7 @@
                                         <span class="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset {{ $statusClass }}">{{ $statusLabel }}</span>
                                     </div>
                                     @if($activity->stage_label && $activity->stage_label !== $statusLabel)
-                                        <p class="mt-1 text-[11px] font-medium text-slate-600">{{ $activity->stage_label }}</p>
+                                        <p class="mt-1.5 text-[11px] text-slate-500"><span class="font-semibold text-slate-600">Tahap:</span> {{ $activity->stage_label }}</p>
                                     @endif
                                     @if($activity->actor)
                                         <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
