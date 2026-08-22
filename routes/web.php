@@ -55,6 +55,7 @@ Route::middleware(['auth'])->group(function () {
     // Customer-only routes
     Route::middleware(['role:pelanggan'])->group(function () {
         Route::get('/pesanan-saya', [CustomerActivityController::class, 'index'])->name('pesanan.saya');
+        Route::get('/pesanan-saya/heartbeat', [CustomerActivityController::class, 'heartbeat'])->name('pesanan.saya.heartbeat');
         Route::get('/aktivitas-saya', fn (\Illuminate\Http\Request $request) => redirect()->route('pesanan.saya', $request->only('tab')))
             ->name('aktivitas.saya');
         Route::redirect('/konsultasi-saya', '/pesanan-saya?tab=konsultasi')->name('konsultasi.saya');

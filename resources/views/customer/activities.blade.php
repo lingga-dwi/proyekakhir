@@ -553,5 +553,39 @@ document.getElementById('reviewModalInvoiceUploadInput').addEventListener('chang
     if (event.target.files.length) submitInvoiceEvidence(event.target.files[0]);
     event.target.value = '';
 });
+
+(function pollForUpdates() {
+    const heartbeatUrl = '{{ route('pesanan.saya.heartbeat') }}';
+    let lastSignal = null;
+    let isFirstCheck = true;
+
+    function anyModalOpen() {
+        return ['reviewModal', 'historyModal'].some(id => {
+            const el = document.getElementById(id);
+            return el && !el.classList.contains('hidden');
+        });
+    }
+
+    function check() {
+        fetch(heartbeatUrl, { headers: { 'Accept': 'application/json' } })
+            .then(response => response.ok ? response.json() : null)
+            .then(payload => {
+                if (!payload) return;
+
+                if (isFirstCheck) {
+                    lastSignal = payload.signal;
+                    isFirstCheck = false;
+                    return;
+                }
+
+                if (payload.signal !== lastSignal && !anyModalOpen()) {
+                    window.location.reload();
+                }
+            })
+            .catch(() => {});
+    }
+
+    setInterval(check, 15000);
+})();
 </script>
 @endpush

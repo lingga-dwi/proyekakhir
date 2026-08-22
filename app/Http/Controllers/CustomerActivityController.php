@@ -208,4 +208,15 @@ class CustomerActivityController extends Controller
 
         return view('customer.activities', compact('activities', 'filters', 'statusCounts'));
     }
+
+    public function heartbeat(Request $request)
+    {
+        $user = $request->user();
+
+        $latestPemesanan = $user->pemesanans()->max('updated_at');
+        $latestKonsultasi = $user->konsultasis()->whereNull('pemesanan_id')->max('updated_at');
+        $counts = $user->pemesanans()->count().':'.$user->konsultasis()->whereNull('pemesanan_id')->count();
+
+        return response()->json(['signal' => $counts.':'.$latestPemesanan.':'.$latestKonsultasi]);
+    }
 }
