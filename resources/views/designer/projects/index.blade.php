@@ -590,7 +590,7 @@ document.getElementById('dpModal').addEventListener('click', event => {
     }
 
     check();
-    setInterval(check, 5000);
+    setInterval(check, 3000);
 })();
 </script>
 @endpush

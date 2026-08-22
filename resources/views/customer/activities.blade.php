@@ -585,7 +585,7 @@ document.getElementById('reviewModalInvoiceUploadInput').addEventListener('chang
             .catch(() => {});
     }
 
-    setInterval(check, 15000);
+    setInterval(check, 3000);
 })();
 </script>
 @endpush
