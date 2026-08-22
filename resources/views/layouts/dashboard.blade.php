@@ -78,13 +78,16 @@
                         <p class="truncate text-sm font-semibold">{{ auth()->user()->nama }}</p>
                         <p class="text-xs capitalize text-slate-500">{{ auth()->user()->role }}</p>
                     </div>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-red-600 transition hover:bg-red-50" aria-label="Keluar" title="Keluar">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </form>
                 </div>
-                <form method="POST" action="{{ route('logout') }}" class="mt-2">
-                    @csrf
-                    <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50">
-                        <i class="fas fa-sign-out-alt w-5 text-center"></i>Keluar
-                    </button>
-                </form>
+                <a href="{{ route('home') }}" class="mt-2 flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-amber-700">
+                    Lihat website <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                </a>
             </div>
         </aside>
 
@@ -102,9 +105,6 @@
                     </div>
                     <div class="flex items-center gap-3">
                         @include('partials.notifications')
-                        <a href="{{ route('home') }}" class="hidden items-center gap-2 text-sm font-medium text-slate-600 hover:text-amber-700 sm:inline-flex">
-                            Lihat website <i class="fas fa-arrow-up-right-from-square text-xs"></i>
-                        </a>
                     </div>
                 </div>
             </header>
