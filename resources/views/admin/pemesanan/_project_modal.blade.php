@@ -91,13 +91,6 @@
                         <i class="fas fa-check" aria-hidden="true"></i> Selesaikan Konsultasi
                     </button>
                 </form>
-
-                <div class="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                    <button type="button" id="projectModalHistoryToggle" class="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:text-amber-800">
-                        <i class="fas fa-clock-rotate-left text-[10px]" aria-hidden="true"></i> Riwayat Pengiriman
-                    </button>
-                </div>
-                <div id="projectModalHistoryPanel" class="mt-2 hidden max-h-32 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3"></div>
             </section>
         </div>
     </div>

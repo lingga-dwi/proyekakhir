@@ -667,36 +667,6 @@ function openProjectModal(button) {
     if (canCompleteConsultation) completeForm.action = project.completeConsultationUrl;
     document.getElementById('projectConsultationResult').value = '';
 
-    const historyPanel = document.getElementById('projectModalHistoryPanel');
-    historyPanel.replaceChildren();
-    const decisionLabels = { approved: 'Disetujui', revision_requested: 'Minta revisi' };
-    const stageLabels = { draft: 'Desain awal', final: 'Desain final' };
-
-    const decisionRows = (project.decisions || []).map(decision => ({
-        timestamp: decision.timestamp,
-        html: `<p class="font-semibold text-slate-700">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
-            <p class="mt-0.5 text-slate-500">${decision.customer || 'Pelanggan'} · ${decision.date}</p>
-            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`,
-    }));
-    const statusRows = (project.statusHistory || []).map(entry => ({
-        timestamp: entry.timestamp,
-        html: `<p class="font-semibold text-slate-700">${entry.note || 'Status diperbarui'}</p>
-            <p class="mt-0.5 text-slate-500">${entry.date}</p>`,
-    }));
-
-    const allRows = decisionRows.concat(statusRows).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    allRows.forEach(row => {
-        const el = document.createElement('div');
-        el.className = 'rounded-lg bg-slate-50 p-2.5 text-xs';
-        el.innerHTML = row.html;
-        historyPanel.appendChild(el);
-    });
-    if (!allRows.length) {
-        historyPanel.innerHTML = '<p class="text-xs text-slate-400">Belum ada riwayat tercatat.</p>';
-    }
-    historyPanel.classList.add('hidden');
-    document.getElementById('projectModalHistoryToggle').onclick = () => historyPanel.classList.toggle('hidden');
-
     const modal = document.getElementById('projectModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
