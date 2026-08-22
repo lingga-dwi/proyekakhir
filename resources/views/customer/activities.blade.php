@@ -146,15 +146,25 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-5 text-right">
-                                        <button
-                                            type="button"
-                                            class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                            data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
-                                            onclick="openReviewModal(this)"
-                                        >
-                                            Tinjau Penawaran
-                                            <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                        </button>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button
+                                                type="button"
+                                                class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                                data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
+                                                onclick="openReviewModal(this)"
+                                            >
+                                                Tinjau Penawaran
+                                                <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                                data-history="{{ json_encode(['reference' => $activity->reference, 'history' => $activity->history], JSON_THROW_ON_ERROR) }}"
+                                                onclick="openHistoryModal(this)"
+                                                aria-label="Riwayat tahapan"
+                                                title="Riwayat tahapan"
+                                            ><i class="fas fa-clock-rotate-left" aria-hidden="true"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -191,15 +201,25 @@
                                         <p class="mt-0.5 text-[11px] text-slate-400">Oleh: {{ $activity->actor }}</p>
                                     @endif
                                 </div>
-                                <button
-                                    type="button"
-                                    class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white"
-                                    data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
-                                    onclick="openReviewModal(this)"
-                                >
-                                    Tinjau Penawaran
-                                    <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex w-44 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-1.5 text-sm font-semibold text-white"
+                                        data-review="{{ $activity->review ? json_encode($activity->review, JSON_THROW_ON_ERROR) : 'null' }}"
+                                        onclick="openReviewModal(this)"
+                                    >
+                                        Tinjau Penawaran
+                                        <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500"
+                                        data-history="{{ json_encode(['reference' => $activity->reference, 'history' => $activity->history], JSON_THROW_ON_ERROR) }}"
+                                        onclick="openHistoryModal(this)"
+                                        aria-label="Riwayat tahapan"
+                                        title="Riwayat tahapan"
+                                    ><i class="fas fa-clock-rotate-left" aria-hidden="true"></i></button>
+                                </div>
                             </div>
                         </article>
                     @endforeach
@@ -227,6 +247,7 @@
 </main>
 
 @include('customer._review_modal')
+@include('customer._history_modal')
 @endsection
 
 @push('scripts')
@@ -427,6 +448,32 @@ function closeReviewModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     if (reviewModalNeedsRefresh) window.location.reload();
+}
+
+function openHistoryModal(button) {
+    const data = JSON.parse(button.dataset.history);
+    document.getElementById('historyModalReference').textContent = `#${data.reference}`;
+    const list = document.getElementById('historyModalList');
+    list.replaceChildren();
+    (data.history || []).forEach(entry => {
+        const el = document.createElement('div');
+        el.className = 'rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm';
+        el.innerHTML = `<p class="font-semibold text-slate-800">${entry.note || 'Status diperbarui'}</p>
+            <p class="mt-0.5 text-slate-500">${entry.date}</p>`;
+        list.appendChild(el);
+    });
+    if (!(data.history || []).length) {
+        list.innerHTML = '<p class="py-8 text-center text-sm text-slate-400">Belum ada riwayat tercatat untuk pesanan ini.</p>';
+    }
+    const modal = document.getElementById('historyModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeHistoryModal() {
+    const modal = document.getElementById('historyModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
 function showRevisionPanel() {

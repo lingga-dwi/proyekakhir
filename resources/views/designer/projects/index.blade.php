@@ -236,6 +236,14 @@
                                         onclick="openDpModal(this)"
                                     >Unggah Desain &amp; RAB</button>
                                 @endif
+                                <button
+                                    type="button"
+                                    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+                                    data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
+                                    onclick="openHistoryModal(this)"
+                                    aria-label="Riwayat tahapan"
+                                    title="Riwayat tahapan"
+                                ><i class="fas fa-clock-rotate-left" aria-hidden="true"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -252,6 +260,7 @@
 </section>
 
 @include('designer.projects._project_modal')
+@include('designer.projects._history_modal')
 @endsection
 
 @push('scripts')
@@ -348,6 +357,49 @@ function renderDpHistoryPanel(project) {
 
 function closeDpModal() {
     const modal = document.getElementById('dpModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function openHistoryModal(button) {
+    const project = JSON.parse(button.dataset.project);
+    document.getElementById('historyModalReference').textContent = `#${project.reference}`;
+
+    const decisionLabels = { approved: 'Disetujui', revision_requested: 'Minta revisi' };
+    const stageLabels = { draft: 'Desain awal', final: 'Desain final' };
+
+    const decisionRows = (project.decisions || []).map(decision => ({
+        timestamp: decision.timestamp,
+        html: `<p class="font-semibold text-slate-800">${stageLabels[decision.stage] || decision.stage} · ${decisionLabels[decision.decision] || decision.decision}</p>
+            <p class="mt-0.5 text-slate-500">${decision.customer || 'Pelanggan'} · ${decision.date}</p>
+            ${decision.feedback ? `<p class="mt-1 text-slate-600">${decision.feedback}</p>` : ''}`,
+    }));
+    const statusRows = (project.statusHistory || []).map(entry => ({
+        timestamp: entry.timestamp,
+        html: `<p class="font-semibold text-slate-800">${entry.note || 'Status diperbarui'}</p>
+            <p class="mt-0.5 text-slate-500">${entry.date}</p>`,
+    }));
+
+    const list = document.getElementById('historyModalList');
+    list.replaceChildren();
+    const allRows = decisionRows.concat(statusRows).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    allRows.forEach(row => {
+        const el = document.createElement('div');
+        el.className = 'rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm';
+        el.innerHTML = row.html;
+        list.appendChild(el);
+    });
+    if (!allRows.length) {
+        list.innerHTML = '<p class="py-8 text-center text-sm text-slate-400">Belum ada riwayat tercatat untuk proyek ini.</p>';
+    }
+
+    const modal = document.getElementById('historyModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeHistoryModal() {
+    const modal = document.getElementById('historyModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }

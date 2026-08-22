@@ -13,7 +13,12 @@ class CustomerActivityController extends Controller
     {
         $user = $request->user();
         $activities = $user->pemesanans()
-            ->with(['katalog', 'konsultasi', 'documents', 'dpInvoice', 'invoices' => fn ($query) => $query->orderBy('created_at')])
+            ->with([
+                'katalog', 'konsultasi', 'documents', 'dpInvoice',
+                'invoices' => fn ($query) => $query->orderBy('created_at'),
+                'statusTrackings' => fn ($query) => $query->orderByDesc('created_at'),
+                'documentDecisions' => fn ($query) => $query->orderByDesc('created_at'),
+            ])
             ->get()
             ->map(function ($pemesanan) {
                 $reference = 'PRY-'.str_pad((string) $pemesanan->id, 4, '0', STR_PAD_LEFT);
@@ -62,6 +67,20 @@ class CustomerActivityController extends Controller
                     'created_at' => $pemesanan->created_at,
                     'detail_url' => route('pemesanan.show', $pemesanan),
                     'review' => $reviewPayload,
+                    'history' => $pemesanan->statusTrackings
+                        ->map(fn ($tracking) => [
+                            'note' => $tracking->catatan,
+                            'date' => $tracking->created_at->translatedFormat('d M Y, H:i'),
+                            'timestamp' => $tracking->created_at->toIso8601String(),
+                        ])
+                        ->concat($pemesanan->documentDecisions->map(fn ($decision) => [
+                            'note' => ($decision->stage === 'draft' ? 'Desain awal' : 'Desain final').' · '.($decision->decision === 'approved' ? 'Disetujui' : 'Minta revisi').($decision->feedback ? ': '.$decision->feedback : ''),
+                            'date' => $decision->created_at->translatedFormat('d M Y, H:i'),
+                            'timestamp' => $decision->created_at->toIso8601String(),
+                        ]))
+                        ->sortByDesc('timestamp')
+                        ->values()
+                        ->all(),
                     'searchable' => mb_strtolower(implode(' ', [
                         $reference,
                         $title,
@@ -110,6 +129,20 @@ class CustomerActivityController extends Controller
                         'created_at' => $konsultasi->created_at,
                         'detail_url' => route('konsultasi.show', $konsultasi),
                         'review' => null,
+                        'history' => collect([
+                            [
+                                'note' => 'Permintaan konsultasi diajukan.',
+                                'date' => $konsultasi->created_at->translatedFormat('d M Y, H:i'),
+                                'timestamp' => $konsultasi->created_at->toIso8601String(),
+                            ],
+                        ])
+                            ->when($konsultasi->accepted_at, fn ($rows) => $rows->push([
+                                'note' => $konsultasi->status === 'cancelled' ? 'Konsultasi ditolak admin.' : 'Konsultasi diterima dan desainer ditugaskan.',
+                                'date' => $konsultasi->accepted_at->translatedFormat('d M Y, H:i'),
+                                'timestamp' => $konsultasi->accepted_at->toIso8601String(),
+                            ]))
+                            ->values()
+                            ->all(),
                         'searchable' => mb_strtolower(implode(' ', [
                             $reference,
                             $title,
