@@ -85,9 +85,6 @@
                         </button>
                     </form>
                 </div>
-                <a href="{{ route('home') }}" class="mt-2 flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-amber-700">
-                    Lihat website <i class="fas fa-arrow-up-right-from-square text-xs"></i>
-                </a>
             </div>
         </aside>
 
