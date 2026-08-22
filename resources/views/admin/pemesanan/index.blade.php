@@ -495,7 +495,7 @@
                                         class="inline-flex h-9 items-center justify-center rounded-lg bg-slate-950 px-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
                                         data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
                                         onclick="openProjectModal(this)"
-                                    >Tinjau Penawaran</button>
+                                    >Tinjau Pemesanan</button>
                                     <button
                                         type="button"
                                         class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
@@ -630,6 +630,7 @@ function openProjectModal(button) {
     const standardView = document.getElementById('projectModalStandardView');
     const panel = document.getElementById('projectModalPanel');
     validationView.classList.toggle('hidden', !useCardLayout);
+    standardView.classList.toggle('hidden', useCardLayout);
     panel.classList.toggle('max-w-2xl', !useCardLayout);
     panel.classList.toggle('max-w-6xl', useCardLayout);
     document.getElementById('projectModalSubtitle').textContent = needsValidation

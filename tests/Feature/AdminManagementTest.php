@@ -479,7 +479,7 @@ class AdminManagementTest extends TestCase
 
         $this->actingAs($admin)->get(route('admin.pemesanan.index'))
             ->assertOk()
-            ->assertSee('Tinjau Penawaran')
+            ->assertSee('Tinjau Pemesanan')
             ->assertSee('Dokumen dari Desainer')
             ->assertSee('design-siap-validasi.pdf')
             ->assertSee('rab-siap-validasi.pdf')

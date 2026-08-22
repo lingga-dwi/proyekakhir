@@ -2,7 +2,7 @@
     <div id="projectModalPanel" class="relative max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
         <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-2">
             <div>
-                <h2 id="project-modal-title" class="text-lg font-semibold text-slate-950"><span id="projectModalTitleText">Tinjau Penawaran</span> <span id="projectModalReferenceTitle" class="text-amber-700"></span></h2>
+                <h2 id="project-modal-title" class="text-lg font-semibold text-slate-950"><span id="projectModalTitleText">Tinjau Pemesanan</span> <span id="projectModalReferenceTitle" class="text-amber-700"></span></h2>
                 <p id="projectModalSubtitle" class="mt-0.5 text-xs text-slate-500">Kelola tahap proses, penugasan desainer, serta desain &amp; RAB.</p>
             </div>
             <button type="button" onclick="closeProjectModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
