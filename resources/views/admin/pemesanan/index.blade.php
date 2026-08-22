@@ -1086,26 +1086,41 @@ function renderProjectValidationDocuments(project) {
         finalDesign: { label: 'Desain Final', icon: 'fa-file-image', color: 'bg-red-50 text-red-500' },
         finalRab: { label: 'RAB Final', icon: 'fa-file-lines', color: 'bg-emerald-50 text-emerald-600' },
     };
+    const stageGroups = {
+        'Desain Awal & Draft RAB': ['draftDesign', 'draftRab'],
+        'Desain & RAB Final': ['finalDesign', 'finalRab'],
+    };
     const container = document.getElementById('projectModalValidationDocuments');
     container.replaceChildren();
 
-    const entries = Object.entries(docTypeMeta).filter(([key]) => project[key]);
-    if (!entries.length) {
+    const hasAnyDocument = Object.keys(docTypeMeta).some(key => project[key]);
+    if (!hasAnyDocument) {
         container.innerHTML = '<p class="text-xs text-slate-400">Belum ada dokumen yang diunggah.</p>';
         return;
     }
 
-    entries.forEach(([key, meta]) => {
-        const document_ = project[key];
-        const row = document.createElement('div');
-        row.className = 'flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2';
-        row.innerHTML = `
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${meta.color}"><i class="fas ${meta.icon} text-xs" aria-hidden="true"></i></span>
-            <p class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">${meta.label}</p>
-            <a href="${document_.downloadUrl}" target="_blank" rel="noopener" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Unduh ${meta.label}">
-                <i class="fas fa-download text-xs" aria-hidden="true"></i>
-            </a>`;
-        container.appendChild(row);
+    Object.entries(stageGroups).forEach(([heading, keys]) => {
+        const entries = keys.filter(key => project[key]);
+        if (!entries.length) return;
+
+        const headingEl = document.createElement('p');
+        headingEl.className = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
+        headingEl.textContent = heading;
+        container.appendChild(headingEl);
+
+        entries.forEach(key => {
+            const meta = docTypeMeta[key];
+            const document_ = project[key];
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2';
+            row.innerHTML = `
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${meta.color}"><i class="fas ${meta.icon} text-xs" aria-hidden="true"></i></span>
+                <p class="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">${meta.label}</p>
+                <a href="${document_.downloadUrl}" target="_blank" rel="noopener" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-700" title="Unduh ${meta.label}">
+                    <i class="fas fa-download text-xs" aria-hidden="true"></i>
+                </a>`;
+            container.appendChild(row);
+        });
     });
 }
 
