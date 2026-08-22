@@ -440,6 +440,7 @@ function sendDpDocuments() {
                 return;
             }
             applyDpDocumentResponse(json, true);
+            closeDpModal();
         })
         .catch(() => showDpToast('Gagal mengirim ke pelanggan. Periksa koneksi Anda.', 'error'))
         .finally(() => {
