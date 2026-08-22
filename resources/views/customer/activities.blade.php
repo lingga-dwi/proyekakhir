@@ -373,9 +373,7 @@ function renderReviewModal(review) {
                 const uploadBtn = document.createElement('button');
                 uploadBtn.type = 'button';
                 uploadBtn.className = 'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800';
-                uploadBtn.innerHTML = invoice.status === 'submitted'
-                    ? '<i class="fas fa-upload" aria-hidden="true"></i> Ganti Bukti Pembayaran'
-                    : '<i class="fas fa-upload" aria-hidden="true"></i> Upload Bukti Pembayaran';
+                uploadBtn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim';
                 uploadBtn.onclick = () => triggerInvoiceUpload(invoice);
                 card.appendChild(uploadBtn);
             }
