@@ -37,7 +37,7 @@ class ProjectStageLabel
         }
 
         if ($pemesanan->workflow_stage === 'approved') {
-            return 'Pengerjaan';
+            return 'Pengerjaan Proyek';
         }
 
         return match ($pemesanan->workflow_stage) {
@@ -66,9 +66,10 @@ class ProjectStageLabel
         }
 
         return match ($pemesanan->workflow_stage) {
-            'konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design', 'approved' => 'Desainer',
+            'konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design' => 'Desainer',
             'awaiting_admin_validation', 'dp_verification' => 'Admin',
             'awaiting_draft_approval', 'awaiting_dp', 'awaiting_final_approval' => 'Pelanggan',
+            'approved' => 'Tim Lapangan',
             default => null,
         };
     }

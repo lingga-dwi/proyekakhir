@@ -520,7 +520,7 @@ class AdminManagementTest extends TestCase
         $response->assertOk()
             ->assertSee('Menunggu Desain Awal &amp; Draft RAB', false)
             ->assertSee('&quot;stageLabel&quot;:&quot;Menunggu Desain Awal &amp; Draft RAB&quot;', false)
-            ->assertSee('&quot;stageLabel&quot;:&quot;Pengerjaan&quot;', false)
+            ->assertSee('&quot;stageLabel&quot;:&quot;Pengerjaan Proyek&quot;', false)
             ->assertSee('&quot;canFinalize&quot;:false', false)
             ->assertSee('&quot;canFinalize&quot;:true', false);
     }
