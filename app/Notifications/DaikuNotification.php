@@ -44,7 +44,7 @@ class DaikuNotification extends Notification implements ShouldQueue
         $greetingName = $notifiable->nama ?? ($this->category === 'general' ? 'Pelanggan' : 'Admin');
 
         $mail = (new MailMessage)
-            ->subject($this->categoryPrefix().$this->title)
+            ->subject($this->title)
             ->greeting('Halo '.$greetingName.',')
             ->line($this->message);
 
@@ -60,12 +60,4 @@ class DaikuNotification extends Notification implements ShouldQueue
             ->line('Email ini dikirim otomatis oleh sistem Daiku Interior. Mohon tidak membalas email ini.');
     }
 
-    private function categoryPrefix(): string
-    {
-        return match ($this->category) {
-            'order' => '[Pesanan Baru] ',
-            'payment' => '[Pembayaran] ',
-            default => '',
-        };
-    }
 }

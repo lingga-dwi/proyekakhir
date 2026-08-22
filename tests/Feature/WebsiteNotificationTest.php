@@ -175,6 +175,6 @@ class WebsiteNotificationTest extends TestCase
         $this->assertStringContainsString('Referensi', $rendered);
         $this->assertStringContainsString('DI-1', $rendered);
         $this->assertStringContainsString('Rp 2.000.000', $rendered);
-        $this->assertStringContainsString('[Pembayaran]', $mail->subject);
+        $this->assertSame('Bukti pembayaran DP masuk', $mail->subject);
     }
 }
