@@ -101,10 +101,10 @@
                     <table class="w-full min-w-275 text-left">
                         <thead class="border-b border-slate-200 bg-white text-xs font-semibold uppercase tracking-wide text-slate-500">
                             <tr>
-                                <th scope="col" class="px-6 py-4 text-center">Referensi</th>
-                                <th scope="col" class="px-5 py-4 text-center">Detail Proyek</th>
-                                <th scope="col" class="px-5 py-4 text-center">Catatan Konsultasi</th>
-                                <th scope="col" class="px-5 py-4 text-center">Status</th>
+                                <th scope="col" class="px-6 py-4">Referensi</th>
+                                <th scope="col" class="px-5 py-4">Detail Proyek</th>
+                                <th scope="col" class="px-5 py-4">Catatan Konsultasi</th>
+                                <th scope="col" class="px-5 py-4">Status</th>
                                 <th scope="col" class="px-6 py-4 text-right">Aksi</th>
                             </tr>
                         </thead>
