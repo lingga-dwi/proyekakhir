@@ -49,12 +49,12 @@
         <table class="w-full min-w-[1160px] text-left">
             <thead class="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <tr>
-                    <th class="px-5 py-3">Referensi</th>
-                    <th class="px-5 py-3">Pelanggan</th>
-                    <th class="px-5 py-3">Detail Proyek</th>
-                    <th class="px-5 py-3">Catatan Konsultasi</th>
-                    <th class="px-5 py-3">Status</th>
-                    <th class="px-5 py-3">Aksi</th>
+                    <th class="px-5 py-3 text-center">Referensi</th>
+                    <th class="px-5 py-3 text-center">Pelanggan</th>
+                    <th class="px-5 py-3 text-center">Detail Proyek</th>
+                    <th class="px-5 py-3 text-center">Catatan Konsultasi</th>
+                    <th class="px-5 py-3 text-center">Status</th>
+                    <th class="px-5 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">

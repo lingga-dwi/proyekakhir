@@ -72,13 +72,13 @@
         <table class="w-full min-w-[1320px]">
             <thead class="bg-slate-50 text-left text-xs uppercase tracking-wider text-slate-500">
                 <tr>
-                    <th class="px-5 py-3 font-medium">Referensi</th>
-                    <th class="px-5 py-3 font-medium">Pelanggan</th>
-                    <th class="px-5 py-3 font-medium">Detail Proyek</th>
-                    <th class="px-5 py-3 font-medium">Catatan Konsultasi</th>
-                    <th class="px-5 py-3 font-medium">Penanggung Jawab</th>
-                    <th class="px-5 py-3 font-medium">Status</th>
-                    <th class="px-5 py-3 font-medium">Aksi</th>
+                    <th class="px-5 py-3 text-center font-medium">Referensi</th>
+                    <th class="px-5 py-3 text-center font-medium">Pelanggan</th>
+                    <th class="px-5 py-3 text-center font-medium">Detail Proyek</th>
+                    <th class="px-5 py-3 text-center font-medium">Catatan Konsultasi</th>
+                    <th class="px-5 py-3 text-center font-medium">Penanggung Jawab</th>
+                    <th class="px-5 py-3 text-center font-medium">Status</th>
+                    <th class="px-5 py-3 text-center font-medium">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
