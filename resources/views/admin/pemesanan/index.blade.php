@@ -500,12 +500,6 @@
                                         type="button"
                                         class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
                                         data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
-                                        onclick="openOrderReviewModal(this)"
-                                    >Tinjau Pemesanan</button>
-                                    <button
-                                        type="button"
-                                        class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 px-3.5 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700"
-                                        data-project="{{ json_encode($projectPayload, JSON_THROW_ON_ERROR) }}"
                                         onclick="openHistoryModal(this)"
                                     >Riwayat</button>
                                 </div>
@@ -669,9 +663,112 @@ function openProjectModal(button) {
     if (canCompleteConsultation) completeForm.action = project.completeConsultationUrl;
     document.getElementById('projectConsultationResult').value = '';
 
+    const suffix = useCardLayout ? '' : 'Standard';
+    document.getElementById('projectModalDesigner' + suffix).value = project.designer || '';
+    document.getElementById('projectModalTargetSelesai' + suffix).value = project.targetSelesai || '';
+    document.getElementById('projectModalAssignmentError' + suffix).classList.add('hidden');
+
+    const finalizeField = document.getElementById('projectModalFinalizeField');
+    if (finalizeField) {
+        finalizeField.classList.toggle('hidden', !project.canFinalize);
+        const completeBtn = document.getElementById('projectModalCompleteBtn');
+        completeBtn.disabled = project.status === 'selesai';
+        completeBtn.innerHTML = project.status === 'selesai'
+            ? '<i class="fas fa-circle-check" aria-hidden="true"></i> Proyek Selesai'
+            : '<i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek';
+    }
+
     const modal = document.getElementById('projectModal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+}
+
+function saveProjectAssignment(suffix = '') {
+    const project = currentProjectModalData;
+    const errorEl = document.getElementById('projectModalAssignmentError' + suffix);
+    errorEl.classList.add('hidden');
+
+    const designerId = document.getElementById('projectModalDesigner' + suffix).value || null;
+    const targetSelesai = document.getElementById('projectModalTargetSelesai' + suffix).value || null;
+
+    fetch(`{{ url('/admin/proyek') }}/${project.id}`, {
+        method: 'PUT',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            status_pemesanan: project.status,
+            designer_id: designerId,
+            target_selesai: targetSelesai,
+        }),
+    })
+        .then(response => response.json().then(json => ({ ok: response.ok, json })))
+        .then(({ ok, json }) => {
+            if (!ok) {
+                errorEl.textContent = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal menyimpan perubahan.');
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            project.designer = designerId;
+            project.targetSelesai = targetSelesai;
+            syncProjectModalButton();
+            showModalToast(json.message || 'Penugasan berhasil disimpan.');
+            setTimeout(() => window.location.reload(), 600);
+        })
+        .catch(() => { errorEl.textContent = 'Gagal menyimpan perubahan. Periksa koneksi Anda.'; errorEl.classList.remove('hidden'); });
+}
+
+function setProjectFinalStatus(status) {
+    const project = currentProjectModalData;
+    const reference = project?.reference || '';
+
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Selesaikan proyek ini?',
+            message: `Proyek ${reference} akan ditandai selesai. Pastikan seluruh pengerjaan dan pembayaran sudah rampung sebelum melanjutkan.`,
+            confirmLabel: 'Ya, selesaikan',
+            tone: 'success',
+            onConfirm: () => {
+                fetch(`{{ url('/admin/proyek') }}/${project.id}`, {
+                    method: 'PUT',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status_pemesanan: status,
+                        designer_id: document.getElementById('projectModalDesigner').value || null,
+                        target_selesai: document.getElementById('projectModalTargetSelesai').value || null,
+                    }),
+                })
+                    .then(response => response.json().then(json => ({ ok: response.ok, json })))
+                    .then(({ ok, json }) => {
+                        if (!ok) {
+                            showModalToast(json.message || 'Gagal menyelesaikan proyek.', 'error');
+                            return;
+                        }
+                        showModalToast(json.message || 'Proyek berhasil diselesaikan.');
+                        setTimeout(() => window.location.reload(), 600);
+                    })
+                    .catch(() => showModalToast('Gagal menyelesaikan proyek. Periksa koneksi Anda.', 'error'));
+            },
+        },
+    }));
+}
+
+function confirmDeleteProject() {
+    const project = currentProjectModalData;
+    const reference = project?.reference || '';
+    window.dispatchEvent(new CustomEvent('open-confirmation', {
+        detail: {
+            title: 'Hapus pesanan ini?',
+            message: `Seluruh data proyek ${reference}, dokumen, dan riwayat konsultasi terkait akan dihapus permanen dan tidak dapat dikembalikan.`,
+            confirmLabel: 'Ya, hapus',
+            tone: 'danger',
+            onConfirm: () => {
+                fetch(project.deleteUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: '_method=DELETE',
+                }).then(() => window.location.reload());
+            },
+        },
+    }));
 }
 
 function confirmValidateProjectDraft() {
@@ -1086,119 +1183,6 @@ function closeHistoryModal() {
     modal.classList.remove('flex');
 }
 
-let currentOrderReviewData = null;
-
-function orderReviewCsrfToken() {
-    return document.querySelector('#orderReviewCsrfForm input[name="_token"]').value;
-}
-
-function openOrderReviewModal(button) {
-    const project = JSON.parse(button.dataset.project);
-    currentOrderReviewData = project;
-
-    document.getElementById('orderReviewReference').textContent = `#${project.reference}`;
-    document.getElementById('orderReviewStageLabel').textContent = project.stageLabel || 'Proses Proyek';
-    document.getElementById('orderReviewDesigner').value = project.designer || '';
-    document.getElementById('orderReviewTargetSelesai').value = project.targetSelesai || '';
-    document.getElementById('orderReviewError').classList.add('hidden');
-
-    const finalizeField = document.getElementById('orderReviewFinalizeField');
-    document.getElementById('orderReviewStatus').value = project.status;
-    finalizeField.classList.toggle('hidden', !project.canFinalize);
-
-    const completeBtn = document.getElementById('orderReviewCompleteBtn');
-    completeBtn.disabled = project.status === 'selesai';
-    completeBtn.innerHTML = project.status === 'selesai'
-        ? '<i class="fas fa-circle-check" aria-hidden="true"></i> Proyek Selesai'
-        : '<i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek';
-
-    const modal = document.getElementById('orderReviewModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function closeOrderReviewModal() {
-    const modal = document.getElementById('orderReviewModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-}
-
-function setOrderReviewStatus(status) {
-    document.getElementById('orderReviewStatus').value = status;
-
-    if (status === 'selesai') {
-        const reference = currentOrderReviewData?.reference || '';
-        window.dispatchEvent(new CustomEvent('open-confirmation', {
-            detail: {
-                title: 'Selesaikan proyek ini?',
-                message: `Proyek ${reference} akan ditandai selesai. Pastikan seluruh pengerjaan dan pembayaran sudah rampung sebelum melanjutkan.`,
-                confirmLabel: 'Ya, selesaikan',
-                tone: 'success',
-                onConfirm: () => saveOrderReview(),
-            },
-        }));
-        return;
-    }
-
-    saveOrderReview();
-}
-
-function saveOrderReview() {
-    const project = currentOrderReviewData;
-    const errorEl = document.getElementById('orderReviewError');
-    errorEl.classList.add('hidden');
-
-    const saveBtn = document.getElementById('orderReviewSaveBtn');
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Menyimpan...';
-
-    fetch(`{{ url('/admin/proyek') }}/${project.id}`, {
-        method: 'PUT',
-        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': orderReviewCsrfToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            status_pemesanan: document.getElementById('orderReviewStatus').value,
-            designer_id: document.getElementById('orderReviewDesigner').value || null,
-            target_selesai: document.getElementById('orderReviewTargetSelesai').value || null,
-        }),
-    })
-        .then(response => response.json().then(json => ({ ok: response.ok, json })))
-        .then(({ ok, json }) => {
-            if (!ok) {
-                errorEl.textContent = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal menyimpan perubahan.');
-                errorEl.classList.remove('hidden');
-                return;
-            }
-            showModalToast(json.message || 'Perubahan berhasil disimpan.');
-            closeOrderReviewModal();
-            setTimeout(() => window.location.reload(), 600);
-        })
-        .catch(() => { errorEl.textContent = 'Gagal menyimpan perubahan. Periksa koneksi Anda.'; errorEl.classList.remove('hidden'); })
-        .finally(() => {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Simpan Perubahan';
-        });
-}
-
-function confirmDeleteOrderReview() {
-    const project = currentOrderReviewData;
-    const reference = project?.reference || '';
-    window.dispatchEvent(new CustomEvent('open-confirmation', {
-        detail: {
-            title: 'Hapus pesanan ini?',
-            message: `Seluruh data proyek ${reference}, dokumen, dan riwayat konsultasi terkait akan dihapus permanen dan tidak dapat dikembalikan.`,
-            confirmLabel: 'Ya, hapus',
-            tone: 'danger',
-            onConfirm: () => {
-                fetch(project.deleteUrl, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': orderReviewCsrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: '_method=DELETE',
-                }).then(() => window.location.reload());
-            },
-        },
-    }));
-}
-
 function openDetailModal(button) {
     const detail = JSON.parse(button.dataset.detail);
     const contact = [detail.email, detail.phone].filter(Boolean).join(' · ') || 'Belum ada kontak';
@@ -1270,7 +1254,7 @@ openOrderModal();
     let isFirstCheck = true;
 
     function anyModalOpen() {
-        const jsModals = ['projectModal', 'orderModal', 'detailModal', 'invoiceModal', 'orderReviewModal'];
+        const jsModals = ['projectModal', 'orderModal', 'detailModal', 'invoiceModal'];
         if (jsModals.some(id => {
             const el = document.getElementById(id);
             return el && !el.classList.contains('hidden');

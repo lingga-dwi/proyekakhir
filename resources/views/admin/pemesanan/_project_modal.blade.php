@@ -23,6 +23,42 @@
                         <i class="fas fa-circle-info mt-0.5" aria-hidden="true"></i>
                         <span>Pastikan desain dan RAB sudah sesuai sebelum membuat penawaran.</span>
                     </div>
+
+                    <div class="mt-4 rounded-xl border border-slate-200 p-3">
+                        <h5 class="text-sm font-semibold text-slate-900">Penugasan &amp; Jadwal</h5>
+
+                        <label class="mt-3 block">
+                            <span class="text-xs font-medium text-slate-600">Penanggung Jawab</span>
+                            <select id="projectModalDesigner" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                                <option value="">Belum ditetapkan</option>
+                                @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
+                            </select>
+                        </label>
+
+                        <label class="mt-3 block">
+                            <span class="text-xs font-medium text-slate-600">Target Selesai</span>
+                            <input type="date" id="projectModalTargetSelesai" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                            <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
+                        </label>
+
+                        <button type="button" id="projectModalSaveAssignmentBtn" onclick="saveProjectAssignment()" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
+                            Simpan Penugasan
+                        </button>
+
+                        <div id="projectModalFinalizeField" class="mt-3 hidden rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                            <p class="text-xs font-semibold text-slate-700">Status Produksi</p>
+                            <p class="mt-1 text-[11px] text-slate-500">Desain final sudah disetujui pelanggan dan pengerjaan sedang berjalan. Tandai selesai setelah produksi rampung.</p>
+                            <button type="button" id="projectModalCompleteBtn" onclick="setProjectFinalStatus('selesai')" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
+                                <i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek
+                            </button>
+                        </div>
+
+                        <button type="button" onclick="confirmDeleteProject()" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50">
+                            <i class="fas fa-trash-can" aria-hidden="true"></i> Hapus Pesanan
+                        </button>
+
+                        <p id="projectModalAssignmentError" class="mt-2 hidden text-xs text-red-600"></p>
+                    </div>
                 </section>
 
                 <section>
@@ -80,7 +116,7 @@
             </div>
         </div>
 
-        <div id="projectModalStandardView" class="mt-3">
+        <div id="projectModalStandardView" class="mt-3 space-y-4">
             <section class="rounded-2xl border border-slate-200 p-4">
                 <form id="projectCompleteConsultationForm" method="POST" action="" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-2.5">
                     @csrf
@@ -91,6 +127,34 @@
                         <i class="fas fa-check" aria-hidden="true"></i> Selesaikan Konsultasi
                     </button>
                 </form>
+            </section>
+
+            <section class="rounded-2xl border border-slate-200 p-4">
+                <h5 class="text-sm font-semibold text-slate-900">Penugasan &amp; Jadwal</h5>
+
+                <label class="mt-3 block">
+                    <span class="text-xs font-medium text-slate-600">Penanggung Jawab</span>
+                    <select id="projectModalDesignerStandard" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        <option value="">Belum ditetapkan</option>
+                        @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
+                    </select>
+                </label>
+
+                <label class="mt-3 block">
+                    <span class="text-xs font-medium text-slate-600">Target Selesai</span>
+                    <input type="date" id="projectModalTargetSelesaiStandard" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                    <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
+                </label>
+
+                <button type="button" onclick="saveProjectAssignment('Standard')" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-amber-300">
+                    Simpan Penugasan
+                </button>
+
+                <button type="button" onclick="confirmDeleteProject()" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50">
+                    <i class="fas fa-trash-can" aria-hidden="true"></i> Hapus Pesanan
+                </button>
+
+                <p id="projectModalAssignmentErrorStandard" class="mt-2 hidden text-xs text-red-600"></p>
             </section>
         </div>
     </div>
@@ -160,63 +224,6 @@
         <div class="mt-5 flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
             <button type="button" onclick="closeInvoiceModal()" class="rounded-xl border border-orange-200 px-4 py-2.5 text-sm font-semibold text-orange-600 transition hover:bg-orange-50">Batal</button>
             <button type="button" id="invoiceModalSubmitBtn" onclick="submitInvoiceModal()" class="rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">Tambahkan Tagihan</button>
-        </div>
-    </div>
-</div>
-
-<div id="orderReviewModal" class="fixed inset-0 z-70 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="order-review-modal-title">
-    <form id="orderReviewCsrfForm">@csrf</form>
-    <div class="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl sm:p-6">
-        <div class="flex items-start justify-between gap-4">
-            <h2 id="order-review-modal-title" class="text-lg font-semibold text-slate-950">Tinjau Pemesanan <span id="orderReviewReference" class="text-amber-700"></span></h2>
-            <button type="button" onclick="closeOrderReviewModal()" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100" aria-label="Tutup"><i class="fas fa-times"></i></button>
-        </div>
-
-        <div class="mt-4 space-y-4">
-            <div>
-                <span class="text-sm font-medium text-slate-700">Tahap Saat Ini</span>
-                <div class="mt-1.5 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <span class="h-2 w-2 shrink-0 rounded-full bg-blue-500"></span>
-                    <span id="orderReviewStageLabel" class="text-sm font-semibold text-slate-800"></span>
-                </div>
-                <p class="mt-1 text-[11px] text-slate-400">Tahap berubah otomatis berdasarkan aktivitas pelanggan, desainer, dan admin.</p>
-            </div>
-
-            <label class="block">
-                <span class="text-sm font-medium text-slate-700">Penanggung Jawab</span>
-                <select id="orderReviewDesigner" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-                    <option value="">Belum ditetapkan</option>
-                    @foreach($designers as $designer)<option value="{{ $designer->id }}">{{ $designer->nama }}</option>@endforeach
-                </select>
-            </label>
-
-            <label class="block">
-                <span class="text-sm font-medium text-slate-700">Target Selesai</span>
-                <input type="date" id="orderReviewTargetSelesai" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-                <p class="mt-1 text-[11px] text-slate-400">Dipakai untuk kartu "Deadline ≤ 7 Hari" di dashboard.</p>
-            </label>
-
-            <input type="hidden" id="orderReviewStatus">
-
-            <div id="orderReviewFinalizeField" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <span class="text-sm font-medium text-slate-700">Status Produksi</span>
-                <p class="mt-1 text-[11px] text-slate-400">Desain final sudah disetujui pelanggan dan pengerjaan sedang berjalan. Tandai selesai setelah produksi rampung.</p>
-                <button type="button" id="orderReviewCompleteBtn" onclick="setOrderReviewStatus('selesai')" class="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300">
-                    <i class="fas fa-circle-check" aria-hidden="true"></i> Selesaikan Proyek
-                </button>
-            </div>
-
-            <p id="orderReviewError" class="hidden text-xs text-red-600"></p>
-        </div>
-
-        <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-            <button type="button" onclick="confirmDeleteOrderReview()" class="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-50">
-                <i class="fas fa-trash-can" aria-hidden="true"></i> Hapus
-            </button>
-            <div class="flex items-center gap-3">
-                <button type="button" onclick="closeOrderReviewModal()" class="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Tutup</button>
-                <button type="button" id="orderReviewSaveBtn" onclick="saveOrderReview()" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">Simpan Perubahan</button>
-            </div>
         </div>
     </div>
 </div>
