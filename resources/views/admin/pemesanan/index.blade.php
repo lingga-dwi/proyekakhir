@@ -943,8 +943,8 @@ function renderInvoiceListInto(containerId, invoices, mode) {
             if (invoice.status !== 'paid') {
                 const payBtn = document.createElement('button');
                 payBtn.type = 'button';
-                payBtn.className = 'mt-1 block whitespace-nowrap text-[11px] font-semibold text-emerald-700 hover:underline';
-                payBtn.textContent = 'Tandai Lunas';
+                payBtn.className = 'mt-1 inline-flex items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700';
+                payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
                 payBtn.onclick = () => confirmMarkProjectInvoicePaid(invoice);
                 actionsCell.appendChild(payBtn);
             }
@@ -981,7 +981,7 @@ function renderInvoiceListInto(containerId, invoices, mode) {
             if (invoice.status !== 'paid') {
                 const payBtn = document.createElement('button');
                 payBtn.type = 'button';
-                payBtn.className = 'inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50';
+                payBtn.className = 'inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700';
                 payBtn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Tandai Lunas';
                 payBtn.onclick = () => confirmMarkProjectInvoicePaid(invoice);
                 actionsRow.appendChild(payBtn);

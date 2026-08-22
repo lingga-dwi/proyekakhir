@@ -551,8 +551,24 @@ class PemesananController extends Controller
         abort_unless($invoice && $invoice->status === 'submitted', 422, 'Tidak ada pembayaran DP yang menunggu verifikasi.');
 
         $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
+        $this->advanceToSurveyAfterDpVerified($pemesanan, $request->user());
+
+        return back()->with('success', 'DP berhasil diverifikasi. Proyek siap dijadwalkan untuk survei.');
+    }
+
+    /**
+     * Move the project into the survey stage once its DP invoice is paid,
+     * whether that happened through the normal verifyDp() flow or by an
+     * admin marking the DP invoice paid directly from the invoice table.
+     */
+    private function advanceToSurveyAfterDpVerified(Pemesanan $pemesanan, User $actor): void
+    {
+        if (! in_array($pemesanan->workflow_stage, ['awaiting_dp', 'dp_verification'], true)) {
+            return;
+        }
+
         $pemesanan->update(['workflow_stage' => 'survey_scheduled', 'progress' => 30, 'catatan_progres' => 'DP telah diverifikasi. Menunggu survei lokasi oleh desainer.']);
-        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
+        $this->recordStatusTracking($pemesanan, $actor, $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
         $this->notifications->send(
             $pemesanan->user,
@@ -561,8 +577,6 @@ class PemesananController extends Controller
             route('pemesanan.show', $pemesanan, false),
             'Lihat proyek'
         );
-
-        return back()->with('success', 'DP berhasil diverifikasi. Proyek siap dijadwalkan untuk survei.');
     }
 
     public function storeInvoice(Request $request, Pemesanan $pemesanan)
@@ -623,6 +637,11 @@ class PemesananController extends Controller
         abort_unless($invoice->status !== 'paid', 422, 'Tagihan ini sudah lunas.');
 
         $invoice->update(['status' => 'paid', 'verified_by' => $request->user()->id, 'verified_at' => now()]);
+
+        $isDpInvoice = $pemesanan->dpInvoice?->id === $invoice->id;
+        if ($isDpInvoice) {
+            $this->advanceToSurveyAfterDpVerified($pemesanan, $request->user());
+        }
 
         $message = 'Tagihan ditandai lunas.';
 

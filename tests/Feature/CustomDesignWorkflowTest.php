@@ -808,6 +808,40 @@ class CustomDesignWorkflowTest extends TestCase
         $this->assertSame($admin->id, $invoice->fresh()->verified_by);
     }
 
+    public function test_marking_the_dp_invoice_paid_advances_the_project_to_survey(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $project = Pemesanan::create([
+            'id_user' => $customer->id,
+            'tanggal_pesan' => now()->toDateString(),
+            'status_pemesanan' => Pemesanan::STATUS_CONFIRMED,
+            'workflow_stage' => 'dp_verification',
+            'progress' => 25,
+            'total_harga' => 10000000,
+            'jenis_proyek' => 'Desain interior',
+        ]);
+        // The DP invoice is whichever one was created first, regardless of
+        // its type column — mirrors the real "Tandai Lunas" button used
+        // instead of the dedicated verifyDp() flow.
+        $invoice = $project->invoices()->create([
+            'number' => 'INV-2026-0001-'.$project->id,
+            'type' => 'custom',
+            'name' => 'DP 20%',
+            'amount' => 2000000,
+            'status' => 'submitted',
+        ]);
+
+        $this->actingAs($admin)->postJson(route('admin.pemesanan.invoice.paid', [$project, $invoice]))
+            ->assertOk()->assertJson(['success' => true]);
+
+        $invoice->refresh();
+        $project->refresh();
+        $this->assertSame('paid', $invoice->status);
+        $this->assertSame($admin->id, $invoice->verified_by);
+        $this->assertSame('survey_scheduled', $project->workflow_stage);
+    }
+
     public function test_customer_can_upload_evidence_for_any_unpaid_invoice(): void
     {
         Storage::fake('payment_evidence');
