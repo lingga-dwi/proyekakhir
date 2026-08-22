@@ -233,6 +233,20 @@ class PemesananController extends Controller
         abort_unless($document->pemesanan_id === $pemesanan->id, 404);
         $this->authorizeOrderAccess($request, $pemesanan);
 
+        if ($pemesanan->id_user === $request->user()->id) {
+            $stagesPastDraftValidation = [
+                'awaiting_draft_approval', 'awaiting_dp', 'dp_verification',
+                'survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved',
+            ];
+            $stagesPastFinalValidation = ['awaiting_final_approval', 'approved'];
+
+            $isVisibleToCustomer = $document->stage === 'draft'
+                ? in_array($pemesanan->workflow_stage, $stagesPastDraftValidation, true)
+                : in_array($pemesanan->workflow_stage, $stagesPastFinalValidation, true);
+
+            abort_unless($isVisibleToCustomer, 403, 'Dokumen ini belum divalidasi dan dikirim oleh admin.');
+        }
+
         return Storage::disk('local')->download($document->path, $document->original_name);
     }
 

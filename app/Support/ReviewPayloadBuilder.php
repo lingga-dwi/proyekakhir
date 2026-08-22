@@ -47,23 +47,37 @@ class ReviewPayloadBuilder
             'downloadUrl' => route('pemesanan.document.download', [$pemesanan->id, $document->id]),
         ];
 
-        $draftDocuments = $pemesanan->documents
-            ->where('stage', 'draft')
-            ->where('submission_round', (int) $pemesanan->draft_round)
-            ->whereIn('document_type', ['design', 'rab'])
-            ->groupBy('document_type')
-            ->map(fn ($group) => $group->sortByDesc('version')->first())
-            ->map(fn ($document) => $formatDoc($document, 'draft'))
-            ->values()->all();
+        // Draft/final documents are only visible to the customer once admin
+        // has validated and sent them onward — a designer's in-progress
+        // upload (still at draft_design/revision_requested/final_design,
+        // or awaiting admin validation) must not be downloadable early.
+        $stagesPastDraftValidation = [
+            'awaiting_draft_approval', 'awaiting_dp', 'dp_verification',
+            'survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved',
+        ];
+        $stagesPastFinalValidation = ['awaiting_final_approval', 'approved'];
 
-        $finalDocuments = $pemesanan->documents
-            ->where('stage', 'final')
-            ->where('submission_round', (int) $pemesanan->final_round)
-            ->whereIn('document_type', ['design', 'rab'])
-            ->groupBy('document_type')
-            ->map(fn ($group) => $group->sortByDesc('version')->first())
-            ->map(fn ($document) => $formatDoc($document, 'final'))
-            ->values()->all();
+        $draftDocuments = in_array($pemesanan->workflow_stage, $stagesPastDraftValidation, true)
+            ? $pemesanan->documents
+                ->where('stage', 'draft')
+                ->where('submission_round', (int) $pemesanan->draft_round)
+                ->whereIn('document_type', ['design', 'rab'])
+                ->groupBy('document_type')
+                ->map(fn ($group) => $group->sortByDesc('version')->first())
+                ->map(fn ($document) => $formatDoc($document, 'draft'))
+                ->values()->all()
+            : [];
+
+        $finalDocuments = in_array($pemesanan->workflow_stage, $stagesPastFinalValidation, true)
+            ? $pemesanan->documents
+                ->where('stage', 'final')
+                ->where('submission_round', (int) $pemesanan->final_round)
+                ->whereIn('document_type', ['design', 'rab'])
+                ->groupBy('document_type')
+                ->map(fn ($group) => $group->sortByDesc('version')->first())
+                ->map(fn ($document) => $formatDoc($document, 'final'))
+                ->values()->all()
+            : [];
 
         $documents = [...$draftDocuments, ...$finalDocuments];
 
