@@ -542,7 +542,10 @@ function submitReviewDecision(decision) {
                 return;
             }
             showReviewToast(json.message || 'Keputusan berhasil dikirim.');
-            if (json.review) {
+            if (decision === 'approved') {
+                reviewModalNeedsRefresh = true;
+                closeReviewModal();
+            } else if (json.review) {
                 renderReviewModal(json.review);
                 reviewModalNeedsRefresh = true;
             } else {
