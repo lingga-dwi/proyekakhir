@@ -66,7 +66,7 @@
                             $project->status_pemesanan === 'dibatalkan' => 'bg-red-50 text-red-700',
                             $project->status_pemesanan === 'selesai' => 'bg-emerald-50 text-emerald-700',
                             $project->workflow_stage === 'approved' => 'bg-purple-50 text-purple-700',
-                            $project->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-50 text-orange-700',
+                            in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true) => 'bg-orange-50 text-orange-700',
                             default => 'bg-blue-50 text-blue-700',
                         };
                         $canUpdate = !in_array($project->status_pemesanan, ['selesai', 'dibatalkan'], true);
@@ -93,13 +93,13 @@
 
                         $canManageDocuments = in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design'], true);
                         $isSendableStage = in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design'], true);
-                        $isAwaitingDecision = in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_final_approval'], true);
+                        $isAwaitingDecision = in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_admin_validation_final', 'awaiting_final_approval'], true);
                         $docStage = null;
                         $docRound = null;
                         if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_admin_validation', 'awaiting_draft_approval'], true)) {
                             $docStage = 'draft';
                             $docRound = (int) $project->draft_round;
-                        } elseif (in_array($project->workflow_stage, ['survey_scheduled', 'final_design', 'awaiting_final_approval'], true)) {
+                        } elseif (in_array($project->workflow_stage, ['survey_scheduled', 'final_design', 'awaiting_admin_validation_final', 'awaiting_final_approval'], true)) {
                             $docStage = 'final';
                             $docRound = (int) $project->final_round;
                         }

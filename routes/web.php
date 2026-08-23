@@ -130,6 +130,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('admin.pemesanan.validate.send');
         Route::post('/admin/pemesanan/{pemesanan}/validasi/revisi', [PemesananController::class, 'requestValidationRevision'])
             ->name('admin.pemesanan.validate.revision');
+        Route::post('/admin/pemesanan/{pemesanan}/validasi-final/kirim', [PemesananController::class, 'validateFinal'])
+            ->name('admin.pemesanan.validate-final.send');
+        Route::post('/admin/pemesanan/{pemesanan}/validasi-final/revisi', [PemesananController::class, 'requestFinalValidationRevision'])
+            ->name('admin.pemesanan.validate-final.revision');
         Route::delete('/admin/pemesanan/{pemesanan}', [PemesananController::class, 'destroy'])
             ->name('admin.pemesanan.destroy');
         Route::put('/admin/pemesanan/konsultasi/{konsultasi}/desainer', [KonsultasiController::class, 'assignDesigner'])

@@ -49,6 +49,7 @@ class ProjectStageLabel
             'dp_verification' => 'Menunggu Verifikasi Pembayaran',
             'survey_scheduled' => 'Survei',
             'final_design' => 'Desain Detail / 3D',
+            'awaiting_admin_validation_final' => 'Menunggu Validasi Admin',
             'awaiting_final_approval' => 'Menunggu Persetujuan Final',
             default => 'Proses Proyek',
         };
@@ -67,7 +68,7 @@ class ProjectStageLabel
 
         return match ($pemesanan->workflow_stage) {
             'konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design' => 'Desainer',
-            'awaiting_admin_validation', 'dp_verification' => 'Admin',
+            'awaiting_admin_validation', 'dp_verification', 'awaiting_admin_validation_final' => 'Admin',
             'awaiting_draft_approval', 'awaiting_dp', 'awaiting_final_approval' => 'Pelanggan',
             'approved' => 'Tim Lapangan',
             default => null,

@@ -125,32 +125,20 @@ class PemesananController extends Controller
         }
 
         $pemesanan->update([
-            'workflow_stage' => $isDraft ? 'awaiting_admin_validation' : 'awaiting_final_approval',
+            'workflow_stage' => $isDraft ? 'awaiting_admin_validation' : 'awaiting_admin_validation_final',
             'progress' => $isDraft ? 15 : 45,
-            'catatan_progres' => $isDraft ? 'Desain awal/RAB dikirim dan menunggu validasi admin.' : 'Desain dan RAB final dikirim untuk persetujuan pelanggan.',
+            'catatan_progres' => $isDraft ? 'Desain awal/RAB dikirim dan menunggu validasi admin.' : 'Desain dan RAB final dikirim dan menunggu validasi admin.',
         ]);
         $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
 
-        if ($isDraft) {
-            $this->notifications->admins(
-                'Desain awal & RAB menunggu validasi',
-                'Dokumen proyek DI-'.$pemesanan->id.' telah dikirim desainer dan menunggu validasi Anda.',
-                route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id], false),
-                'Validasi dokumen'
-            );
-        } else {
-            $this->notifications->send(
-                $pemesanan->user,
-                'Desain final dan RAB tersedia',
-                'Dokumen proyek DI-'.$pemesanan->id.' telah dikirim dan menunggu keputusan Anda.',
-                route('pemesanan.show', $pemesanan, false),
-                'Tinjau dokumen'
-            );
-        }
+        $this->notifications->admins(
+            $isDraft ? 'Desain awal & RAB menunggu validasi' : 'Desain & RAB final menunggu validasi',
+            'Dokumen proyek DI-'.$pemesanan->id.' telah dikirim desainer dan menunggu validasi Anda.',
+            route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id], false),
+            'Validasi dokumen'
+        );
 
-        $message = $isDraft
-            ? 'Dokumen berhasil dikirim dan menunggu validasi admin.'
-            : 'Dokumen berhasil dikirim ke pelanggan untuk ditinjau.';
+        $message = 'Dokumen berhasil dikirim dan menunggu validasi admin.';
 
         if ($request->wantsJson()) {
             return $this->documentJsonResponse($pemesanan->fresh(), $submittedTypes->first(), $message, actor: $request->user());
@@ -228,6 +216,70 @@ class PemesananController extends Controller
         return back()->with('success', $message);
     }
 
+    public function validateFinal(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($pemesanan->workflow_stage === 'awaiting_admin_validation_final', 422, 'Proyek tidak sedang menunggu validasi admin untuk desain final.');
+
+        $pemesanan->update([
+            'workflow_stage' => 'awaiting_final_approval',
+            'progress' => 45,
+            'catatan_progres' => 'Desain dan RAB final divalidasi admin dan dikirim untuk persetujuan pelanggan.',
+        ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
+
+        $this->notifications->send(
+            $pemesanan->user,
+            'Desain final dan RAB tersedia',
+            'Dokumen proyek DI-'.$pemesanan->id.' telah divalidasi dan menunggu keputusan Anda.',
+            route('pemesanan.show', $pemesanan, false),
+            'Tinjau dokumen'
+        );
+
+        $message = 'Desain final divalidasi dan berhasil dikirim ke pelanggan.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function requestFinalValidationRevision(Request $request, Pemesanan $pemesanan)
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($pemesanan->workflow_stage === 'awaiting_admin_validation_final', 422, 'Proyek tidak sedang menunggu validasi admin untuk desain final.');
+
+        $data = $request->validate([
+            'feedback' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $pemesanan->update([
+            'workflow_stage' => 'final_design',
+            'final_round' => $pemesanan->final_round + 1,
+            'catatan_progres' => 'Admin meminta revisi desain final: '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
+        ]);
+        $this->recordStatusTracking($pemesanan, $request->user(), $pemesanan->catatan_progres, $pemesanan->status_pemesanan);
+
+        if ($pemesanan->designer) {
+            $this->notifications->send(
+                $pemesanan->designer,
+                'Admin meminta revisi',
+                'Admin meminta revisi desain final proyek DI-'.$pemesanan->id.'. '.($data['feedback'] ?: 'Tidak ada catatan tambahan.'),
+                route('pemesanan.show', $pemesanan, false),
+                'Lihat catatan revisi'
+            );
+        }
+
+        $message = 'Permintaan revisi dikirim ke desainer.';
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function downloadDocument(Request $request, Pemesanan $pemesanan, ProjectDocument $document)
     {
         abort_unless($document->pemesanan_id === $pemesanan->id, 404);
@@ -236,7 +288,8 @@ class PemesananController extends Controller
         if ($pemesanan->id_user === $request->user()->id) {
             $stagesPastDraftValidation = [
                 'awaiting_draft_approval', 'awaiting_dp', 'dp_verification',
-                'survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved',
+                'survey_scheduled', 'final_design', 'awaiting_admin_validation_final',
+                'awaiting_final_approval', 'approved',
             ];
             $stagesPastFinalValidation = ['awaiting_final_approval', 'approved'];
 
@@ -304,7 +357,7 @@ class PemesananController extends Controller
         $isKonsultasi = $pemesanan->workflow_stage === 'konsultasi';
         $isDraft = in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested'], true);
         $isFinal = in_array($pemesanan->workflow_stage, ['survey_scheduled', 'final_design'], true);
-        $isAwaitingDecision = in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_final_approval'], true);
+        $isAwaitingDecision = in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_admin_validation_final', 'awaiting_final_approval'], true);
         $deleteRouteName = $actor?->isAdmin() ? 'admin.pemesanan.document.delete' : 'designer.proyek.document.delete';
 
         $stage = $isKonsultasi || $isDraft || in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval'], true) ? 'draft' : 'final';
@@ -552,7 +605,7 @@ class PemesananController extends Controller
 
         $invoice->update(['proof_path' => $path, 'status' => 'submitted']);
 
-        $stagesPastDpVerification = ['survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved'];
+        $stagesPastDpVerification = ['survey_scheduled', 'final_design', 'awaiting_admin_validation_final', 'awaiting_final_approval', 'approved'];
         $isDpInvoice = $pemesanan->dpInvoice?->id === $invoice->id;
         if ($isDpInvoice && ! in_array($pemesanan->workflow_stage, $stagesPastDpVerification, true)) {
             if ($pemesanan->workflow_stage === 'awaiting_draft_approval') {

@@ -358,15 +358,16 @@
                                         if (in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'awaiting_admin_validation', 'awaiting_draft_approval'], true)) {
                                             $docStage = 'draft';
                                             $docRound = (int) $project->draft_round;
-                                        } elseif (in_array($project->workflow_stage, ['final_design', 'awaiting_final_approval'], true)) {
+                                        } elseif (in_array($project->workflow_stage, ['final_design', 'awaiting_admin_validation_final', 'awaiting_final_approval'], true)) {
                                             $docStage = 'final';
                                             $docRound = (int) $project->final_round;
                                         }
                                     }
                                     $canManageDocuments = $project && in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'final_design'], true);
                                     $isSendableStage = $project && in_array($project->workflow_stage, ['konsultasi', 'draft_design', 'revision_requested', 'final_design'], true);
-                                    $isAwaitingDecision = $project && in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_final_approval'], true);
+                                    $isAwaitingDecision = $project && in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_draft_approval', 'awaiting_admin_validation_final', 'awaiting_final_approval'], true);
                                     $needsAdminValidation = $project && $project->workflow_stage === 'awaiting_admin_validation';
+                                    $needsFinalAdminValidation = $project && $project->workflow_stage === 'awaiting_admin_validation_final';
                                     $roundDocuments = $project && $docStage
                                         ? $project->documents->where('stage', $docStage)->where('submission_round', $docRound)
                                         : collect();
@@ -416,10 +417,11 @@
                                         'reference' => $reference,
                                         'status' => $item->status,
                                         'stageLabel' => $project
-                                            ? ($project->workflow_stage === 'awaiting_admin_validation' ? 'Perlu Ditinjau' : \App\Support\ProjectStageLabel::forPemesanan($project))
+                                            ? (in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true) ? 'Perlu Ditinjau' : \App\Support\ProjectStageLabel::forPemesanan($project))
                                             : null,
                                         'workflowStage' => $project?->workflow_stage,
                                         'needsValidation' => $needsAdminValidation,
+                                        'needsFinalValidation' => $needsFinalAdminValidation,
                                         'canFinalize' => $project && $project->workflow_stage === 'approved',
                                         'completeConsultationUrl' => $project?->konsultasi
                                             ? route('admin.pemesanan.konsultasi.complete', $project->konsultasi->id)
@@ -435,6 +437,8 @@
                                         ] : null,
                                         'validateUrl' => route('admin.pemesanan.validate.send', $item->id),
                                         'revisionUrl' => route('admin.pemesanan.validate.revision', $item->id),
+                                        'validateFinalUrl' => route('admin.pemesanan.validate-final.send', $item->id),
+                                        'revisionFinalUrl' => route('admin.pemesanan.validate-final.revision', $item->id),
                                         'bankDisplayName' => config('company.bank.display_name'),
                                         'bankName' => config('company.bank.name'),
                                         'bankAccountNumber' => config('company.bank.account_number'),
@@ -609,6 +613,7 @@ function setRupiahInputValue(input, amount) {
 
 let currentProjectModalData = null;
 let currentProjectModalButton = null;
+let currentProjectModalIsFinalValidation = false;
 
 function syncProjectModalButton() {
     if (currentProjectModalButton) {
@@ -626,6 +631,9 @@ function openProjectModal(button) {
 
     const useCardLayout = project.workflowStage && project.workflowStage !== 'konsultasi';
     const needsValidation = project.workflowStage === 'awaiting_admin_validation';
+    const needsFinalValidation = project.workflowStage === 'awaiting_admin_validation_final';
+    const isAnyValidation = needsValidation || needsFinalValidation;
+    currentProjectModalIsFinalValidation = needsFinalValidation;
 
     const validationView = document.getElementById('projectModalValidationView');
     const standardView = document.getElementById('projectModalStandardView');
@@ -636,15 +644,24 @@ function openProjectModal(button) {
     panel.classList.toggle('max-w-6xl', useCardLayout);
     document.getElementById('projectModalSubtitle').textContent = needsValidation
         ? 'Tinjau desain awal dan draft RAB, tetapkan penawaran dan kirim ke pelanggan.'
-        : useCardLayout
-            ? 'Tinjau dokumen, penawaran, dan tagihan proyek.'
-            : 'Kelola tahap proses, penugasan desainer, serta desain & RAB.';
+        : needsFinalValidation
+            ? 'Tinjau desain final dan RAB final sebelum dikirim ke pelanggan.'
+            : useCardLayout
+                ? 'Tinjau dokumen, penawaran, dan tagihan proyek.'
+                : 'Kelola tahap proses, penugasan desainer, serta desain & RAB.';
 
-    document.getElementById('projectModalValidationInfoBanner').classList.toggle('hidden', !needsValidation);
+    const validationInfoBanner = document.getElementById('projectModalValidationInfoBanner');
+    validationInfoBanner.classList.toggle('hidden', !isAnyValidation);
+    validationInfoBanner.querySelector('span').textContent = needsFinalValidation
+        ? 'Pastikan desain dan RAB final sudah sesuai sebelum dikirim ke pelanggan.'
+        : 'Pastikan desain dan RAB sudah sesuai sebelum membuat penawaran.';
 
     const validationFooter = document.getElementById('projectModalValidationFooter');
-    validationFooter.classList.toggle('hidden', !needsValidation);
-    validationFooter.classList.toggle('flex', needsValidation);
+    validationFooter.classList.toggle('hidden', !isAnyValidation);
+    validationFooter.classList.toggle('flex', isAnyValidation);
+    document.getElementById('projectModalValidateBtn').innerHTML = needsFinalValidation
+        ? '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim ke Pelanggan'
+        : '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim';
 
     if (useCardLayout) {
         renderProjectValidationDocuments(project);
@@ -819,6 +836,19 @@ function confirmDeleteProject() {
 }
 
 function confirmValidateProjectDraft() {
+    if (currentProjectModalIsFinalValidation) {
+        window.dispatchEvent(new CustomEvent('open-confirmation', {
+            detail: {
+                title: 'Validasi dan kirim ke pelanggan?',
+                message: 'Desain final dan RAB final akan dikirim ke pelanggan untuk ditinjau. Pastikan dokumen sudah benar.',
+                confirmLabel: 'Ya, validasi & kirim',
+                tone: 'primary',
+                onConfirm: () => validateProjectDraft(),
+            },
+        }));
+        return;
+    }
+
     const totalHarga = getCurrentTotalHarga();
     if (totalHarga <= 0) {
         showModalToast('Buat minimal satu tagihan terlebih dahulu sebelum memvalidasi.', 'error');
@@ -838,21 +868,25 @@ function confirmValidateProjectDraft() {
 
 function validateProjectDraft() {
     const project = currentProjectModalData;
+    const isFinal = currentProjectModalIsFinalValidation;
     const totalHarga = getCurrentTotalHarga();
 
-    if (totalHarga <= 0) {
+    if (!isFinal && totalHarga <= 0) {
         showModalToast('Buat minimal satu tagihan terlebih dahulu sebelum memvalidasi.', 'error');
         return;
     }
 
     const btn = document.getElementById('projectModalValidateBtn');
+    const defaultLabel = isFinal
+        ? '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim ke Pelanggan'
+        : '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim';
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Memvalidasi...';
 
-    fetch(project.validateUrl, {
+    fetch(isFinal ? project.validateFinalUrl : project.validateUrl, {
         method: 'POST',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ total_harga: totalHarga }),
+        body: JSON.stringify(isFinal ? {} : { total_harga: totalHarga }),
     })
         .then(response => response.json().then(json => ({ ok: response.ok, json })))
         .then(({ ok, json }) => {
@@ -868,7 +902,7 @@ function validateProjectDraft() {
         .catch(() => showModalToast('Gagal memvalidasi. Periksa koneksi Anda.', 'error'))
         .finally(() => {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Validasi &amp; Kirim';
+            btn.innerHTML = defaultLabel;
         });
 }
 
@@ -885,7 +919,7 @@ function requestProjectValidationRevision() {
     }
 
     btn.disabled = true;
-    fetch(project.revisionUrl, {
+    fetch(currentProjectModalIsFinalValidation ? project.revisionFinalUrl : project.revisionUrl, {
         method: 'POST',
         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ feedback: textarea.value }),

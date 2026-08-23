@@ -68,7 +68,7 @@ class CustomerActivityController extends Controller
                         $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
                         $pemesanan->workflow_stage === 'approved' => 'bg-purple-100 text-purple-800',
                         $pemesanan->workflow_stage === 'konsultasi' => 'bg-violet-100 text-violet-700',
-                        $pemesanan->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-100 text-orange-800',
+                        in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true) => 'bg-orange-100 text-orange-800',
                         default => 'bg-blue-100 text-blue-800',
                     },
                     'actor' => \App\Support\ProjectStageLabel::actorFor($pemesanan),

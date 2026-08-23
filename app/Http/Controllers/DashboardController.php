@@ -107,7 +107,7 @@ class DashboardController extends Controller
                     ->get()
                     ->map(fn (Pemesanan $pemesanan) => [
                         'reference' => 'DI-'.$pemesanan->id,
-                        'stage' => $pemesanan->workflow_stage === 'awaiting_admin_validation'
+                        'stage' => in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true)
                             ? 'Perlu Ditinjau'
                             : ProjectStageLabel::forPemesanan($pemesanan),
                         'tone' => 'bg-blue-50 text-blue-700',

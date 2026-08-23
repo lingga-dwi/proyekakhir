@@ -193,6 +193,11 @@ class CustomDesignWorkflowTest extends TestCase
         $this->actingAs($designer)->post(route('designer.proyek.document.send', $project))->assertRedirect();
 
         $project->refresh();
+        $this->assertSame('awaiting_admin_validation_final', $project->workflow_stage);
+
+        $this->actingAs($admin)->post(route('admin.pemesanan.validate-final.send', $project))->assertRedirect();
+
+        $project->refresh();
         $this->assertSame('awaiting_final_approval', $project->workflow_stage);
 
         $this->actingAs($customer)->post(route('pemesanan.document.decision', $project), [

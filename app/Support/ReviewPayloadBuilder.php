@@ -53,7 +53,8 @@ class ReviewPayloadBuilder
         // or awaiting admin validation) must not be downloadable early.
         $stagesPastDraftValidation = [
             'awaiting_draft_approval', 'awaiting_dp', 'dp_verification',
-            'survey_scheduled', 'final_design', 'awaiting_final_approval', 'approved',
+            'survey_scheduled', 'final_design', 'awaiting_admin_validation_final',
+            'awaiting_final_approval', 'approved',
         ];
         $stagesPastFinalValidation = ['awaiting_final_approval', 'approved'];
 
