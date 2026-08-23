@@ -20,7 +20,7 @@
         <h2 id="globalNotificationCardTitle" class="mt-3 text-lg font-bold text-slate-950"></h2>
         <p id="globalNotificationCardMessage" class="mt-1 text-sm leading-6 text-slate-500"></p>
 
-        <button type="button" id="globalNotificationCardAction" onclick="hideNotificationCard()" class="mt-4 inline-flex h-10 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
+        <button type="button" id="globalNotificationCardAction" class="mt-4 inline-flex h-10 w-full items-center justify-center rounded-full bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
             Lanjutkan
         </button>
     </div>
@@ -47,6 +47,7 @@ function showNotificationCard(message, tone = 'success', options = {}) {
     icon.className = `fas text-lg text-white ${isSuccess ? 'fa-check' : 'fa-exclamation'}`;
     actionBtn.textContent = options.actionLabel || (isSuccess ? 'Lanjutkan' : 'Coba Lagi');
     actionBtn.className = `mt-4 inline-flex h-10 w-full items-center justify-center rounded-full px-6 text-sm font-semibold text-white shadow-sm transition ${isSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-red-500 hover:bg-red-600'}`;
+    actionBtn.onclick = options.onAction || hideNotificationCard;
 
     panel.classList.remove('hidden');
     requestAnimationFrame(() => {

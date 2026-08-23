@@ -531,8 +531,11 @@ function submitReviewDecision(decision) {
             if (!ok) {
                 const errorMessage = json.errors ? Object.values(json.errors)[0][0] : (json.message || 'Gagal mengirim keputusan.');
                 if (status === 422 && !json.errors) {
-                    showReviewToast('Tahap pesanan ini sudah berubah. Halaman akan dimuat ulang.', 'error');
-                    setTimeout(() => window.location.reload(), 1500);
+                    showNotificationCard(
+                        'Tahap pesanan ini sudah berubah (misalnya karena Anda sudah mengunggah bukti pembayaran). Muat ulang untuk melihat status terbaru.',
+                        'error',
+                        { title: 'Tahap Sudah Berubah', actionLabel: 'Muat Ulang', duration: 0, onAction: () => window.location.reload() }
+                    );
                 } else {
                     showReviewToast(errorMessage, 'error');
                 }
