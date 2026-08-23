@@ -362,7 +362,38 @@ class PemesananController extends Controller
         ]);
 
         $expectedStage = $data['stage'] === 'draft' ? 'awaiting_draft_approval' : 'awaiting_final_approval';
-        abort_unless($pemesanan->workflow_stage === $expectedStage, 422, 'Tidak ada dokumen yang menunggu keputusan pada tahap ini.');
+        $round = $data['stage'] === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
+
+        if ($pemesanan->workflow_stage !== $expectedStage) {
+            // A customer's already-open modal can go stale if the stage
+            // moved on from under them — most commonly because they
+            // uploaded DP payment evidence before ever clicking Setujui,
+            // which auto-records the draft approval and jumps straight to
+            // dp_verification. Treat a repeat "approved" click as a no-op
+            // success instead of a confusing error in that specific case.
+            $alreadyApproved = $data['decision'] === 'approved'
+                && $pemesanan->documentDecisions()
+                    ->where('stage', $data['stage'])
+                    ->where('submission_round', $round)
+                    ->where('decision', 'approved')
+                    ->exists();
+
+            if ($alreadyApproved) {
+                $message = $data['stage'] === 'draft' ? 'Desain awal sudah disetujui sebelumnya.' : 'Desain final sudah disetujui sebelumnya.';
+
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => $message,
+                        'review' => ReviewPayloadBuilder::build($pemesanan->fresh(['documents', 'konsultasi', 'invoices'])),
+                    ]);
+                }
+
+                return back()->with('success', $message);
+            }
+
+            abort(422, 'Tidak ada dokumen yang menunggu keputusan pada tahap ini.');
+        }
 
         if ($data['stage'] === 'draft' && $data['decision'] === 'approved' && (float) $pemesanan->total_harga <= 0) {
             $message = 'Admin perlu menetapkan nilai proyek sebelum invoice DP dapat dibuat.';
@@ -374,7 +405,6 @@ class PemesananController extends Controller
             return back()->withErrors(['decision' => $message]);
         }
 
-        $round = $data['stage'] === 'draft' ? (int) $pemesanan->draft_round : (int) $pemesanan->final_round;
         $pemesanan->documentDecisions()->create([
             'decided_by' => $request->user()->id,
             'stage' => $data['stage'],
