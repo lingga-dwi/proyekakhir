@@ -2,137 +2,268 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Pemesanan;
-use App\Models\Invoice;
 use App\Models\Konsultasi;
+use App\Models\Pemesanan;
+use App\Models\StatusTracking;
+use App\Models\User;
+use App\Support\ProjectStageLabel;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function admin()
     {
+        $today = today();
+        $deadlineLimit = $today->copy()->addDays(7);
+
         $stats = [
-            'total_projects' => Pemesanan::count(),
-            'pending_orders' => Pemesanan::where('status_pemesanan', 'pending')->count(),
-            'completed_projects' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
-            'total_revenue' => Invoice::query()
-                ->where('status_invoice', 'dibayar')
-                ->whereHas('pemesanan', fn ($query) => $query->where('status_pemesanan', 'selesai'))
-                ->sum('total_tagihan'),
-            'consultations' => Konsultasi::where('status', 'confirmed')->count(),
+            'active_projects' => Pemesanan::whereIn('status_pemesanan', ['dikonfirmasi', 'sedang_dikerjakan'])->count(),
+            // Permintaan pelanggan dimulai sebagai konsultasi dan baru menjadi
+            // pesanan setelah ditinjau admin. Keduanya perlu terlihat di dashboard.
+            'new_requests' => Konsultasi::where('status', Konsultasi::STATUS_PENDING)->count()
+                + Pemesanan::where('status_pemesanan', Pemesanan::STATUS_PENDING)->count(),
+            'deadlines_soon' => Pemesanan::whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+                ->whereNotNull('target_selesai')
+                ->whereDate('target_selesai', '<=', $deadlineLimit)
+                ->count(),
             'new_customers' => User::where('role', 'pelanggan')->where('created_at', '>=', Carbon::now()->subDays(30))->count(),
         ];
 
-        $recent_projects = Pemesanan::with(['user', 'katalog', 'rfq.katalog'])
-                                  ->latest()
-                                  ->take(5)
-                                  ->get();
+        $orderActivities = StatusTracking::with(['pemesanan.user'])
+            ->whereHas('pemesanan')
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (StatusTracking $tracking) => [
+                'icon' => self::activityIcon($tracking),
+                'title' => $tracking->catatan ?: match ($tracking->status) {
+                    'pending' => 'Pesanan baru diterima',
+                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                    'selesai' => 'Proyek diselesaikan',
+                    'dibatalkan' => 'Proyek dibatalkan',
+                    default => 'Progres diperbarui',
+                },
+                'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
+                'occurred_at' => $tracking->created_at,
+                'url' => route('admin.pemesanan.index', [
+                    'search' => 'DI-'.$tracking->pemesanan->id,
+                ]),
+            ]);
 
-        $monthly_orders = Pemesanan::query()
-            ->whereYear('created_at', Carbon::now()->year)
-            ->get(['created_at'])
-            ->groupBy(fn ($pemesanan) => $pemesanan->created_at->month)
-            ->map(fn ($items) => $items->count())
-            ->toArray();
+        $consultationActivities = Konsultasi::with('user')
+            ->whereNull('pemesanan_id')
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (Konsultasi $konsultasi) => [
+                'icon' => match ($konsultasi->status) {
+                    Konsultasi::STATUS_PENDING => 'fa-comments',
+                    Konsultasi::STATUS_CONFIRMED => 'fa-circle-check',
+                    Konsultasi::STATUS_COMPLETED => 'fa-check-double',
+                    default => 'fa-ban',
+                },
+                'title' => match ($konsultasi->status) {
+                    Konsultasi::STATUS_PENDING => 'Permintaan desain baru',
+                    Konsultasi::STATUS_CONFIRMED => 'Permintaan desain dikonfirmasi',
+                    Konsultasi::STATUS_COMPLETED => 'Permintaan desain selesai ditinjau',
+                    default => 'Permintaan desain dibatalkan',
+                },
+                'description' => ($konsultasi->nama ?: ($konsultasi->user?->nama ?? 'Pelanggan')).' · '.$konsultasi->getJenisKonsultasiLabel(),
+                'occurred_at' => $konsultasi->updated_at,
+                'url' => route('admin.pemesanan.index', [
+                    'search' => 'KS-'.$konsultasi->id,
+                ]),
+            ]);
 
-        return view('dashboard.admin', compact('stats', 'recent_projects', 'monthly_orders'));
+        $recentActivities = $orderActivities
+            ->sortByDesc('occurred_at')
+            ->take(6)
+            ->values();
+
+        $latestOrderStatuses = collect()
+            ->concat(
+                Konsultasi::with('user')
+                    ->where('status', Konsultasi::STATUS_PENDING)
+                    ->latest('created_at')
+                    ->take(6)
+                    ->get()
+                    ->map(fn (Konsultasi $konsultasi) => [
+                        'reference' => 'KS-'.$konsultasi->id,
+                        'stage' => ProjectStageLabel::forKonsultasi($konsultasi) ?? 'Menunggu Konfirmasi',
+                        'tone' => 'bg-orange-50 text-orange-700',
+                        'customer' => $konsultasi->nama ?: ($konsultasi->user?->nama ?? 'Pelanggan'),
+                        'project_type' => $konsultasi->getJenisKonsultasiLabel(),
+                        'occurred_at' => $konsultasi->created_at,
+                        'url' => route('admin.pemesanan.index', ['search' => 'KS-'.$konsultasi->id]),
+                    ])
+            )
+            ->concat(
+                Pemesanan::with(['user', 'invoices'])
+                    ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+                    ->latest('updated_at')
+                    ->take(6)
+                    ->get()
+                    ->map(fn (Pemesanan $pemesanan) => [
+                        'reference' => 'DI-'.$pemesanan->id,
+                        'stage' => in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true)
+                            ? 'Perlu Ditinjau'
+                            : ProjectStageLabel::forPemesanan($pemesanan),
+                        'tone' => 'bg-blue-50 text-blue-700',
+                        'customer' => $pemesanan->user?->nama ?? 'Pelanggan',
+                        'project_type' => $pemesanan->jenis_proyek ?: 'Proyek interior',
+                        'occurred_at' => $pemesanan->updated_at,
+                        'url' => route('admin.pemesanan.index', ['search' => 'DI-'.$pemesanan->id]),
+                    ])
+            )
+            ->sortByDesc('occurred_at')
+            ->take(6)
+            ->values();
+
+        return view('dashboard.admin', compact('stats', 'recentActivities', 'latestOrderStatuses'));
     }
 
     public function designer()
     {
+        $designer = auth()->user();
+        $assignedProjects = Pemesanan::where('designer_id', $designer->id);
+        $assignedConsultations = Konsultasi::with('user')
+            ->where('designer_id', $designer->id)
+            ->where('status', Konsultasi::STATUS_CONFIRMED)
+            ->whereNull('pemesanan_id')
+            ->latest('updated_at')
+            ->get();
+
         $stats = [
-            'assigned_projects' => Pemesanan::count(), // In real app, filter by assigned designer
-            'in_progress' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'completed_this_month' => Pemesanan::where('status_pemesanan', 'selesai')
-                                              ->whereMonth('updated_at', Carbon::now()->month)
-                                              ->count(),
-            'pending_reviews' => Pemesanan::where('status_pemesanan', 'dikonfirmasi')->count(),
+            'assigned_projects' => (clone $assignedProjects)->count(),
+            'in_progress' => (clone $assignedProjects)->where('status_pemesanan', 'sedang_dikerjakan')->count(),
+            'completed_this_month' => (clone $assignedProjects)->where('status_pemesanan', 'selesai')
+                ->whereYear('updated_at', now()->year)
+                ->whereMonth('updated_at', now()->month)
+                ->count(),
+            'pending_reviews' => (clone $assignedProjects)->where('status_pemesanan', 'dikonfirmasi')->count(),
         ];
 
-        $my_projects = Pemesanan::with(['user', 'katalog', 'rfq.katalog'])
-                               ->latest()
-                               ->take(5)
-                               ->get();
+        $recentActivities = StatusTracking::with(['pemesanan.user'])
+            ->whereHas('pemesanan', fn ($query) => $query->where('designer_id', $designer->id))
+            ->latest('created_at')
+            ->take(6)
+            ->get()
+            ->map(fn (StatusTracking $tracking) => [
+                'icon' => self::activityIcon($tracking),
+                'title' => $tracking->catatan ?: match ($tracking->status) {
+                    'pending' => 'Pesanan baru diterima',
+                    'dikonfirmasi' => 'Pesanan dikonfirmasi',
+                    'sedang_dikerjakan' => 'Proyek sedang dikerjakan',
+                    'selesai' => 'Proyek diselesaikan',
+                    'dibatalkan' => 'Proyek dibatalkan',
+                    default => 'Progres diperbarui',
+                },
+                'description' => ($tracking->pemesanan->user?->nama ?? 'Pelanggan').' · '.($tracking->pemesanan->jenis_proyek ?: 'Proyek interior'),
+                'occurred_at' => $tracking->created_at,
+                'url' => route('designer.projects.index', [
+                    'search' => 'DI-'.$tracking->pemesanan->id,
+                ]),
+            ]);
 
-        return view('dashboard.designer', compact('stats', 'my_projects'));
+        $latestOrderStatuses = (clone $assignedProjects)->with(['user', 'invoices'])
+            ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
+            ->latest('updated_at')
+            ->take(6)
+            ->get()
+            ->map(fn (Pemesanan $pemesanan) => [
+                'reference' => 'DI-'.$pemesanan->id,
+                'stage' => ProjectStageLabel::forPemesanan($pemesanan),
+                'tone' => 'bg-blue-50 text-blue-700',
+                'customer' => $pemesanan->user?->nama ?? 'Pelanggan',
+                'project_type' => $pemesanan->jenis_proyek ?: 'Proyek interior',
+                'occurred_at' => $pemesanan->updated_at,
+                'url' => route('designer.projects.index', ['search' => 'DI-'.$pemesanan->id]),
+            ])
+            ->values();
+
+        return view('dashboard.designer', compact('stats', 'assignedConsultations', 'recentActivities', 'latestOrderStatuses'));
     }
 
-    public function pelangganDashboard()
+    public function designerProjects(Request $request)
     {
-        $user = auth()->user();
-        
-        $stats = [
-            'total_projects' => $user->pemesanans()->count(),
-            'active_projects' => $user->pemesanans()->whereIn('status_pemesanan', ['pending', 'dikonfirmasi', 'sedang_dikerjakan'])->count(),
-            'completed_projects' => $user->pemesanans()->where('status_pemesanan', 'selesai')->count(),
-            'total_spent' => Invoice::query()
-                ->where('status_invoice', 'dibayar')
-                ->whereHas('pemesanan', fn ($query) => $query->where('id_user', $user->id))
-                ->sum('total_tagihan'),
-        ];
+        $designer = $request->user();
+        $allowedStatuses = Pemesanan::STATUSES;
 
-        $my_orders = $user->pemesanans()
-                         ->with(['katalog', 'rfq.katalog'])
-                         ->latest()
-                         ->take(5)
-                         ->get();
+        $projects = Pemesanan::with([
+            'user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer', 'invoices',
+            'statusTrackings' => fn ($query) => $query->orderByDesc('created_at'),
+        ])
+            ->where('designer_id', $designer->id)
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->string('search'));
+                $numericId = preg_match('/^(?:DI-?)?(\d+)$/i', $search, $match) ? (int) $match[1] : null;
 
-        $upcoming_activities = [
-            [
-                'time' => '09:00',
-                'title' => 'Konsultasi Ruang - Maya Indira',
-                'type' => 'meeting'
-            ],
-            [
-                'time' => '12:00',
-                'title' => 'Review Progress Proyek Mingguan',
-                'type' => 'review'
-            ],
-            [
-                'time' => '01:30',
-                'title' => 'Inspeksi Furniture - Budi Santoso',
-                'type' => 'inspection'
-            ]
-        ];
+                $query->where(function ($nested) use ($search, $numericId) {
+                    $nested->where('jenis_proyek', 'like', "%{$search}%")
+                        ->orWhere('jenis_bangunan', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($customer) => $customer
+                            ->where('nama', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%"));
 
-        return view('dashboard.pelanggan', compact('stats', 'my_orders', 'upcoming_activities'));
+                    if ($numericId) {
+                        $nested->orWhere('id', $numericId);
+                    }
+                });
+            })
+            ->when(
+                in_array($request->status, $allowedStatuses, true),
+                fn ($query) => $query->where('status_pemesanan', $request->status)
+            )
+            ->latest('updated_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('designer.projects.index', compact('projects'));
+    }
+
+    public function designerProjectsHeartbeat(Request $request)
+    {
+        $designer = $request->user();
+
+        $latestPemesanan = Pemesanan::where('designer_id', $designer->id)->max('updated_at');
+        $latestKonsultasi = Konsultasi::where('designer_id', $designer->id)->max('updated_at');
+        $counts = Pemesanan::where('designer_id', $designer->id)->count()
+            .':'.Konsultasi::where('designer_id', $designer->id)->count();
+
+        return response()->json(['signal' => $counts.':'.$latestPemesanan.':'.$latestKonsultasi]);
     }
 
     // Admin Pages
-    public function pelanggan()
+    public function pelanggan(Request $request)
     {
-        $pelanggan = User::where('role', 'pelanggan')
-                        ->withCount(['pemesanans'])
-                        ->latest()
-                        ->paginate(10);
-        
-        return view('admin.pelanggan.index', compact('pelanggan'));
-    }
-
-    public function proyek()
-    {
-        $projectStats = [
-            'konsultasi' => Pemesanan::whereIn('status_pemesanan', ['pending', 'dikonfirmasi'])->count(),
-            'tahap_desain_produksi' => Pemesanan::where('status_pemesanan', 'sedang_dikerjakan')->count(),
-            'persetujuan' => Pemesanan::where('status_pemesanan', 'dibatalkan')->count(),
-            'selesai' => Pemesanan::where('status_pemesanan', 'selesai')->count(),
+        $stats = [
+            'total' => User::where('role', 'pelanggan')->count(),
+            'active' => User::where('role', 'pelanggan')->whereHas('pemesanans')->count(),
+            'new' => User::where('role', 'pelanggan')->where('created_at', '>=', now()->subDays(30))->count(),
+            'projects' => Pemesanan::count(),
         ];
 
-        $featuredProjects = Pemesanan::with(['user'])
+        $pelanggan = User::query()
+            ->where('role', 'pelanggan')
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(fn ($nested) => $nested
+                    ->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('no_telp', 'like', "%{$search}%"));
+            })
+            ->withCount('pemesanans')
+            ->withSum('pemesanans', 'total_harga')
             ->latest()
-            ->take(4)
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
-        $proyek = Pemesanan::with(['user'])
-            ->latest()
-            ->paginate(10);
-        
-        return view('admin.proyek.index', compact('proyek', 'projectStats', 'featuredProjects'));
+        return view('admin.pelanggan.index', compact('pelanggan', 'stats'));
     }
 
-    public function users()
+    public function users(Request $request)
     {
         $userStats = [
             'total' => User::count(),
@@ -141,8 +272,49 @@ class DashboardController extends Controller
             'pelanggan' => User::where('role', 'pelanggan')->count(),
         ];
 
-        $users = User::latest()->paginate(10);
-        
+        $users = User::query()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(fn ($nested) => $nested
+                    ->where('nama', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('role'), fn ($query) => $query->where('role', $request->role))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
         return view('admin.users.index', compact('users', 'userStats'));
+    }
+
+    /**
+     * Guess an activity icon from the tracking note's content, since
+     * status_tracking.status only ever holds the coarse order status
+     * (almost always "dikonfirmasi" throughout the whole design/payment
+     * workflow) and can't distinguish what actually happened.
+     */
+    private static function activityIcon(StatusTracking $tracking): string
+    {
+        $note = mb_strtolower((string) $tracking->catatan);
+
+        return match (true) {
+            $note === '' => match ($tracking->status) {
+                'pending' => 'fa-inbox',
+                'dikonfirmasi' => 'fa-circle-check',
+                'sedang_dikerjakan' => 'fa-drafting-compass',
+                'selesai' => 'fa-flag-checkered',
+                'dibatalkan' => 'fa-ban',
+                default => 'fa-clock-rotate-left',
+            },
+            str_contains($note, 'dibatalkan') || str_contains($note, 'ditolak') => 'fa-ban',
+            str_contains($note, 'diselesaikan') || str_contains($note, 'pengerjaan dapat dimulai') => 'fa-flag-checkered',
+            str_contains($note, 'bukti pembayaran') || str_contains($note, 'dp ') || str_contains($note, 'tagihan') || str_contains($note, 'pembayaran') => 'fa-money-check-dollar',
+            str_contains($note, 'revisi') => 'fa-comment-dots',
+            str_contains($note, 'survei') => 'fa-map-location-dot',
+            str_contains($note, 'desain') || str_contains($note, 'rab') || str_contains($note, 'validasi') || str_contains($note, 'ditinjau') => 'fa-file-signature',
+            str_contains($note, 'disetujui') => 'fa-circle-check',
+            str_contains($note, 'dibuat') || str_contains($note, 'diterima') || str_contains($note, 'dicatat') => 'fa-inbox',
+            default => 'fa-clock-rotate-left',
+        };
     }
 }

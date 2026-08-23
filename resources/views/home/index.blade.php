@@ -1,144 +1,149 @@
 @extends('layouts.main')
 
-@section('title', 'Daiku Interior - Wujudkan Interior Impian Anda')
+@section('title', 'Daiku Interior Pekanbaru - Desain Ruang yang Personal')
+@section('meta_description', 'Jasa desain interior dan furnitur custom untuk rumah, kantor, dan tempat usaha di Pekanbaru. Konsultasikan layout, material, dan kebutuhan pengerjaan Anda.')
+@section('meta_image', asset('images/hero/daiku-home-hero.jpg'))
 
 @section('content')
-<!-- Success Message -->
 @if(session('success'))
-<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4 mx-4">
-    <div class="max-w-7xl mx-auto">
-        <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+    <div class="border-b border-green-200 bg-green-50 px-4 py-3 text-green-800" role="status">
+        <div class="mx-auto max-w-7xl">
+            <i class="fas fa-check-circle mr-2" aria-hidden="true"></i>{{ session('success') }}
+        </div>
     </div>
-</div>
 @endif
 
-<!-- Hero Section -->
-<section class="relative min-h-screen bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');">
-    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-screen flex items-center">
-        <div class="text-center text-white w-full">
-            <h1 class="text-4xl md:text-6xl font-bold mb-6">
-                Wujudkan Interior Impian Anda Bersama<br>
-                <span class="text-yellow-500">Daiku Interior Pekanbaru</span>
+<!-- Hero -->
+<section class="relative isolate min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-900">
+    <img src="{{ asset('images/hero/daiku-home-hero.jpg') }}"
+         alt="Desain interior kamar karya Daiku"
+         class="absolute inset-0 h-full w-full object-cover object-center"
+         fetchpriority="high"
+         decoding="async"
+         width="1279"
+         height="719">
+    <div class="absolute inset-0 bg-slate-950/35"></div>
+    <div class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-slate-950/25 to-transparent"></div>
+
+    <div class="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl items-center justify-center px-4 pb-32 pt-20 text-center sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-6xl text-white">
+            <h1 class="text-5xl font-bold leading-[0.98] tracking-tight sm:text-6xl lg:text-6xl xl:text-7xl">
+                Wujudkan interior impian Anda,
+                <span class="mt-2 block font-light italic">bersama Daiku Interior Pekanbaru.</span>
             </h1>
-            <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-                Bergabunglah dengan ribuan pelanggan yang telah mempercayakan desain interior rumah mereka kepada kami
+            <p class="mx-auto mt-7 max-w-3xl text-base leading-relaxed text-white/90 sm:text-lg">
+                Dari ide hingga ruang impian, Daiku membantu mewujudkan desain interior yang sesuai kebutuhan dan gaya Anda.
             </p>
-            <a href="{{ route('katalog') }}" class="inline-block bg-yellow-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-yellow-600 transition duration-200">
-                Buat Pesanan Sekarang
-            </a>
+            <div class="mt-8 flex justify-center">
+                <a href="{{ route('konsultasi.index') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                    Buat Pesanan Sekarang
+                </a>
+            </div>
         </div>
     </div>
-</section>
 
-<!-- How It Works Section -->
-<section class="py-16 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Layanan Satu Atap</h2>
-            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                Berikut langkah-langkah pemesanan desain interior di website Daiku:
-            </p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <!-- Step 1 -->
-            <div class="relative text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-map-marker-alt text-2xl text-gray-400"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Jadwalkan Survey</h3>
-                <p class="text-gray-600">Pilih dari katalog atau ajukan desain custom Anda.</p>
-
-                <div class="hidden md:block absolute top-8 -right-8 w-40">
-                    <svg viewBox="0 0 160 40" class="w-full h-10">
-                        <path d="M0 20 C40 0 80 40 160 20" fill="none" stroke="#9CA3AF" stroke-width="2"/>
-                    </svg>
-                </div>
+    <div class="absolute inset-x-0 bottom-5 z-20 flex justify-center px-4 sm:bottom-6" aria-label="Keunggulan layanan Daiku">
+        <div class="flex w-fit max-w-full flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border border-white/20 bg-white/15 px-5 py-3 text-white shadow-lg shadow-slate-950/15 backdrop-blur-md sm:gap-x-8 sm:px-6">
+            <div class="flex items-center justify-center gap-2">
+                <i class="fas fa-comments shrink-0 text-xs text-emerald-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Gratis konsultasi</span>
             </div>
-            
-            <!-- Step 2 -->
-            <div class="relative text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-clipboard-list text-2xl text-gray-400"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Isi Detail Pesanan</h3>
-                <p class="text-gray-600">Masukkan ukuran, preferensi warna, upload denah jika ada.</p>
-
-                <div class="hidden md:block absolute top-8 -right-8 w-40">
-                    <svg viewBox="0 0 160 40" class="w-full h-10">
-                        <path d="M0 20 C40 40 80 0 160 20" fill="none" stroke="#9CA3AF" stroke-width="2"/>
-                    </svg>
-                </div>
+            <div class="flex items-center justify-center gap-2">
+                <i class="fas fa-bolt shrink-0 text-xs text-amber-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Responsif</span>
             </div>
-            
-            <!-- Step 3 -->
-            <div class="text-center">
-                <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-comments text-2xl text-gray-400"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">Konsultasi</h3>
-                <p class="text-gray-600">Diskusikan ide Anda bersama desainer profesional kami.</p>
+            <div class="flex items-center justify-center gap-2">
+                <i class="fas fa-couch shrink-0 text-xs text-blue-400" aria-hidden="true"></i>
+                <span class="text-[10px] font-medium leading-tight sm:text-xs">Furnitur kustom</span>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Featured Designs Section -->
-<section class="py-16 bg-yellow-500">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Galeri Inspirasi Desain</h2>
-            <p class="text-lg text-yellow-100 max-w-2xl mx-auto">
-                Lihat beberapa gaya desain yang bisa kami wujudkan untuk Anda.
-            </p>
+@include('home.partials.services')
+
+<!-- Process -->
+<section class="bg-stone-50 py-20" aria-labelledby="process-title">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto mb-14 max-w-2xl text-center">
+            <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">Proses permintaan desain</p>
+            <h2 id="process-title" class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Tiga langkah memulai proyek Anda</h2>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            @foreach($featuredKatalogs as $katalog)
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden group hover:shadow-xl transition duration-300">
-                <div class="aspect-w-16 aspect-h-9 bg-gray-200">
-                    @if($katalog->gambar_utama_url)
-                        <img src="{{ $katalog->gambar_utama_url }}" 
-                             alt="{{ $katalog->nama_desain }}" 
-                             class="w-full h-48 object-cover group-hover:scale-105 transition duration-300">
-                    @else
-                        <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80" 
-                             alt="{{ $katalog->nama_desain }}" 
-                             class="w-full h-48 object-cover group-hover:scale-105 transition duration-300">
-                    @endif
-                </div>
-                <div class="p-6">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ $katalog->nama_desain }}</h3>
-                    <p class="text-gray-600 mb-2">{{ $katalog->category ? $katalog->category->name : $katalog->kategori }}</p>
-                    <p class="text-gray-600 text-sm mb-4">{{ Str::limit($katalog->deskripsi, 100) }}</p>
-                    <a href="{{ route('katalog.detail', $katalog->id) }}" class="inline-block bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition duration-200">
-                        Mulai Konsultasi
-                    </a>
-                </div>
-            </div>
-            @endforeach
-        </div>
-        
-        <div class="text-center mt-8">
-            <a href="{{ route('katalog') }}" class="inline-flex items-center text-white text-lg font-semibold hover:text-yellow-200 transition duration-200">
-                Show More
-                <i class="fas fa-plus ml-2 w-6 h-6 bg-white text-yellow-500 rounded-full flex items-center justify-center"></i>
-            </a>
+
+        <div class="grid gap-8 md:grid-cols-3">
+            <article class="relative rounded-2xl bg-white p-7 shadow-sm ring-1 ring-gray-200">
+                <span class="text-sm font-bold text-amber-600">01</span>
+                <h3 class="mt-4 text-xl font-bold text-slate-900">Kirim permintaan desain</h3>
+                <p class="mt-3 leading-relaxed text-gray-600">Isi informasi proyek, jenis bangunan, luas area, anggaran, dan catatan kebutuhan Anda.</p>
+            </article>
+            <article class="relative rounded-2xl bg-white p-7 shadow-sm ring-1 ring-gray-200">
+                <span class="text-sm font-bold text-amber-600">02</span>
+                <h3 class="mt-4 text-xl font-bold text-slate-900">Tunggu peninjauan tim</h3>
+                <p class="mt-3 leading-relaxed text-gray-600">Tim Daiku meninjau permintaan Anda dan menghubungi melalui WhatsApp untuk membahas kebutuhan awal.</p>
+            </article>
+            <article class="relative rounded-2xl bg-white p-7 shadow-sm ring-1 ring-gray-200">
+                <span class="text-sm font-bold text-amber-600">03</span>
+                <h3 class="mt-4 text-xl font-bold text-slate-900">Konsultasi dan tindak lanjut</h3>
+                <p class="mt-3 leading-relaxed text-gray-600">Setelah konsultasi, tim menyiapkan ruang lingkup dan melanjutkan permintaan yang disetujui menjadi proyek.</p>
+            </article>
         </div>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-16 bg-gray-800 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div class="flex items-center justify-center mb-4">
-            <i class="fas fa-shield-alt text-4xl text-yellow-500 mr-4"></i>
-            <div>
-                <h3 class="text-xl font-semibold">All your data are safe</h3>
-                <p class="text-gray-300">We are using the most advanced security to provide you the best experience ever.</p>
+<!-- Featured Portfolio -->
+<section class="bg-white py-20" aria-labelledby="portfolio-title">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-12 text-center">
+            <div class="mx-auto max-w-2xl">
+                <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">Portofolio Daiku</p>
+                <h2 id="portfolio-title" class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Inspirasi interior untuk ruang yang lebih fungsional</h2>
+                <p class="mt-3 text-lg text-gray-600">Jelajahi contoh kitchen set, kamar, dan ruang keluarga yang dirancang sesuai kebutuhan hunian.</p>
             </div>
         </div>
+
+        @if($portfolioKatalogs->isNotEmpty())
+            <div class="grid gap-7 md:grid-cols-3">
+                @foreach($portfolioKatalogs as $katalog)
+                    <x-catalog-card :katalog="$katalog" />
+                @endforeach
+            </div>
+
+            <div class="mt-10 flex justify-center">
+                <a href="{{ route('katalog') }}" class="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-amber-300 focus:outline-none focus:ring-4 focus:ring-amber-100">
+                    Lihat semua desain <i class="fas fa-arrow-right text-sm" aria-hidden="true"></i>
+                                </a>
+
+                            </div>
+        @else
+            <div class="rounded-2xl border border-dashed border-gray-300 bg-stone-50 px-6 py-12 text-center">
+                <p class="text-gray-600">Portofolio sedang disiapkan.</p>
+            </div>
+        @endif
     </div>
 </section>
+
+<section class="bg-stone-50 py-20" aria-labelledby="faq-title">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-2xl text-center">
+            <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">Pertanyaan umum</p>
+            <h2 id="faq-title" class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">Hal yang sering ditanyakan sebelum memulai</h2>
+            <p class="mt-4 text-gray-600">Jika masih ada yang ingin dibahas, kirim permintaan desain agar tim Daiku dapat membantu sesuai kebutuhan ruang Anda.</p>
+        </div>
+
+        @if($faqs->isNotEmpty())
+            <div class="mt-10 divide-y divide-slate-200 rounded-2xl bg-white px-6 shadow-sm ring-1 ring-slate-200 sm:px-8">
+                @foreach($faqs as $faq)
+                    <details class="group py-5">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-5 font-semibold text-slate-900">
+                            {{ $faq->question }}
+                            <i class="fas fa-plus text-sm text-amber-600 transition group-open:rotate-45" aria-hidden="true"></i>
+                        </summary>
+                        <p class="max-w-3xl pt-4 leading-relaxed text-slate-600">{{ $faq->answer }}</p>
+                    </details>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</section>
+
 @endsection

@@ -1,99 +1,136 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    @php
+        $metaTitle = trim($__env->yieldContent('title')) ?: 'Daiku Interior Pekanbaru';
+        $metaDescription = trim($__env->yieldContent('meta_description')) ?: 'Jasa desain interior di Pekanbaru untuk hunian, kantor, dan ruang usaha.';
+        $metaImage = trim($__env->yieldContent('meta_image')) ?: asset('images/logo/image.png');
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Daiku Interior')</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    @include('partials.favicon')
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ url()->current() }}">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Daiku Interior">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ $metaImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <title>{{ $metaTitle }}</title>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <!-- Font Awesome -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- Head Scripts -->
     @stack('head-scripts')
     
-    <!-- Custom Styles -->
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .yellow-gradient {
-            background: linear-gradient(135deg, #f7b733 0%, #fc4a1a 100%);
-        }
-        .daiku-yellow {
-            background-color: #fbbf24;
-        }
-        .daiku-yellow-hover:hover {
-            background-color: #f59e0b;
-        }
-    </style>
-    
     @stack('styles')
 </head>
 <body class="bg-gray-50">
     <!-- Header Navigation -->
-    <header class="fixed top-0 inset-x-0 z-50 bg-white shadow-sm">
+    <header x-data="{ mobileOpen: false }" @keydown.escape.window="mobileOpen = false" class="fixed top-0 inset-x-0 z-50 bg-white shadow-sm">
         <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
+            <div class="grid h-16 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center">
                 <!-- Logo -->
-                <div class="flex items-center">
+                <div class="col-start-1 row-start-1 flex items-center justify-self-start">
                     <a href="{{ route('home') }}" aria-label="Kembali ke beranda">
                         <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-5 w-auto">
                     </a>
                 </div>
                 
                 <!-- Navigation Menu -->
-                <div class="hidden md:flex space-x-8">
+                <div class="col-start-2 row-start-1 hidden items-center space-x-8 lg:flex">
                     <a href="{{ route('home') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('home') ? 'text-yellow-600' : '' }}">Beranda</a>
+                    <a href="{{ route('about') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('about') ? 'text-yellow-600' : '' }}">Tentang Kami</a>
                     <a href="{{ route('katalog') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('katalog*') ? 'text-yellow-600' : '' }}">Katalog</a>
-                    <a href="{{ route('konsultasi.index') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('konsultasi*') ? 'text-yellow-600' : '' }}">Konsultasi</a>
-                    @auth
-                        <a href="{{ route('pesanan.saya') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('pesanan.saya') ? 'text-yellow-600' : '' }}">Pesanan Saya</a>
-                    @else
-                        <a href="#" onclick="showLoginAlert()" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium">Pesanan Saya</a>
-                    @endauth
+                    <a href="{{ route('konsultasi.index') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('konsultasi.index', 'konsultasi.create') ? 'text-yellow-600' : '' }}">Konsultasi</a>
                 </div>
                 
                 <!-- User Menu -->
-                <div class="flex items-center space-x-4">
+                <div class="col-start-3 row-start-1 hidden items-center justify-self-end gap-2 lg:flex">
                     @auth
-                        <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-yellow-500">
-                                <img class="h-8 w-8 rounded-full bg-gray-300" src="https://ui-avatars.com/api/?name={{ auth()->user()->nama }}&background=fbbf24&color=fff" alt="{{ auth()->user()->nama }}">
-                                <span class="ml-2 text-gray-700">{{ auth()->user()->nama }}</span>
-                                <i class="fas fa-chevron-down ml-2 text-gray-400"></i>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('dashboard.admin') }}"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.admin', 'admin.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center overflow-visible rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-cog text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Admin Panel</span>
+                            </a>
+                        @endif
+                        @if(auth()->user()->isDesigner())
+                            <a href="{{ route('dashboard.designer') }}"
+                               aria-label="Buka Desainer Panel"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('dashboard.designer', 'designer.*') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-cog text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Desainer Panel</span>
+                            </a>
+                        @endif
+                        @if(auth()->user()->isPelanggan())
+                            <a href="{{ route('pesanan.saya') }}"
+                               class="flex h-[46px] w-40 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition duration-200 hover:border-amber-300 hover:shadow-sm {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-gray-200 bg-white text-slate-700' }}">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-folder-open text-sm"></i>
+                                </span>
+                                <span class="whitespace-nowrap text-xs font-bold">Pesanan Saya</span>
+                            </a>
+                        @endif
+                        <div class="relative w-16" x-data="{ open: false }">
+                            @php
+                                $roleLabel = match (auth()->user()->role) {
+                                    'admin' => 'Admin',
+                                    'designer' => 'Desainer',
+                                    default => 'Pelanggan',
+                                };
+                            @endphp
+                            <button type="button"
+                                    @click="open = !open"
+                                    :aria-expanded="open.toString()"
+                                    aria-haspopup="menu"
+                                    aria-label="Buka menu akun"
+                                    class="group relative z-10 flex h-[46px] w-full items-center justify-between gap-1 rounded-xl border bg-white px-2 py-1.5 text-left transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-400"
+                                    :class="open
+                                        ? 'border-amber-300 shadow-sm'
+                                        : 'border-gray-200 hover:border-amber-300 hover:shadow-sm'">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                    <i class="fas fa-user text-sm"></i>
+                                </span>
+                                <i class="fas fa-chevron-down text-[10px] text-slate-600 transition-transform duration-200" :class="open ? 'rotate-180' : ''" aria-hidden="true"></i>
                             </button>
                             
-                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                @if(auth()->user()->isAdmin())
-                                    <a href="{{ route('dashboard.admin') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-cog mr-2"></i>Admin Panel
-                                    </a>
-                                @elseif(auth()->user()->isDesigner())
-                                    <a href="{{ route('dashboard.designer') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-drafting-compass mr-2"></i>Dashboard Designer
-                                    </a>
-                                @else
-                                    <a href="{{ route('pesanan.saya') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-shopping-bag mr-2"></i>Pesanan Saya
-                                    </a>
-                                    <a href="{{ route('konsultasi.saya') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-comments mr-2"></i>Konsultasi Saya
-                                    </a>
-                                @endif
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-user mr-2"></i>Profile
-                                </a>
-                                <form method="POST" action="{{ route('logout') }}">
+                            <div x-cloak x-show="open" x-transition.origin.top.right @click.away="open = false" role="menu" class="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white p-2 shadow-xl">
+                                <div class="flex items-center gap-3 border-b border-gray-100 px-3 py-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500" aria-hidden="true">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <span class="min-w-0 leading-tight">
+                                        <span class="block truncate text-sm font-bold text-slate-900">{{ auth()->user()->nama }}</span>
+                                        <span class="mt-1 block text-xs font-medium text-gray-400">{{ $roleLabel }}</span>
+                                    </span>
+                                </div>
+                                <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-gray-100 pt-1">
                                     @csrf
-                                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                    <button type="submit" role="menuitem" class="block w-full rounded-xl px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50">
+                                        <i class="fas fa-sign-out-alt mr-2"></i>Keluar
                                     </button>
                                 </form>
                             </div>
                         </div>
+                        @include('partials.notifications')
                     @else
                         <a href="{{ route('login') }}" class="text-gray-700 hover:text-yellow-600 px-3 py-2 rounded-md text-sm font-medium">Login</a>
                         <a href="{{ route('register') }}" class="bg-yellow-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-600">Daftar</a>
@@ -101,146 +138,354 @@
                 </div>
                 
                 <!-- Mobile menu button -->
-                <div class="md:hidden">
-                    <button type="button" class="text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-yellow-500 p-2 rounded-md">
-                        <i class="fas fa-bars"></i>
+                <div class="col-start-3 row-start-1 flex items-center gap-2 justify-self-end lg:hidden">
+                    @auth
+                        @include('partials.notifications')
+                    @endauth
+                    <button type="button"
+                            @click="mobileOpen = !mobileOpen"
+                            :aria-expanded="mobileOpen.toString()"
+                            aria-controls="mobile-navigation"
+                            class="text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-yellow-500 p-2 rounded-md">
+                        <span class="sr-only">Buka menu navigasi</span>
+                        <i class="fas" :class="mobileOpen ? 'fa-times' : 'fa-bars'" aria-hidden="true"></i>
                     </button>
+                </div>
+            </div>
+
+            <div id="mobile-navigation" x-cloak x-show="mobileOpen" x-transition class="border-t border-gray-100 py-3 lg:hidden">
+                <div class="space-y-1">
+                    <a href="{{ route('home') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('home') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Beranda</a>
+                    <a href="{{ route('about') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('about') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Tentang Kami</a>
+                    <a href="{{ route('katalog') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('katalog*') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Katalog</a>
+                    <a href="{{ route('konsultasi.index') }}" @click="mobileOpen = false" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('konsultasi.index', 'konsultasi.create') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Konsultasi</a>
+                </div>
+
+                <div class="mt-3 border-t border-gray-100 pt-3">
+                    @auth
+                        <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ auth()->user()->nama }}</p>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('dashboard.admin') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Admin Panel</a>
+                        @elseif(auth()->user()->isDesigner())
+                            <a href="{{ route('dashboard.designer') }}" class="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Desainer Panel</a>
+                        @else
+                            <a href="{{ route('pesanan.saya') }}" class="block rounded-lg px-3 py-2 text-sm font-medium {{ request()->routeIs('pesanan.saya', 'pemesanan.show', 'konsultasi.show') ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50' }}">Pesanan Saya</a>
+                        @endif
+                        <form method="POST" action="{{ route('logout') }}" class="mt-1">
+                            @csrf
+                            <button type="submit" class="block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50">Keluar</button>
+                        </form>
+                    @else
+                        <div class="grid grid-cols-2 gap-2 px-3">
+                            <a href="{{ route('login') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50">Login</a>
+                            <a href="{{ route('register') }}" class="rounded-lg bg-amber-400 px-4 py-2 text-center text-sm font-semibold text-slate-900 hover:bg-amber-300">Daftar</a>
+                        </div>
+                    @endauth
                 </div>
             </div>
         </nav>
     </header>
     
+    @include('partials.notification-card')
+
     <!-- Main Content -->
     <main class="pt-16">
         @yield('content')
     </main>
     
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-100">
-        <div class="h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500"></div>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <!-- Brand -->
-                <div class="lg:col-span-5">
-                    <a href="{{ route('home') }}" aria-label="Kembali ke beranda" class="inline-block mb-5">
-                        <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-6 w-auto">
+    @php
+        $footerWhatsapp = preg_replace('/\D+/', '', config('services.daiku.whatsapp_number'));
+        $footerWhatsappUrl = 'https://wa.me/'.$footerWhatsapp.'?text='.rawurlencode('Halo Daiku, saya ingin berkonsultasi mengenai kebutuhan interior saya.');
+    @endphp
+    @if(!request()->routeIs('pesanan.saya'))
+    <footer class="relative mt-32 bg-slate-900 text-white">
+        @if(!request()->routeIs('konsultasi*'))
+        <div class="absolute inset-x-0 -top-24 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <section class="relative overflow-hidden rounded-md bg-[#fff8ef] px-7 py-10 text-black shadow-lg sm:px-12 lg:flex lg:items-center lg:justify-between lg:gap-10 lg:py-14" aria-labelledby="footer-cta-title">
+                <div class="absolute -right-16 -top-24 h-80 w-80 rounded-full border border-amber-300/40" aria-hidden="true"></div>
+                <div class="absolute right-10 top-12 h-64 w-64 rounded-full border border-amber-300/40" aria-hidden="true"></div>
+                <div class="relative">
+                    <h2 id="footer-cta-title" class="text-3xl font-bold tracking-tight sm:text-4xl">Butuh bantuan atau konsultasi gratis?</h2>
+                    <p class="mt-4 text-base text-slate-700">Mari wujudkan interior yang fungsional dan sesuai kebutuhan ruang Anda.</p>
+                </div>
+                <a href="{{ route('konsultasi.index') }}" class="relative mt-7 inline-flex shrink-0 items-center justify-center rounded bg-slate-900 px-8 py-4 font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-amber-300 lg:mt-0">
+                    Hubungi Kami
+                </a>
+            </section>
+        </div>
+        @endif
+
+        <div class="mx-auto max-w-7xl px-4 pb-8 {{ request()->routeIs('konsultasi*') ? 'pt-16 lg:pt-20' : 'pt-40 lg:pt-44' }} sm:px-6 lg:px-8">
+            <div class="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <a href="{{ route('home') }}" aria-label="Kembali ke beranda" class="inline-block">
+                        <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-8 w-auto brightness-0 invert">
                     </a>
-                    <p class="text-slate-300 leading-relaxed max-w-md mb-6">
-                        Siap mengubah ruang Anda menjadi karya desain yang nyaman dan fungsional. Tim Daiku siap bantu dari konsep sampai eksekusi.
-                    </p>
-                    <div class="flex flex-wrap gap-3">
-                        <a href="{{ route('konsultasi.index') }}" class="inline-flex items-center rounded-lg bg-amber-400 px-5 py-2.5 text-slate-900 font-semibold hover:bg-amber-300 transition duration-200">
-                            Konsultasi Sekarang
-                        </a>
-                        <a href="{{ route('katalog') }}" class="inline-flex items-center rounded-lg border border-slate-600 px-5 py-2.5 text-slate-200 hover:border-amber-300 hover:text-amber-200 transition duration-200">
-                            Lihat Katalog
-                        </a>
+                    <p class="mt-6 max-w-xs text-sm leading-relaxed text-white/75">One stop solution untuk desain interior dan furnitur custom.</p>
+                    <div class="mt-7 flex gap-3">
+                        <a href="https://www.instagram.com/daiku.portfolio/" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 w-9 items-center justify-center rounded bg-white text-slate-900 transition hover:bg-amber-400" aria-label="Instagram Daiku"><i class="fab fa-instagram"></i></a>
+                        <a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex h-9 w-9 items-center justify-center rounded bg-white text-slate-900 transition hover:bg-amber-400" aria-label="WhatsApp Daiku"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
 
-                <!-- Links -->
-                <div class="lg:col-span-3">
-                    <h3 class="text-base font-semibold tracking-wide text-white mb-4">Navigasi</h3>
-                    <ul class="space-y-3">
-                        <li><a href="{{ route('home') }}" class="text-slate-300 hover:text-amber-300 transition duration-150">Beranda</a></li>
-                        <li><a href="{{ route('katalog') }}" class="text-slate-300 hover:text-amber-300 transition duration-150">Katalog</a></li>
-                        <li><a href="{{ route('konsultasi.index') }}" class="text-slate-300 hover:text-amber-300 transition duration-150">Konsultasi</a></li>
-                        <li><a href="{{ route('register') }}" class="text-slate-300 hover:text-amber-300 transition duration-150">Daftar Akun</a></li>
+                <div>
+                    <h3 class="text-xl font-bold">Layanan</h3>
+                    <ul class="mt-6 space-y-4 text-sm text-white/80">
+                        <li><a href="{{ route('konsultasi.index') }}" class="transition hover:text-amber-400">Konsultasi desain interior</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Furnitur custom</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Renovasi ruang</a></li>
                     </ul>
                 </div>
 
-                <!-- Contact -->
-                <div class="lg:col-span-4">
-                    <h3 class="text-base font-semibold tracking-wide text-white mb-4">Kontak</h3>
-                    <ul class="space-y-3 text-slate-300">
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-envelope mt-1 text-amber-300"></i>
-                            <span>info@daikuinterior.com</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-phone mt-1 text-amber-300"></i>
-                            <span>+62 761-123456</span>
-                        </li>
-                        <li class="flex items-start gap-3">
-                            <i class="fas fa-map-marker-alt mt-1 text-amber-300"></i>
-                            <span>Pekanbaru, Riau</span>
-                        </li>
+                <div>
+                    <h3 class="text-xl font-bold">Navigasi</h3>
+                    <ul class="mt-6 space-y-4 text-sm text-white/80">
+                        <li><a href="{{ route('home') }}" class="transition hover:text-amber-400">Beranda</a></li>
+                        <li><a href="{{ route('katalog') }}" class="transition hover:text-amber-400">Portofolio</a></li>
+                        <li><a href="{{ route('about') }}" class="transition hover:text-amber-400">Tentang Kami</a></li>
+                        <li><a href="{{ route('konsultasi.index') }}" class="transition hover:text-amber-400">Konsultasi</a></li>
                     </ul>
-                    <div class="flex items-center gap-3 mt-5">
-                        <a href="#" class="h-9 w-9 rounded-full border border-slate-600 flex items-center justify-center text-slate-300 hover:border-amber-300 hover:text-amber-300 transition duration-150" aria-label="Facebook">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="h-9 w-9 rounded-full border border-slate-600 flex items-center justify-center text-slate-300 hover:border-amber-300 hover:text-amber-300 transition duration-150" aria-label="Twitter">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="h-9 w-9 rounded-full border border-slate-600 flex items-center justify-center text-slate-300 hover:border-amber-300 hover:text-amber-300 transition duration-150" aria-label="Instagram">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-bold">Kontak</h3>
+                    <ul class="mt-6 space-y-4 text-sm leading-relaxed text-white/80">
+                        <li class="flex gap-3"><i class="fas fa-location-dot mt-1 text-amber-400" aria-hidden="true"></i><span>Pekanbaru, Riau, Indonesia</span></li>
+                        <li><a href="{{ $footerWhatsappUrl }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fab fa-whatsapp text-amber-400" aria-hidden="true"></i><span>+{{ $footerWhatsapp }}</span></a></li>
+                        <li><a href="mailto:fendrabudiono@gmail.com" class="flex items-center gap-3 transition hover:text-amber-400"><i class="fas fa-envelope text-amber-400" aria-hidden="true"></i><span>fendrabudiono@gmail.com</span></a></li>
+                    </ul>
                 </div>
             </div>
 
-            <div class="mt-10 border-t border-slate-800 pt-6 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-sm text-slate-400">
-                <p>&copy; {{ now()->year }} Daiku Interior. All rights reserved.</p>
-                <p>Interior design studio Pekanbaru</p>
+            <div class="mt-16 flex flex-col gap-4 border-t border-white/25 pt-6 text-sm text-white/55 sm:flex-row sm:items-center sm:justify-between">
+                <p>&copy; {{ now()->year }} Daiku Interior. Hak cipta dilindungi.</p>
+                <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="self-start transition hover:text-amber-400 sm:self-auto">Kembali ke atas <i class="fas fa-arrow-up ml-1" aria-hidden="true"></i></button>
             </div>
         </div>
     </footer>
-    
-    <!-- Login Alert Modal -->
-    <div id="loginModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
-                    <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Login Diperlukan</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">
-                        Anda harus login terlebih dahulu untuk mengakses halaman "Pesanan Saya".
-                    </p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="loginBtn" onclick="redirectToLogin()" 
-                        class="px-4 py-2 bg-yellow-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 mb-2">
-                        Login Sekarang
-                    </button>
-                    <button onclick="closeLoginModal()" 
-                        class="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                        Batal
-                    </button>
-                </div>
-            </div>
-        </div>
+    @endif
+
+    <div id="imageLightbox" onclick="if (event.target === this) closeImageLightbox()" class="fixed inset-0 z-70 hidden items-center justify-center bg-slate-950/95 p-4 sm:p-8" role="dialog" aria-modal="true" aria-labelledby="imageLightboxCaption">
+        <button type="button" onclick="closeImageLightbox()" class="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-2xl text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-amber-400" aria-label="Tutup gambar besar">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+        <figure onclick="event.stopPropagation()" class="flex max-h-full max-w-7xl flex-col items-center gap-4">
+            <img id="imageLightboxImage" src="" alt="" class="max-h-[calc(100vh-7rem)] max-w-full object-contain" decoding="async">
+            <figcaption id="imageLightboxCaption" class="text-center text-sm text-white/80"></figcaption>
+        </figure>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    
     <script>
-        function showLoginAlert() {
-            document.getElementById('loginModal').classList.remove('hidden');
+        function openImageLightbox(source, alt = '') {
+            const lightbox = document.getElementById('imageLightbox');
+            const image = document.getElementById('imageLightboxImage');
+            const caption = document.getElementById('imageLightboxCaption');
+            if (!lightbox || !image || !source) return;
+
+            image.src = source;
+            image.alt = alt;
+            caption.textContent = alt;
+            lightbox.classList.remove('hidden');
+            lightbox.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
         }
-        
-        function closeLoginModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-        }
-        
-        function redirectToLogin() {
-            window.location.href = "{{ route('login') }}";
-        }
-        
-        // Close modal when clicking outside
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('loginModal');
-            if (event.target === modal) {
-                closeLoginModal();
+
+        function closeImageLightbox() {
+            const lightbox = document.getElementById('imageLightbox');
+            const image = document.getElementById('imageLightboxImage');
+            const sidebar = document.getElementById('detailSidebar');
+            if (!lightbox) return;
+
+            lightbox.classList.add('hidden');
+            lightbox.classList.remove('flex');
+            if (image) image.src = '';
+            if (!sidebar || sidebar.classList.contains('translate-x-full')) {
+                document.body.classList.remove('overflow-hidden');
             }
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape') closeImageLightbox();
         });
     </script>
-    
+
+    <div
+        x-data="{
+            open: false,
+            pendingForm: null,
+            onConfirm: null,
+            title: 'Konfirmasi tindakan',
+            message: 'Apakah Anda yakin ingin melanjutkan?',
+            confirmLabel: 'Konfirmasi',
+            tone: 'primary',
+            submitting: false,
+            show(detail) {
+                this.pendingForm = detail.form || null;
+                this.onConfirm = detail.onConfirm || null;
+                this.title = detail.title || 'Konfirmasi tindakan';
+                this.message = detail.message || 'Apakah Anda yakin ingin melanjutkan?';
+                this.confirmLabel = detail.confirmLabel || 'Konfirmasi';
+                this.tone = detail.tone || 'primary';
+                this.submitting = false;
+                this.open = true;
+                this.$nextTick(() => this.$refs.cancelButton.focus());
+            },
+            close() {
+                if (this.submitting) return;
+                this.open = false;
+                this.pendingForm = null;
+                this.onConfirm = null;
+            },
+            confirm() {
+                if (this.submitting) return;
+                if (this.onConfirm) {
+                    this.submitting = true;
+                    Promise.resolve(this.onConfirm()).finally(() => {
+                        this.submitting = false;
+                        this.open = false;
+                        this.onConfirm = null;
+                    });
+                    return;
+                }
+                if (!this.pendingForm) return;
+                this.submitting = true;
+                this.pendingForm.submit();
+            }
+        }"
+        x-cloak
+        x-show="open"
+        @open-confirmation.window="show($event.detail)"
+        @keydown.escape.window="close()"
+        class="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6"
+        role="presentation"
+    >
+        <div
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+            @click="close()"
+        ></div>
+
+        <section
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="translate-y-3 scale-95 opacity-0"
+            x-transition:enter-end="translate-y-0 scale-100 opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="translate-y-0 scale-100 opacity-100"
+            x-transition:leave-end="translate-y-2 scale-95 opacity-0"
+            class="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirmation-dialog-title"
+            aria-describedby="confirmation-dialog-message"
+            @click.stop
+        >
+            <div class="px-6 pb-5 pt-6 sm:px-7 sm:pt-7">
+                <h2 id="confirmation-dialog-title" class="text-xl font-bold text-slate-950" x-text="title"></h2>
+                <p id="confirmation-dialog-message" class="mt-2 text-sm leading-6 text-slate-600" x-text="message"></p>
+            </div>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end sm:px-7">
+                <button
+                    x-ref="cancelButton"
+                    type="button"
+                    class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+                    @click="close()"
+                    :disabled="submitting"
+                >
+                    Batal
+                </button>
+                <button
+                    type="button"
+                    class="inline-flex h-11 min-w-32 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-70"
+                    :class="tone === 'danger' ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : (tone === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500' : 'bg-slate-950 hover:bg-slate-800 focus:ring-slate-700')"
+                    @click="confirm()"
+                    :disabled="submitting"
+                >
+                    <i x-show="submitting" class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+                    <span x-text="submitting ? 'Memproses...' : confirmLabel"></span>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <div
+        x-data="{
+            open: false,
+            title: 'Informasi',
+            message: '',
+            show(detail) {
+                this.title = detail.title || 'Informasi';
+                this.message = detail.message || '';
+                this.open = true;
+                this.$nextTick(() => this.$refs.noticeCloseButton.focus());
+            },
+            close() {
+                this.open = false;
+            }
+        }"
+        x-cloak
+        x-show="open"
+        @open-notice.window="show($event.detail)"
+        @keydown.escape.window="close()"
+        class="fixed inset-0 z-120 flex items-center justify-center p-4 sm:p-6"
+        role="presentation"
+    >
+        <div
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+            @click="close()"
+        ></div>
+
+        <section
+            x-show="open"
+            x-transition:enter="ease-out duration-200"
+            x-transition:enter-start="translate-y-3 scale-95 opacity-0"
+            x-transition:enter-end="translate-y-0 scale-100 opacity-100"
+            x-transition:leave="ease-in duration-150"
+            x-transition:leave-start="translate-y-0 scale-100 opacity-100"
+            x-transition:leave-end="translate-y-2 scale-95 opacity-0"
+            class="relative w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="notice-dialog-title"
+            aria-describedby="notice-dialog-message"
+            @click.stop
+        >
+            <div class="px-6 pb-5 pt-6 text-center sm:px-7 sm:pt-7">
+                <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                    <i class="fas fa-circle-info" aria-hidden="true"></i>
+                </span>
+                <h2 id="notice-dialog-title" class="mt-3 text-lg font-bold text-slate-950" x-text="title"></h2>
+                <p id="notice-dialog-message" class="mt-2 text-sm leading-6 text-slate-600" x-text="message"></p>
+            </div>
+
+            <div class="border-t border-slate-100 bg-slate-50 px-6 py-4 sm:px-7">
+                <button
+                    x-ref="noticeCloseButton"
+                    type="button"
+                    class="inline-flex h-11 w-full items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2"
+                    @click="close()"
+                >
+                    Mengerti
+                </button>
+            </div>
+        </section>
+    </div>
+
     @stack('scripts')
 </body>
 </html>

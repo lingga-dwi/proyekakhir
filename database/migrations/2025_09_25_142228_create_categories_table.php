@@ -22,7 +22,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
-            
+
             $table->foreign('parent_id')->references('id')->on('categories')->onDelete('cascade');
             $table->index(['parent_id', 'is_active']);
         });

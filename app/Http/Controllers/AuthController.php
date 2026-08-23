@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
@@ -29,10 +28,8 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->has('remember'))) {
             $request->session()->regenerate();
-            
-            // Always redirect to home after login
-            $user = Auth::user();
-            return redirect()->route('home')->with('success', 'Selamat datang kembali, ' . $user->nama . '!');
+
+            return redirect()->route('home');
         }
 
         return back()->withErrors([
@@ -51,8 +48,6 @@ class AuthController extends Controller
             'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'alamat' => 'required|string',
-            'no_telp' => 'required|string',
         ]);
 
         $user = User::create([
@@ -60,13 +55,11 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'pelanggan',
-            'alamat' => $request->alamat,
-            'no_telp' => $request->no_telp,
         ]);
 
         Auth::login($user);
 
-        return redirect()->route('home')->with('success', 'Akun berhasil dibuat! Selamat datang, ' . $user->nama . '!');
+        return redirect()->route('home')->with('success', 'Akun berhasil dibuat. Selamat datang di Daiku Interior!');
     }
 
     public function logout(Request $request)

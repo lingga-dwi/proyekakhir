@@ -1,396 +1,59 @@
 @extends('layouts.main')
 
-@section('title', 'Layanan Desain Interior - Daiku Interior')
+@section('title', 'Konsultasi Desain Interior Pekanbaru - Daiku Interior')
+@section('meta_description', 'Mulai konsultasi desain interior bersama Daiku di Pekanbaru dengan alur kebutuhan, survei, perencanaan, dan pengerjaan yang terarah.')
 
 @section('content')
-<!-- Hero Section - IKEA Style -->
-<section class="bg-white">
-    <div class="max-w-7xl mx-auto">
-        <div class="grid lg:grid-cols-2 min-h-screen">
-            <!-- Left Content -->
-            <div class="flex items-center px-8 lg:px-16 py-16">
-                <div class="max-w-lg">
-                    <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                        Layanan desain interior
-                    </h1>
-                    
-                    <div class="space-y-6 mb-8">
-                        <h2 class="text-2xl lg:text-3xl font-bold text-gray-900">
-                            Wujudkan interior impian Anda dengan Layanan Desain Interior Daiku
-                        </h2>
-                        
-                        <div class="space-y-4 text-gray-700 leading-relaxed">
-                            <p>
-                                Dapatkan inspirasi gaya melalui konsultasi bersama ahli dan 
-                                temukan pilihan warna, pencahayaan, penyimpanan, serta 
-                                perabot yang pas untuk ruangan Anda.
-                            </p>
-                            <p>
-                                Dengan pengalaman panjang di bidang perabot rumah, Daiku 
-                                menghadirkan produk dan solusi yang mengutamakan gaya dan 
-                                fungsi. Gunakan kesempatan ini untuk merasakan keunggulan 
-                                pengetahuan Daiku yang mendalam.
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        @auth
-                            <a href="{{ route('konsultasi.create') }}" 
-                               class="inline-flex items-center justify-center px-8 py-4 bg-green-500 text-white font-medium rounded-full hover:bg-green-600 transition duration-200">
-                                <i class="fab fa-whatsapp mr-3 text-xl"></i>
-                                Konsultasi Sekarang
-                            </a>
-                            <a href="{{ route('pemesanan.create') }}" 
-                               class="inline-flex items-center justify-center px-8 py-4 bg-yellow-500 text-gray-900 font-medium rounded-full hover:bg-yellow-600 transition duration-200">
+@php
+    $coverImage = $featuredKatalogs->first()?->gambar_utama_url
+        ?? asset('images/hero/daiku-home-hero.jpg');
+@endphp
+
+<section class="bg-white py-6 sm:py-8">
+    <div class="mx-auto grid min-h-[68vh] max-w-7xl overflow-hidden rounded-2xl bg-white lg:grid-cols-2">
+        <div class="flex items-center px-4 py-16 sm:px-8 lg:px-12">
+            <div class="max-w-xl">
+                <p class="text-sm font-bold uppercase tracking-[0.18em] text-amber-600">Konsultasi Daiku</p>
+                <h1 class="mt-4 text-4xl font-bold leading-tight text-slate-900 sm:text-5xl">Mulai dari kebutuhan ruang Anda.</h1>
+                <p class="mt-6 text-lg leading-relaxed text-gray-600">
+                    Mulai konsultasi dengan mengisi kebutuhan ruang, ukuran, preferensi, dan kendala Anda. Informasi ini membantu tim Daiku meninjau proyek sebelum melanjutkan pembahasan melalui WhatsApp.
+                </p>
+                <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                    @auth
+                        @if(auth()->user()->isPelanggan())
+                            <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
                                 Buat Pesanan
                             </a>
-                        @else
-                            <a href="{{ route('login') }}" 
-                               class="inline-flex items-center justify-center px-8 py-4 bg-green-500 text-white font-medium rounded-full hover:bg-green-600 transition duration-200">
-                                <i class="fab fa-whatsapp mr-3 text-xl"></i>
-                                Konsultasi Sekarang
+                        @elseif(auth()->user()->isAdmin())
+                            <a href="{{ route('admin.pemesanan.index') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Kelola Pesanan
                             </a>
-                            <a href="{{ route('login') }}" 
-                               class="inline-flex items-center justify-center px-8 py-4 bg-yellow-500 text-gray-900 font-medium rounded-full hover:bg-yellow-600 transition duration-200">
-                                Buat Pesanan
+                        @elseif(auth()->user()->isDesigner())
+                            <a href="{{ route('dashboard.designer') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                                Dashboard Desainer
                             </a>
-                        @endauth
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Right Image -->
-            <div class="relative bg-blue-100">
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                         alt="Interior Design Consultation" 
-                         class="w-full h-full object-cover">
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Services Section -->
-<section id="layanan" class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl font-bold text-gray-900 mb-4">Pilihan Layanan Konsultasi</h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                Kami menyediakan berbagai jenis konsultasi yang disesuaikan dengan kebutuhan dan budget Anda
-            </p>
-        </div>
-        
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Konsultasi Gratis -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition duration-300">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-comments text-2xl text-green-600"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Konsultasi Gratis</h3>
-                    <div class="text-3xl font-bold text-green-600 mb-4">GRATIS</div>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        Diskusi awal untuk memahami kebutuhan dan memberikan arahan dasar desain interior
-                    </p>
-                    <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-green-500 mr-3 mt-0.5"></i>
-                            <span>30 menit konsultasi online via video call</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-green-500 mr-3 mt-0.5"></i>
-                            <span>Tips dan saran dasar penataan ruang</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-green-500 mr-3 mt-0.5"></i>
-                            <span>Referensi gaya desain yang sesuai</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-green-500 mr-3 mt-0.5"></i>
-                            <span>Rekomendasi produk dasar</span>
-                        </li>
-                    </ul>
-                    @auth
-                        <a href="{{ route('konsultasi.create') }}?type=free_consultation" 
-                           class="block w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
-                            Pilih Layanan
-                        </a>
+                        @endif
                     @else
-                        <a href="{{ route('login') }}" 
-                           class="block w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
-                            Login untuk Memilih
+                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center rounded-lg bg-amber-400 px-6 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                            Buat Pesanan
                         </a>
                     @endauth
+                    <a href="https://wa.me/6285805908809?text=Halo%20Daiku%2C%20saya%20ingin%20bertanya%20tentang%20desain%20interior." target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 rounded-lg border border-green-600 px-6 py-3.5 font-semibold text-green-700 transition hover:bg-green-50">
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M20.5 3.5A11.9 11.9 0 0 0 12.03 0C5.44 0 .08 5.35.08 11.94c0 2.1.55 4.15 1.59 5.96L0 24l6.24-1.64a11.9 11.9 0 0 0 5.78 1.48h.01c6.59 0 11.94-5.35 11.94-11.94 0-3.19-1.24-6.19-3.47-8.4Zm-8.47 18.3h-.01a9.86 9.86 0 0 1-5.03-1.38l-.36-.21-3.7.97.99-3.61-.23-.37a9.88 9.88 0 1 1 8.34 4.6Zm5.42-7.4c-.3-.15-1.77-.87-2.05-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.95 1.17-.17.2-.35.22-.65.07-.3-.15-1.24-.46-2.36-1.47-.87-.78-1.46-1.74-1.63-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.15.2 2.1 3.21 5.09 4.5.71.31 1.27.5 1.7.64.72.23 1.37.2 1.89.12.58-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z"/>
+                        </svg>
+                        Chat WhatsApp Langsung
+                    </a>
                 </div>
-            </div>
-            
-            <!-- Virtual Design -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover:shadow-md transition duration-300">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-laptop text-2xl text-blue-600"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Virtual Design</h3>
-                    <div class="text-3xl font-bold text-blue-600 mb-4">Rp 2.500.000</div>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        Desain 3D dan layout ruangan lengkap dengan rekomendasi produk dan warna
-                    </p>
-                    <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-blue-500 mr-3 mt-0.5"></i>
-                            <span>Desain 3D profesional dengan rendering berkualitas tinggi</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-blue-500 mr-3 mt-0.5"></i>
-                            <span>Shopping list produk dengan link pembelian</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-blue-500 mr-3 mt-0.5"></i>
-                            <span>2x revisi gratis untuk penyesuaian</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-blue-500 mr-3 mt-0.5"></i>
-                            <span>Panduan implementasi step-by-step</span>
-                        </li>
-                    </ul>
-                    @auth
-                        <a href="{{ route('konsultasi.create') }}?type=virtual_design" 
-                           class="block w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                            Pilih Layanan
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" 
-                           class="block w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                            Login untuk Memilih
-                        </a>
-                    @endauth
-                </div>
-            </div>
-            
-            <!-- In-Home Visit -->
-            <div class="bg-white rounded-lg shadow-sm border-2 border-yellow-400 p-8 hover:shadow-md transition duration-300 relative">
-                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span class="bg-yellow-400 text-gray-900 text-sm font-bold px-4 py-1 rounded-full">POPULER</span>
-                </div>
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-home text-2xl text-yellow-600"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">Kunjungan Rumah</h3>
-                    <div class="text-3xl font-bold text-yellow-600 mb-4">Rp 5.000.000</div>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        Konsultasi langsung di lokasi dengan pengukuran dan analisis detail ruangan
-                    </p>
-                    <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-yellow-500 mr-3 mt-0.5"></i>
-                            <span>Kunjungan & survei lokasi oleh desainer profesional</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-yellow-500 mr-3 mt-0.5"></i>
-                            <span>Konsep desain lengkap dengan mood board</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-yellow-500 mr-3 mt-0.5"></i>
-                            <span>Estimasi biaya detail dan timeline proyek</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check text-yellow-500 mr-3 mt-0.5"></i>
-                            <span>Follow-up support selama 1 bulan</span>
-                        </li>
-                    </ul>
-                    @auth
-                        <a href="{{ route('konsultasi.create') }}?type=in_home_visit" 
-                           class="block w-full bg-yellow-500 text-gray-900 py-3 rounded-lg hover:bg-yellow-600 transition duration-200 font-medium">
-                            Pilih Layanan
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" 
-                           class="block w-full bg-yellow-500 text-gray-900 py-3 rounded-lg hover:bg-yellow-600 transition duration-200 font-medium">
-                            Login untuk Memilih
-                        </a>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- How It Works -->
-<section class="py-20 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl font-bold text-gray-900 mb-4">Bagaimana Cara Kerjanya?</h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                Proses konsultasi yang mudah dan terstruktur untuk hasil yang maksimal
-            </p>
-        </div>
-        
-        <div class="grid md:grid-cols-3 gap-12">
-            <div class="text-center">
-                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span class="text-2xl font-bold text-blue-600">1</span>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-4">Pilih Layanan</h3>
-                <p class="text-gray-600 leading-relaxed">
-                    Pilih jenis konsultasi yang sesuai dengan kebutuhan dan budget Anda. 
-                    Mulai dari konsultasi gratis hingga kunjungan rumah.
-                </p>
-            </div>
-            
-            <div class="text-center">
-                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span class="text-2xl font-bold text-green-600">2</span>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-4">Konsultasi</h3>
-                <p class="text-gray-600 leading-relaxed">
-                    Diskusikan impian dan kebutuhan ruangan Anda dengan desainer ahli kami. 
-                    Dapatkan insight dan rekomendasi yang tepat.
-                </p>
-            </div>
-            
-            <div class="text-center">
-                <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <span class="text-2xl font-bold text-yellow-600">3</span>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-4">Implementasi</h3>
-                <p class="text-gray-600 leading-relaxed">
-                    Dapatkan desain, shopping list, dan panduan implementasi. 
-                    Tim kami siap membantu hingga ruangan impian Anda terwujud.
+                <p class="mt-5 text-sm leading-relaxed text-gray-500">
+                    Setelah form dikirim, admin akan menghubungi Anda melalui WhatsApp.
                 </p>
             </div>
         </div>
-    </div>
-</section>
-
-<!-- Portfolio Preview -->
-<section class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-4xl font-bold text-gray-900 mb-4">Hasil Konsultasi Kami</h2>
-            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                Lihat transformasi ruangan yang telah kami bantu wujudkan melalui layanan konsultasi
-            </p>
-        </div>
-        
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition duration-300">
-                <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                         alt="Living Room Design" 
-                         class="w-full h-48 object-cover">
-                    <div class="absolute top-4 left-4">
-                        <span class="bg-white text-gray-900 px-3 py-1 rounded-full text-sm font-medium shadow">Ruang Keluarga</span>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Modern Minimalis</h3>
-                    <p class="text-gray-600 text-sm mb-4">Transformasi ruang keluarga dengan konsep minimalis yang nyaman dan fungsional.</p>
-                    <div class="flex items-center text-sm text-gray-500">
-                        <i class="fas fa-map-marker-alt mr-2"></i>
-                        Jakarta • 45m²
-                    </div>
-                </div>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition duration-300">
-                <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                         alt="Kitchen Design" 
-                         class="w-full h-48 object-cover">
-                    <div class="absolute top-4 left-4">
-                        <span class="bg-white text-gray-900 px-3 py-1 rounded-full text-sm font-medium shadow">Dapur</span>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Scandinavian Kitchen</h3>
-                    <p class="text-gray-600 text-sm mb-4">Desain dapur bergaya Skandinavia yang clean, bright, dan sangat fungsional.</p>
-                    <div class="flex items-center text-sm text-gray-500">
-                        <i class="fas fa-map-marker-alt mr-2"></i>
-                        Bandung • 20m²
-                    </div>
-                </div>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition duration-300">
-                <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1540932239986-30128078f3c5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" 
-                         alt="Bedroom Design" 
-                         class="w-full h-48 object-cover">
-                    <div class="absolute top-4 left-4">
-                        <span class="bg-white text-gray-900 px-3 py-1 rounded-full text-sm font-medium shadow">Kamar Tidur</span>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Cozy Bedroom</h3>
-                    <p class="text-gray-600 text-sm mb-4">Kamar tidur yang hangat dan nyaman dengan sentuhan modern yang elegan.</p>
-                    <div class="flex items-center text-sm text-gray-500">
-                        <i class="fas fa-map-marker-alt mr-2"></i>
-                        Surabaya • 25m²
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="text-center mt-12">
-            <a href="{{ route('katalog') }}" 
-               class="inline-flex items-center px-8 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition duration-200">
-                Lihat Semua Portfolio
-                <i class="fas fa-arrow-right ml-2"></i>
-            </a>
+        <div class="min-h-[420px] overflow-hidden bg-gray-100 lg:min-h-full">
+            <img src="{{ $coverImage }}" alt="Inspirasi desain interior Daiku" class="h-full w-full object-cover" fetchpriority="high" decoding="async">
         </div>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="py-20 bg-blue-50">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-4xl font-bold text-gray-900 mb-6">Siap Memulai Konsultasi?</h2>
-        <p class="text-xl text-gray-600 mb-8">
-            Konsultasi gratis tersedia! Mari wujudkan impian interior Anda bersama tim ahli desainer Daiku Interior.
-        </p>
-        
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            @auth
-                <a href="{{ route('konsultasi.create') }}" 
-                   class="inline-flex items-center justify-center px-8 py-4 bg-gray-900 text-white font-medium rounded-full hover:bg-gray-800 transition duration-200">
-                    <i class="fas fa-calendar-check mr-3"></i>
-                    Booking Konsultasi Sekarang
-                </a>
-            @else
-                <a href="{{ route('register') }}" 
-                   class="inline-flex items-center justify-center px-8 py-4 bg-gray-900 text-white font-medium rounded-full hover:bg-gray-800 transition duration-200">
-                    <i class="fas fa-user-plus mr-3"></i>
-                    Daftar & Mulai Konsultasi
-                </a>
-            @endauth
-            
-            <a href="https://wa.me/6281234567890" 
-               class="inline-flex items-center justify-center px-8 py-4 bg-green-500 text-white font-medium rounded-full hover:bg-green-600 transition duration-200">
-                <i class="fab fa-whatsapp mr-3 text-xl"></i>
-                Konsultasi Sekarang
-            </a>
-        </div>
-    </div>
-</section>
-@endsection
-
-@section('scripts')
-<script>
-// Smooth scroll for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
-    });
-});
-</script>
 @endsection

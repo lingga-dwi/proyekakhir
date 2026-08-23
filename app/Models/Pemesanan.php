@@ -2,35 +2,67 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Pemesanan extends Model
 {
     use HasFactory;
 
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_CONFIRMED = 'dikonfirmasi';
+
+    public const STATUS_IN_PROGRESS = 'sedang_dikerjakan';
+
+    public const STATUS_COMPLETED = 'selesai';
+
+    public const STATUS_CANCELLED = 'dibatalkan';
+
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+        self::STATUS_IN_PROGRESS,
+        self::STATUS_COMPLETED,
+        self::STATUS_CANCELLED,
+    ];
+
     protected $table = 'pemesanan';
 
     protected $fillable = [
-        'id_rfq',
         'id_user',
+        'designer_id',
         'katalog_id',
         'tanggal_pesan',
+        'sumber_masuk',
         'status_pemesanan',
+        'workflow_stage',
+        'draft_round',
+        'final_round',
+        'progress',
+        'target_mulai',
+        'target_selesai',
+        'survey_scheduled_at',
+        'survey_notes',
+        'survey_result',
+        'survey_completed_at',
+        'catatan_progres',
         'total_harga',
         'jenis_proyek',
         'jenis_bangunan',
         'luas_area',
-        'jumlah_ruangan',
-        'gaya_desain_preferensi',
-        'warna_dominan',
         'deskripsi_keinginan_desain',
-        'upload_denah_foto',
     ];
 
     protected $casts = [
         'tanggal_pesan' => 'date',
-        'upload_denah_foto' => 'array',
+        'target_mulai' => 'date',
+        'target_selesai' => 'date',
+        'survey_scheduled_at' => 'datetime',
+        'survey_completed_at' => 'datetime',
+        'draft_round' => 'integer',
+        'final_round' => 'integer',
+        'progress' => 'integer',
         'luas_area' => 'decimal:2',
         'total_harga' => 'decimal:2',
     ];
@@ -41,9 +73,9 @@ class Pemesanan extends Model
         return $this->belongsTo(User::class, 'id_user');
     }
 
-    public function rfq()
+    public function designer()
     {
-        return $this->belongsTo(Rfq::class, 'id_rfq');
+        return $this->belongsTo(User::class, 'designer_id');
     }
 
     public function katalog()
@@ -56,34 +88,33 @@ class Pemesanan extends Model
         return $this->hasMany(StatusTracking::class, 'id_pemesanan');
     }
 
-    public function invoice()
+    public function konsultasi()
     {
-        return $this->hasOne(Invoice::class, 'id_pemesanan');
+        return $this->hasOne(Konsultasi::class, 'pemesanan_id');
     }
 
-    // Helper methods
-    public function isPending()
+    public function documents()
     {
-        return $this->status_pemesanan === 'pending';
+        return $this->hasMany(ProjectDocument::class);
     }
 
-    public function isDikonfirmasi()
+    public function documentDecisions()
     {
-        return $this->status_pemesanan === 'dikonfirmasi';
+        return $this->hasMany(ProjectDocumentDecision::class);
     }
 
-    public function getSedangDikerjakan()
+    public function invoices()
     {
-        return $this->status_pemesanan === 'sedang_dikerjakan';
+        return $this->hasMany(ProjectInvoice::class);
     }
 
-    public function isSelesai()
+    /**
+     * The first invoice an admin creates for a project acts as the DP —
+     * the customer must pay and get it verified before production can
+     * move on to the survey stage.
+     */
+    public function dpInvoice()
     {
-        return $this->status_pemesanan === 'selesai';
-    }
-
-    public function isDibatalkan()
-    {
-        return $this->status_pemesanan === 'dibatalkan';
+        return $this->hasOne(ProjectInvoice::class)->oldestOfMany();
     }
 }

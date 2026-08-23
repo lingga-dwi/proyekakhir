@@ -1,238 +1,141 @@
 @extends('layouts.main')
 
-@section('title', 'Detail Konsultasi')
+@section('title', 'Detail Permintaan Desain - Daiku Interior')
 
 @section('content')
-<div class="bg-gray-50 min-h-screen py-8">
-    <div class="container mx-auto px-4">
-        
-        <!-- Back Button -->
-        <div class="mb-6">
-            <a href="{{ route('konsultasi.saya') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Kembali ke Konsultasi Saya
-            </a>
-        </div>
+@php
+    $whatsappNumber = preg_replace('/\D+/', '', config('services.daiku.whatsapp_number'));
+    $whatsappUrl = 'https://wa.me/'.$whatsappNumber.'?text='.rawurlencode('Halo Daiku, saya ingin menanyakan permintaan desain DI-'.$konsultasi->id.'.');
+    [$statusLabel, $statusClass, $statusMessage] = match ($konsultasi->status) {
+        'pending' => [\App\Support\ProjectStageLabel::forKonsultasi($konsultasi), 'bg-amber-100 text-amber-800', 'Permintaan sedang ditinjau oleh tim Daiku.'],
+        'confirmed' => [\App\Support\ProjectStageLabel::forKonsultasi($konsultasi), 'bg-blue-100 text-blue-800', 'Desainer Daiku telah ditugaskan dan akan menghubungi Anda melalui WhatsApp.'],
+        'completed' => ['Selesai', 'bg-emerald-100 text-emerald-800', 'Peninjauan permintaan telah selesai.'],
+        'cancelled' => ['Dibatalkan', 'bg-red-100 text-red-700', 'Permintaan ini tidak dapat dilanjutkan.'],
+        default => [ucfirst($konsultasi->status), 'bg-slate-100 text-slate-700', 'Status permintaan sedang diperbarui.'],
+    };
+    if ($konsultasi->status === 'pending' && $konsultasi->accepted_at) {
+        [$statusLabel, $statusClass, $statusMessage] = ['Diterima', 'bg-amber-100 text-amber-800', 'Permintaan telah diterima. Tim Daiku sedang menentukan jadwal konsultasi dan desainer.'];
+    }
+    $requestNote = trim((string) $konsultasi->deskripsi_kebutuhan);
+    if (in_array(mb_strtolower($requestNote), ['', '-', 'gaada', 'tidak ada', 'n/a'], true)) {
+        $requestNote = 'Belum ada catatan tambahan dari pelanggan.';
+    }
+    $isAssignedDesigner = auth()->user()->isDesigner()
+        && $konsultasi->designer_id === auth()->id();
+@endphp
 
-        <!-- Success Message -->
+<main class="min-h-screen bg-slate-50 py-10">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <a href="{{ $isAssignedDesigner ? route('designer.dashboard') : route('pesanan.saya') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-700 transition hover:text-amber-800">
+            <i class="fas fa-arrow-left text-xs" aria-hidden="true"></i>
+            {{ $isAssignedDesigner ? 'Kembali ke Dashboard Desainer' : 'Kembali ke Pesanan Saya' }}
+        </a>
+
         @if(session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
-                {{ session('success') }}
+            <div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <ul class="list-disc space-y-1 pl-5">
+                    @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                </ul>
             </div>
         @endif
 
-        <!-- Consultation Detail -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-2xl font-bold">Konsultasi #{{ $konsultasi->id }}</h1>
-                        <p class="text-blue-100">{{ $konsultasi->getJenisKonsultasiLabel() }}</p>
-                    </div>
-                    <div class="text-right">
-                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                            @if($konsultasi->status == 'pending') bg-yellow-100 text-yellow-800
-                            @elseif($konsultasi->status == 'confirmed') bg-blue-100 text-blue-800
-                            @elseif($konsultasi->status == 'completed') bg-green-100 text-green-800
-                            @else bg-red-100 text-red-800
-                            @endif">
-                            @if($konsultasi->status == 'pending') Menunggu Konfirmasi
-                            @elseif($konsultasi->status == 'confirmed') Dikonfirmasi
-                            @elseif($konsultasi->status == 'completed') Selesai
-                            @else Dibatalkan
-                            @endif
-                        </div>
-                    </div>
+        <section class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="request-title">
+            <header class="flex flex-col gap-5 bg-slate-900 px-6 py-7 text-white sm:flex-row sm:items-start sm:justify-between sm:px-8">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Permintaan desain #{{ $konsultasi->id }}</p>
+                    <h1 id="request-title" class="mt-2 text-2xl font-bold sm:text-3xl">{{ $konsultasi->getJenisKonsultasiLabel() }}</h1>
+                    <p class="mt-2 text-sm text-slate-300">{{ $konsultasi->getJenisRuanganLabel() }} · Dikirim {{ $konsultasi->created_at->translatedFormat('j F Y') }}</p>
                 </div>
-            </div>
+                <span class="w-fit rounded-full px-3 py-1.5 text-sm font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+            </header>
 
-            <!-- Content -->
-            <div class="p-6">
-                <div class="grid md:grid-cols-2 gap-8">
-                    <!-- Left Column -->
-                    <div class="space-y-6">
-                        <!-- Personal Info -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Informasi Personal</h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <span class="text-sm text-gray-600">Nama:</span>
-                                    <p class="font-medium">{{ $konsultasi->nama }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600">Email:</span>
-                                    <p class="font-medium">{{ $konsultasi->email }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600">No. Telepon:</span>
-                                    <p class="font-medium">{{ $konsultasi->no_telp }}</p>
-                                </div>
-                            </div>
+            <div class="grid gap-6 p-6 sm:p-8 lg:grid-cols-2">
+                <section class="rounded-xl border border-slate-200 p-5" aria-labelledby="customer-title">
+                    <h2 id="customer-title" class="text-lg font-bold text-slate-900">Informasi pelanggan</h2>
+                    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Nama</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->nama }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">No. WhatsApp</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->no_telp }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Email</dt><dd class="mt-1 break-all font-semibold text-slate-800">{{ $konsultasi->email ?: 'Tidak diisi' }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Alamat proyek</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->alamat ?: $konsultasi->user?->alamat ?: 'Tidak diisi' }}</dd></div>
+                    </dl>
+                </section>
+
+                <section class="rounded-xl border border-slate-200 p-5" aria-labelledby="project-title">
+                    <h2 id="project-title" class="text-lg font-bold text-slate-900">Ringkasan proyek</h2>
+                    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Jenis proyek</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->getJenisKonsultasiLabel() }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Jenis bangunan</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->getJenisRuanganLabel() }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Luas area</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->luas_ruangan ? $konsultasi->luas_ruangan.' m²' : 'Belum diisi' }}</dd></div>
+                        <div><dt class="text-xs font-medium uppercase tracking-wide text-slate-400">Anggaran</dt><dd class="mt-1 font-semibold text-slate-800">{{ $konsultasi->getBudgetRangeLabel() }}</dd></div>
+                    </dl>
+                </section>
+
+                <section class="rounded-xl bg-amber-50 p-5 lg:col-span-2" aria-labelledby="status-title">
+                    <h2 id="status-title" class="text-lg font-bold text-slate-900">Status permintaan</h2>
+                    <div class="mt-3 flex gap-3 text-sm leading-relaxed text-slate-700"><i class="fas fa-clock mt-0.5 text-amber-600" aria-hidden="true"></i><p>{{ $statusMessage }}</p></div>
+                </section>
+
+                <section class="lg:col-span-2" aria-labelledby="note-title">
+                    <h2 id="note-title" class="text-lg font-bold text-slate-900">Catatan kebutuhan</h2>
+                    <p class="mt-3 rounded-xl bg-slate-50 p-5 leading-relaxed text-slate-700">{{ $requestNote }}</p>
+                </section>
+
+                @if(!empty($konsultasi->attachments))
+                    <section class="lg:col-span-2" aria-labelledby="attachment-title">
+                        <h2 id="attachment-title" class="text-lg font-bold text-slate-900">Lampiran referensi</h2>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            @foreach($konsultasi->attachments as $index => $attachment)
+                                @php
+                                    $attachmentPath = is_array($attachment) ? ($attachment['path'] ?? '') : $attachment;
+                                    $attachmentName = is_array($attachment) ? ($attachment['name'] ?? basename($attachmentPath)) : basename($attachmentPath);
+                                @endphp
+                                <a href="{{ route('konsultasi.attachment.download', [$konsultasi, $index]) }}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50">
+                                    <i class="fas fa-paperclip text-amber-600" aria-hidden="true"></i>
+                                    <span class="truncate">{{ $attachmentName }}</span>
+                                    <i class="fas fa-download ml-auto text-slate-400" aria-hidden="true"></i>
+                                </a>
+                            @endforeach
                         </div>
-
-                        <!-- Schedule -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Jadwal Konsultasi</h3>
-                            <div class="bg-blue-50 rounded-lg p-4">
-                                <div class="flex items-center mb-2">
-                                    <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ $konsultasi->tanggal_konsultasi->format('d F Y') }}</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    <span class="font-medium">{{ date('H:i', strtotime($konsultasi->waktu_konsultasi)) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Admin Notes -->
-                        @if($konsultasi->catatan_admin)
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-800 mb-4">Catatan dari Tim</h3>
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <p class="text-gray-700">{{ $konsultasi->catatan_admin }}</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- Right Column -->
-                    <div class="space-y-6">
-                        <!-- Project Details -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Detail Proyek</h3>
-                            <div class="space-y-3">
-                                <div>
-                                    <span class="text-sm text-gray-600">Jenis Ruangan:</span>
-                                    <p class="font-medium">{{ ucwords(str_replace('_', ' ', $konsultasi->jenis_ruangan)) }}</p>
-                                </div>
-                                @if($konsultasi->luas_ruangan)
-                                    <div>
-                                        <span class="text-sm text-gray-600">Luas Ruangan:</span>
-                                        <p class="font-medium">{{ $konsultasi->luas_ruangan }} m²</p>
-                                    </div>
-                                @endif
-                                <div>
-                                    <span class="text-sm text-gray-600">Budget Range:</span>
-                                    <p class="font-medium">{{ $konsultasi->getBudgetRangeLabel() }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-gray-600">Timeline:</span>
-                                    <p class="font-medium">{{ $konsultasi->getTimelineLabel() }}</p>
-                                </div>
-                                @if($konsultasi->gaya_preferensi)
-                                    <div>
-                                        <span class="text-sm text-gray-600">Gaya Preferensi:</span>
-                                        <p class="font-medium">{{ $konsultasi->gaya_preferensi }}</p>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- Description -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Deskripsi Kebutuhan</h3>
-                            <div class="bg-gray-50 rounded-lg p-4">
-                                <p class="text-gray-700 leading-relaxed">{{ $konsultasi->deskripsi_kebutuhan }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Photos -->
-                        @if($konsultasi->upload_foto && count($konsultasi->upload_foto) > 0)
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-800 mb-4">Foto Ruangan</h3>
-                                <div class="grid grid-cols-2 gap-4">
-                                    @foreach($konsultasi->upload_foto as $foto)
-                                        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                            <img src="{{ Storage::url($foto) }}" alt="Foto ruangan" 
-                                                class="w-full h-full object-cover hover:scale-105 transition duration-300 cursor-pointer"
-                                                onclick="openModal('{{ Storage::url($foto) }}')">
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                <!-- Status Timeline -->
-                @if($konsultasi->status == 'confirmed' || $konsultasi->status == 'completed')
-                    <div class="mt-8 pt-8 border-t">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Status Konsultasi</h3>
-                        <div class="flex items-center space-x-4">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </div>
-                                <span class="ml-2 text-sm font-medium text-gray-700">Konsultasi Dikonfirmasi</span>
-                            </div>
-                            
-                            @if($konsultasi->status == 'completed')
-                                <div class="w-4 h-0.5 bg-green-500"></div>
-                                <div class="flex items-center">
-                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                                        <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                        </svg>
-                                    </div>
-                                    <span class="ml-2 text-sm font-medium text-gray-700">Konsultasi Selesai</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
+                    </section>
                 @endif
 
-                <!-- Action Buttons -->
-                <div class="mt-8 pt-8 border-t">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">Butuh bantuan? <a href="#" class="text-blue-600 hover:text-blue-800">Hubungi support</a></p>
-                        </div>
-                        
-                        @if($konsultasi->status == 'pending')
-                            <div class="text-right">
-                                <p class="text-sm text-gray-600 mb-2">Tim kami akan menghubungi Anda segera</p>
-                                <a href="{{ route('konsultasi.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                                    Book Konsultasi Lagi
-                                </a>
-                            </div>
-                        @elseif($konsultasi->status == 'completed')
-                            <a href="{{ route('konsultasi.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                                Book Konsultasi Lagi
-                            </a>
-                        @endif
-                    </div>
-                </div>
+                @if($konsultasi->catatan_admin)
+                    <section class="lg:col-span-2" aria-labelledby="team-note-title">
+                        <h2 id="team-note-title" class="text-lg font-bold text-slate-900">Catatan dari tim Daiku</h2>
+                        <p class="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-5 leading-relaxed text-slate-700">{{ $konsultasi->catatan_admin }}</p>
+                    </section>
+                @endif
+
+                @if($konsultasi->consultation_result)
+                    <section class="lg:col-span-2" aria-labelledby="consultation-result-title">
+                        <h2 id="consultation-result-title" class="text-lg font-bold text-slate-900">Hasil konsultasi</h2>
+                        <p class="mt-3 whitespace-pre-line rounded-xl border border-emerald-100 bg-emerald-50 p-5 leading-relaxed text-slate-700">{{ $konsultasi->consultation_result }}</p>
+                    </section>
+                @endif
+
+                @if($isAssignedDesigner && $konsultasi->status === 'confirmed' && $konsultasi->pemesanan?->workflow_stage === 'konsultasi')
+                    <section class="rounded-xl border border-amber-200 bg-amber-50 p-5 lg:col-span-2" aria-labelledby="complete-consultation-title">
+                        <h2 id="complete-consultation-title" class="text-lg font-bold text-slate-900">Catat hasil konsultasi</h2>
+                        <p class="mt-1 text-sm leading-6 text-slate-600">Ringkas kebutuhan, keputusan, kendala, dan tindak lanjut yang disepakati. Setelah disimpan, proyek masuk ke tahap desain awal.</p>
+                        <form method="POST" action="{{ route('designer.konsultasi.complete', $konsultasi) }}" class="mt-4 space-y-3">
+                            @csrf
+                            <textarea name="consultation_result" rows="6" maxlength="5000" required class="w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500" placeholder="Contoh: kebutuhan ruang, ukuran terverifikasi, preferensi, batas anggaran, dan keputusan konsultasi.">{{ old('consultation_result') }}</textarea>
+                            <button class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">Simpan hasil & mulai desain awal</button>
+                        </form>
+                    </section>
+                @endif
             </div>
-        </div>
+
+            <footer class="flex flex-col gap-4 border-t border-slate-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                <a href="{{ $whatsappUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-sm font-semibold text-green-700 hover:text-green-800"><i class="fab fa-whatsapp text-base" aria-hidden="true"></i> Tanya melalui WhatsApp Daiku</a>
+                @if(in_array($konsultasi->status, ['completed', 'cancelled'], true))
+                    <a href="{{ route('konsultasi.create') }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Buat Pesanan Baru <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i></a>
+                @endif
+            </footer>
+        </section>
     </div>
-</div>
-
-<!-- Modal for Image Preview -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 hidden z-50 flex items-center justify-center" onclick="closeModal()">
-    <div class="max-w-4xl max-h-full p-4">
-        <img id="modalImage" src="" alt="Preview" class="max-w-full max-h-full object-contain">
-    </div>
-</div>
-
-<script>
-function openModal(imageSrc) {
-    document.getElementById('modalImage').src = imageSrc;
-    document.getElementById('imageModal').classList.remove('hidden');
-}
-
-function closeModal() {
-    document.getElementById('imageModal').classList.add('hidden');
-}
-</script>
+</main>
 @endsection
-

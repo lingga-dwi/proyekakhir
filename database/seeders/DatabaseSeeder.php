@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
+use App\Models\Katalog;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -11,14 +13,18 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        if (app()->environment(['local', 'testing'])) {
-            $this->call(UserSeeder::class);
+        // Deployment memakai database baru. Isi katalog hanya sekali saat masih
+        // kosong; seed berikutnya tidak boleh menimpa katalog yang dikelola admin.
+        if (Katalog::query()->exists()) {
+            return;
+        }
+
+        if (! Category::query()->exists()) {
+            $this->call(CategorySeeder::class);
         }
 
         $this->call([
-            CategorySeeder::class,
-            KatalogSeeder::class,
-            ProjectDummySeeder::class,
+            CuratedKatalogSeeder::class,
         ]);
     }
 }

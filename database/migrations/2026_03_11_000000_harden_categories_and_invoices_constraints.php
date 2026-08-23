@@ -23,7 +23,7 @@ return new class extends Migration
                 $duplicates->slice(1)->each(function ($category) use ($slug): void {
                     DB::table('categories')
                         ->where('id', $category->id)
-                        ->update(['slug' => $slug . '-' . $category->id]);
+                        ->update(['slug' => $slug.'-'.$category->id]);
                 });
             });
 

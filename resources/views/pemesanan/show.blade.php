@@ -1,10 +1,20 @@
 @extends('layouts.main')
 
 @section('title', 'Detail Pesanan - Daiku Interior')
+@section('page-title', 'Detail Pesanan')
+@section('page-description', 'Tinjau kebutuhan pelanggan, pembayaran, dan progres proyek')
 
 @section('content')
 <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        @if(session('success'))
+            <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ session('success') }}</div>
+        @endif
+        @if($errors->any())
+            <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                <ul class="list-disc space-y-1 pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div class="flex items-center justify-between">
@@ -13,35 +23,153 @@
                     <p class="text-gray-600">Dibuat pada {{ $pemesanan->created_at->format('d M Y H:i') }}</p>
                 </div>
                 <div class="text-right">
-                    @switch($pemesanan->status_pemesanan)
-                        @case('pending')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                                <i class="fas fa-clock mr-2"></i>Menunggu Konfirmasi
-                            </span>
-                            @break
-                        @case('dikonfirmasi')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                <i class="fas fa-check mr-2"></i>Dikonfirmasi
-                            </span>
-                            @break
-                        @case('sedang_dikerjakan')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
-                                <i class="fas fa-cog mr-2"></i>Sedang Dikerjakan
-                            </span>
-                            @break
-                        @case('selesai')
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                <i class="fas fa-check-circle mr-2"></i>Selesai
-                            </span>
-                            @break
-                        @default
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                                {{ ucfirst($pemesanan->status_pemesanan) }}
-                            </span>
-                    @endswitch
+                    @php
+                        $stageLabel = \App\Support\ProjectStageLabel::forPemesanan($pemesanan);
+                        $stageActor = \App\Support\ProjectStageLabel::actorFor($pemesanan);
+                        $stageBadgeClass = match(true) {
+                            $pemesanan->status_pemesanan === 'dibatalkan' => 'bg-red-100 text-red-800',
+                            $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
+                            $pemesanan->workflow_stage === 'approved' => 'bg-orange-100 text-orange-800',
+                            default => 'bg-amber-100 text-amber-800',
+                        };
+                    @endphp
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium {{ $stageBadgeClass }}">
+                        {{ $stageLabel }}
+                    </span>
                 </div>
             </div>
         </div>
+
+        @php
+            $draftDocuments = $pemesanan->documents
+                ->where('stage', 'draft')
+                ->where('submission_round', $pemesanan->draft_round);
+            $finalDocuments = $pemesanan->documents
+                ->where('stage', 'final')
+                ->where('submission_round', $pemesanan->final_round)
+                ->whereIn('document_type', ['design', 'rab']);
+            $surveyDocuments = $pemesanan->documents->where('document_type', 'survey');
+            $dpInvoice = $pemesanan->dpInvoice;
+        @endphp
+
+        <section class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">Tahap proses saat ini</p>
+            <h2 class="mt-1 text-lg font-semibold text-slate-950">{{ $stageLabel }}</h2>
+            @if($stageActor)<p class="mt-1 text-xs font-medium text-amber-700">Oleh: {{ $stageActor }}</p>@endif
+            @if($pemesanan->catatan_progres)<p class="mt-2 text-sm leading-6 text-slate-700">{{ $pemesanan->catatan_progres }}</p>@endif
+        </section>
+
+        @if((auth()->user()->isAdmin() || $pemesanan->designer_id === auth()->id()) && in_array($pemesanan->workflow_stage, ['draft_design', 'revision_requested', 'final_design'], true))
+            @php
+                $activeDocumentStage = $pemesanan->workflow_stage === 'final_design' ? 'final' : 'draft';
+                $activeDocuments = $activeDocumentStage === 'final' ? $finalDocuments : $draftDocuments;
+                $activeRound = $activeDocumentStage === 'final' ? $pemesanan->final_round : $pemesanan->draft_round;
+                $hasDesign = $activeDocuments->contains('document_type', 'design');
+                $hasRab = $activeDocuments->contains('document_type', 'rab');
+            @endphp
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Kirim dokumen {{ $activeDocumentStage === 'final' ? 'final' : 'awal' }} · Putaran {{ $activeRound }}</h2>
+                <p class="mt-1 text-sm text-slate-500">Desain dan RAB wajib tersedia pada putaran yang sama sebelum sistem mengirimkannya untuk ditinjau pelanggan.</p>
+                <div class="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                    <span class="rounded-full px-3 py-1 {{ $hasDesign ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ $hasDesign ? '✓' : '○' }} Desain</span>
+                    <span class="rounded-full px-3 py-1 {{ $hasRab ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500' }}">{{ $hasRab ? '✓' : '○' }} RAB</span>
+                </div>
+                <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.pemesanan.document.upload', $pemesanan) : route('designer.proyek.document.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 grid gap-3 sm:grid-cols-[180px_1fr_auto]">
+                    @csrf
+                    <select name="document_type" class="rounded-lg border-slate-300" required><option value="design">Desain</option><option value="rab">RAB</option></select>
+                    <input type="file" name="document" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="rounded-lg border border-slate-300 p-2 text-sm">
+                    <button class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Unggah dokumen</button>
+                </form>
+
+                @if(auth()->user()->isAdmin() && $activeDocumentStage === 'draft')
+                    <form method="POST" action="{{ route('admin.proyek.update', $pemesanan) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status_pemesanan" value="{{ $pemesanan->status_pemesanan }}">
+                        <input type="number" name="total_harga" min="0" step="1000" value="{{ $pemesanan->total_harga > 0 ? $pemesanan->total_harga : '' }}" placeholder="Nilai penawaran (Rp)" class="rounded-lg border-slate-300">
+                        <button class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Simpan nilai</button>
+                    </form>
+                @endif
+
+                <form method="POST" action="{{ auth()->user()->isAdmin() ? route('admin.pemesanan.document.send', $pemesanan) : route('designer.proyek.document.send', $pemesanan) }}" class="mt-3" @submit.prevent="window.dispatchEvent(new CustomEvent('open-confirmation', { detail: { title: 'Kirim dokumen ke pelanggan?', message: 'Dokumen {{ $activeDocumentStage === 'final' ? 'final' : 'awal' }} akan dikirim ke pelanggan untuk ditinjau. Pastikan berkas sudah benar sebelum melanjutkan.', confirmLabel: 'Ya, kirim', tone: 'primary', form: $event.target } }))">
+                    @csrf
+                    <button
+                        class="w-full rounded-lg bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                        @disabled(! $hasDesign || ! $hasRab)
+                    >Kirim ke Pelanggan</button>
+                    @if($activeDocumentStage === 'draft' && (float) $pemesanan->total_harga <= 0)
+                        <p class="mt-1.5 text-xs text-slate-500">Isi Nilai Penawaran sebelum pelanggan menyetujui desain ini, agar invoice DP 20% dapat dibuat.</p>
+                    @endif
+                </form>
+            </section>
+        @endif
+
+        @foreach(['draft' => ['Dokumen desain awal & RAB', $draftDocuments], 'final' => ['Dokumen desain & RAB final', $finalDocuments]] as $stage => [$title, $documents])
+            @if($documents->isNotEmpty())
+                <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="font-semibold text-slate-950">{{ $title }} · Putaran {{ $stage === 'draft' ? $pemesanan->draft_round : $pemesanan->final_round }}</h2>
+                    <div class="mt-4 space-y-2">
+                        @foreach($documents as $document)
+                            <a href="{{ route('pemesanan.document.download', [$pemesanan, $document]) }}" class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm transition hover:border-amber-300 hover:bg-amber-50">
+                                <span><i class="fas fa-file-arrow-down mr-2 text-amber-600" aria-hidden="true"></i>{{ $document->document_type === 'rab' ? 'RAB' : 'Desain' }} — {{ $document->original_name }}</span>
+                                <span class="text-xs text-slate-400">v{{ $document->version }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                    @if(auth()->id() === $pemesanan->id_user && (($stage === 'draft' && $pemesanan->workflow_stage === 'awaiting_draft_approval') || ($stage === 'final' && $pemesanan->workflow_stage === 'awaiting_final_approval')))
+                        <form method="POST" action="{{ route('pemesanan.document.decision', $pemesanan) }}" class="mt-5 grid gap-3 rounded-xl bg-slate-50 p-4" x-data="{ decision: null }" @submit="if (decision === 'approved') { $event.preventDefault(); window.dispatchEvent(new CustomEvent('open-confirmation', { detail: { title: '{{ $stage === 'draft' ? 'Setujui desain awal & lanjut ke DP?' : 'Setujui desain final?' }}', message: 'Setelah disetujui, keputusan ini tidak dapat dibatalkan dan proyek akan lanjut ke tahap berikutnya.', confirmLabel: 'Ya, setujui', tone: 'success', form: $event.target } })); }">
+                            @csrf
+                            <input type="hidden" name="stage" value="{{ $stage }}">
+                            <textarea name="feedback" rows="3" maxlength="2000" class="rounded-lg border-slate-300" placeholder="Catatan revisi (isi bila meminta revisi)"></textarea>
+                            <div class="flex flex-wrap gap-3">
+                                <button name="decision" value="approved" @click="decision = 'approved'" class="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">{{ $stage === 'draft' ? 'Setujui & lanjut ke DP' : 'Setujui desain final' }}</button>
+                                <button name="decision" value="revision_requested" @click="decision = 'revision_requested'" class="rounded-lg border border-amber-300 bg-white px-4 py-2.5 text-sm font-semibold text-amber-800 hover:bg-amber-50">Minta revisi</button>
+                            </div>
+                        </form>
+                    @endif
+                </section>
+            @endif
+        @endforeach
+
+        @if($dpInvoice)
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Invoice DP 20%</h2>
+                <p class="mt-1 text-sm text-slate-600">{{ $dpInvoice->number }} · Rp {{ number_format($dpInvoice->amount, 0, ',', '.') }} · {{ strtoupper($dpInvoice->status) }}</p>
+                @if($dpInvoice->due_date)<p class="mt-1 text-xs text-slate-500">Jatuh tempo: {{ $dpInvoice->due_date->format('d M Y') }}</p>@endif
+                @if(auth()->id() === $pemesanan->id_user && $pemesanan->workflow_stage === 'awaiting_dp')
+                    <form method="POST" action="{{ route('pemesanan.dp-evidence.upload', $pemesanan) }}" enctype="multipart/form-data" class="mt-4 flex flex-col gap-3 sm:flex-row">
+                        @csrf <input type="file" name="bukti_pembayaran" accept=".jpg,.jpeg,.png,.webp,.pdf" required class="min-w-0 flex-1 rounded-lg border border-slate-300 p-2 text-sm"><button class="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950">Kirim bukti DP</button>
+                    </form>
+                @endif
+            </section>
+        @endif
+
+        @if($pemesanan->survey_result)
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Hasil survei lokasi</h2>
+                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{{ $pemesanan->survey_result }}</p>
+                @foreach($surveyDocuments as $document)
+                    <a href="{{ route('pemesanan.document.download', [$pemesanan, $document]) }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-amber-700"><i class="fas fa-paperclip"></i>{{ $document->original_name }}</a>
+                @endforeach
+            </section>
+        @endif
+
+        @if($pemesanan->documentDecisions->isNotEmpty())
+            <section class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 class="font-semibold text-slate-950">Riwayat keputusan pelanggan</h2>
+                <div class="mt-3 divide-y divide-slate-100">
+                    @foreach($pemesanan->documentDecisions->sortByDesc('created_at') as $decision)
+                        <div class="py-3 text-sm">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <p class="font-semibold text-slate-800">{{ $decision->stage === 'draft' ? 'Desain awal' : 'Desain final' }} · Putaran {{ $decision->submission_round }}</p>
+                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $decision->decision === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800' }}">{{ $decision->decision === 'approved' ? 'Disetujui' : 'Revisi diminta' }}</span>
+                            </div>
+                            @if($decision->feedback)<p class="mt-1 text-slate-600">{{ $decision->feedback }}</p>@endif
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Content -->
@@ -72,14 +200,12 @@
                 <!-- Detail Proyek -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Detail Proyek</h2>
-                    @php
-                        $selectedKatalog = $pemesanan->katalog ?: ($pemesanan->rfq ? $pemesanan->rfq->katalog : null);
-                    @endphp
+                    @php($selectedKatalog = $pemesanan->katalog)
                     @if($selectedKatalog)
                     <div class="mb-4 p-4 bg-yellow-50 rounded-lg">
                         <h3 class="font-medium text-gray-800">Desain Terpilih</h3>
                         <p class="text-gray-600">{{ $selectedKatalog->nama_desain }}</p>
-                        <p class="text-sm text-gray-500">{{ $selectedKatalog->category ? $selectedKatalog->category->name : $selectedKatalog->kategori }}</p>
+                        <p class="text-sm text-gray-500">{{ $selectedKatalog->category?->name ?? 'Tanpa kategori' }}</p>
                     </div>
                     @endif
                     
@@ -137,7 +263,7 @@
                         <div class="border border-gray-200 rounded-lg p-4 text-center">
                             <i class="fas fa-file-image text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600">{{ basename($file) }}</p>
-                            <a href="{{ Storage::url($file) }}" target="_blank" class="text-blue-600 text-sm hover:text-blue-800">
+                            <a href="{{ route('pemesanan.attachment', [$pemesanan, $loop->index]) }}" target="_blank" rel="noopener" class="text-blue-600 text-sm hover:text-blue-800">
                                 Lihat File
                             </a>
                         </div>
@@ -153,43 +279,35 @@
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Progress Proyek</h2>
                     <div class="space-y-4">
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full {{ $pemesanan->status_pemesanan == 'pending' || $pemesanan->status_pemesanan == 'dikonfirmasi' || $pemesanan->status_pemesanan == 'sedang_dikerjakan' || $pemesanan->status_pemesanan == 'selesai' ? 'bg-green-500' : 'bg-gray-300' }} flex items-center justify-center mr-3">
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-3 shrink-0">
                                 <i class="fas fa-check text-white text-sm"></i>
                             </div>
                             <div>
                                 <p class="font-medium text-gray-800">Pesanan Diterima</p>
-                                <p class="text-sm text-gray-500">{{ $pemesanan->created_at->format('d M Y H:i') }}</p>
+                                <p class="text-sm text-gray-500">{{ $pemesanan->created_at->translatedFormat('d M Y, H:i') }} WIB</p>
                             </div>
                         </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full {{ $pemesanan->status_pemesanan == 'dikonfirmasi' || $pemesanan->status_pemesanan == 'sedang_dikerjakan' || $pemesanan->status_pemesanan == 'selesai' ? 'bg-green-500' : 'bg-gray-300' }} flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-white text-sm"></i>
+
+                        @foreach($pemesanan->statusTrackings as $tracking)
+                            <div class="flex items-start">
+                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-3 shrink-0">
+                                    <i class="fas fa-check text-white text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800">{{ $tracking->catatan ?: 'Status diperbarui' }}</p>
+                                    <p class="text-sm text-gray-500">{{ $tracking->created_at->translatedFormat('d M Y, H:i') }} WIB</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Konsultasi Selesai</p>
-                                <p class="text-sm text-gray-500">{{ $pemesanan->status_pemesanan == 'dikonfirmasi' || $pemesanan->status_pemesanan == 'sedang_dikerjakan' || $pemesanan->status_pemesanan == 'selesai' ? $pemesanan->updated_at->format('d M Y H:i') : 'Belum selesai' }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full {{ $pemesanan->status_pemesanan == 'sedang_dikerjakan' || $pemesanan->status_pemesanan == 'selesai' ? 'bg-green-500' : 'bg-gray-300' }} flex items-center justify-center mr-3">
-                                <i class="fas fa-check text-white text-sm"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-800">Pengerjaan Dimulai</p>
-                                <p class="text-sm text-gray-500">{{ $pemesanan->status_pemesanan == 'sedang_dikerjakan' || $pemesanan->status_pemesanan == 'selesai' ? 'Sedang dikerjakan' : 'Menunggu konfirmasi' }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <div class="w-8 h-8 rounded-full {{ $pemesanan->status_pemesanan == 'selesai' ? 'bg-green-500' : 'bg-gray-300' }} flex items-center justify-center mr-3">
+                        @endforeach
+
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 rounded-full {{ $pemesanan->status_pemesanan === 'selesai' ? 'bg-green-500' : 'bg-gray-300' }} flex items-center justify-center mr-3 shrink-0">
                                 <i class="fas fa-check text-white text-sm"></i>
                             </div>
                             <div>
                                 <p class="font-medium text-gray-800">Proyek Selesai</p>
-                                <p class="text-sm text-gray-500">{{ $pemesanan->status_pemesanan == 'selesai' ? $pemesanan->updated_at->format('d M Y H:i') : 'Belum selesai' }}</p>
+                                <p class="text-sm text-gray-500">{{ $pemesanan->status_pemesanan === 'selesai' ? $pemesanan->updated_at->translatedFormat('d M Y, H:i').' WIB' : 'Belum selesai' }}</p>
                             </div>
                         </div>
                     </div>
@@ -200,35 +318,33 @@
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Hubungi Kami</h2>
                     <div class="space-y-3">
                         <div class="flex items-center">
-                            <i class="fas fa-phone text-yellow-500 w-5"></i>
-                            <span class="ml-3 text-gray-700">+62 761-123456</span>
-                        </div>
-                        <div class="flex items-center">
-                            <i class="fas fa-envelope text-yellow-500 w-5"></i>
-                            <span class="ml-3 text-gray-700">info@daikuinterior.com</span>
-                        </div>
-                        <div class="flex items-center">
                             <i class="fas fa-map-marker-alt text-yellow-500 w-5"></i>
                             <span class="ml-3 text-gray-700">Pekanbaru, Riau</span>
                         </div>
+                        <a href="{{ route('konsultasi.index') }}" class="flex items-center text-gray-700 hover:text-yellow-700">
+                            <i class="fas fa-comments text-yellow-500 w-5"></i>
+                            <span class="ml-3">Buka layanan konsultasi</span>
+                        </a>
                     </div>
-                    
-                    <button class="w-full mt-4 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition duration-200">
-                        <i class="fas fa-comments mr-2"></i>Chat dengan Designer
-                    </button>
                 </div>
 
                 @if(auth()->user()->isAdmin())
                 <!-- Admin Actions -->
                 <div class="bg-white rounded-lg shadow-sm p-6">
                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Admin Actions</h2>
-                    <form action="{{ route('admin.pemesanan.updateStatus', $pemesanan->id) }}" method="POST">
+                    <form action="{{ route('admin.pemesanan.updateStatus', $pemesanan->id) }}" method="POST" x-data="{ status: '{{ $pemesanan->status_pemesanan }}' }" @submit.prevent="
+                        if (status === 'dibatalkan' && status !== '{{ $pemesanan->status_pemesanan }}') {
+                            window.dispatchEvent(new CustomEvent('open-confirmation', { detail: { title: 'Batalkan pesanan ini?', message: 'Pesanan DI-{{ $pemesanan->id }} akan ditandai dibatalkan dan pelanggan akan diberi tahu. Tindakan ini tidak dapat dibatalkan.', confirmLabel: 'Ya, batalkan', tone: 'danger', form: $event.target } }));
+                        } else {
+                            $event.target.submit();
+                        }
+                    ">
                         @csrf
                         @method('PUT')
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-600 mb-2">Update Status</label>
-                                <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
+                                <select name="status" x-model="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500">
                                     <option value="pending" {{ $pemesanan->status_pemesanan == 'pending' ? 'selected' : '' }}>Pending</option>
                                     <option value="dikonfirmasi" {{ $pemesanan->status_pemesanan == 'dikonfirmasi' ? 'selected' : '' }}>Dikonfirmasi</option>
                                     <option value="sedang_dikerjakan" {{ $pemesanan->status_pemesanan == 'sedang_dikerjakan' ? 'selected' : '' }}>Sedang Dikerjakan</option>

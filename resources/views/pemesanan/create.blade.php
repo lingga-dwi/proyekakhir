@@ -28,7 +28,7 @@
                             @endif
                             <div>
                                 <p class="font-medium text-gray-800">{{ $katalog->nama_desain }}</p>
-                                <p class="text-sm text-gray-600">{{ $katalog->category->name ?? $katalog->kategori }}</p>
+                                <p class="text-sm text-gray-600">{{ $katalog->category?->name ?? 'Tanpa kategori' }}</p>
                                 <p class="text-blue-600 font-semibold">{{ $katalog->getFormattedHargaAttribute() }}</p>
                             </div>
                         </div>
@@ -51,16 +51,10 @@
                                 Nama Lengkap <span class="text-red-500">*</span>
                             </label>
                             <input type="text" 
-                                   name="nama" 
-                                   value="{{ old('nama', auth()->user()->nama ?? '') }}"
-                                   placeholder="Masukkan nama lengkap" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('nama') border-red-500 @enderror"
-                                   readonly
-                                   required>
+                                   value="{{ auth()->user()->nama }}"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                                   readonly>
                             <p class="text-xs text-gray-500 mt-1">Mengikuti data akun yang sedang login.</p>
-                            @error('nama')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                         
                         <div>
@@ -71,10 +65,10 @@
                                    name="no_hp" 
                                    value="{{ old('no_hp', auth()->user()->no_telp ?? '') }}"
                                    placeholder="08xxxxxxxxxx" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('no_hp') border-red-500 @enderror"
-                                   readonly
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 {{ filled(auth()->user()->no_telp) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('no_hp') border-red-500 @enderror"
+                                   @readonly(filled(auth()->user()->no_telp))
                                    required>
-                            <p class="text-xs text-gray-500 mt-1">Nomor telepon transaksi mengikuti profil akun.</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ filled(auth()->user()->no_telp) ? 'Nomor telepon mengikuti profil akun.' : 'Isi sekali untuk melengkapi kontak proyek.' }}</p>
                             @error('no_hp')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -87,10 +81,10 @@
                             <textarea name="alamat" 
                                       rows="3"
                                       placeholder="Masukkan alamat lengkap proyek"
-                                      class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('alamat') border-red-500 @enderror"
-                                      readonly
+                                      class="w-full px-4 py-3 rounded-lg border border-gray-300 {{ filled(auth()->user()->alamat) ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-900' }} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('alamat') border-red-500 @enderror"
+                                      @readonly(filled(auth()->user()->alamat))
                                       required>{{ old('alamat', auth()->user()->alamat ?? '') }}</textarea>
-                            <p class="text-xs text-gray-500 mt-1">Alamat mengikuti data akun agar histori proyek tetap konsisten.</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ filled(auth()->user()->alamat) ? 'Alamat mengikuti data akun agar histori proyek konsisten.' : 'Isi alamat lokasi proyek untuk melengkapi profil.' }}</p>
                             @error('alamat')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -101,16 +95,10 @@
                                 Email <span class="text-red-500">*</span>
                             </label>
                             <input type="email" 
-                                   name="email" 
-                                   value="{{ old('email', auth()->user()->email ?? '') }}"
-                                   placeholder="nama@email.com" 
-                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200 @error('email') border-red-500 @enderror"
-                                   readonly
-                                   required>
+                                   value="{{ auth()->user()->email }}"
+                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-100 text-gray-700"
+                                   readonly>
                             <p class="text-xs text-gray-500 mt-1">Email login tidak diubah saat membuat pesanan.</p>
-                            @error('email')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                     </div>
                 </div>

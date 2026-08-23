@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
@@ -17,7 +16,6 @@ class CategorySeeder extends Seeder
             'name' => 'Rumah Tinggal',
             'slug' => 'rumah-tinggal',
             'description' => 'Desain interior untuk rumah tinggal dan hunian pribadi',
-            'icon' => 'fas fa-home',
             'sort_order' => 1,
             'is_active' => true,
         ]);
@@ -26,7 +24,6 @@ class CategorySeeder extends Seeder
             'name' => 'Apartemen & Kondominium',
             'slug' => 'apartemen-kondominium',
             'description' => 'Desain interior untuk apartemen dan kondominium modern',
-            'icon' => 'fas fa-building',
             'sort_order' => 2,
             'is_active' => true,
         ]);
@@ -35,7 +32,6 @@ class CategorySeeder extends Seeder
             'name' => 'Ruang Komersial',
             'slug' => 'ruang-komersial',
             'description' => 'Desain interior untuk kantor, toko, dan ruang bisnis',
-            'icon' => 'fas fa-briefcase',
             'sort_order' => 3,
             'is_active' => true,
         ]);
@@ -44,7 +40,6 @@ class CategorySeeder extends Seeder
             'name' => 'Outdoor & Taman',
             'slug' => 'outdoor-taman',
             'description' => 'Desain landscape dan ruang luar',
-            'icon' => 'fas fa-tree',
             'sort_order' => 4,
             'is_active' => true,
         ]);
@@ -54,7 +49,6 @@ class CategorySeeder extends Seeder
             'name' => 'Ruang Keluarga',
             'slug' => 'ruang-keluarga',
             'description' => 'Desain ruang keluarga yang nyaman untuk berkumpul',
-            'icon' => 'fas fa-couch',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 1,
         ]);
@@ -63,16 +57,14 @@ class CategorySeeder extends Seeder
             'name' => 'Ruang Tamu',
             'slug' => 'ruang-tamu',
             'description' => 'Desain ruang tamu yang elegant untuk menerima tamu',
-            'icon' => 'fas fa-users',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 2,
         ]);
 
         \App\Models\Category::create([
-            'name' => 'Kamar Tidur Utama',
-            'slug' => 'kamar-tidur-utama',
-            'description' => 'Desain kamar tidur utama yang mewah dan nyaman',
-            'icon' => 'fas fa-bed',
+            'name' => 'Kamar Tidur',
+            'slug' => 'kamar-tidur',
+            'description' => 'Desain kamar tidur yang nyaman dan sesuai kebutuhan penghuni',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 3,
         ]);
@@ -81,7 +73,6 @@ class CategorySeeder extends Seeder
             'name' => 'Kamar Tidur Anak',
             'slug' => 'kamar-tidur-anak',
             'description' => 'Desain kamar tidur anak yang fun dan edukatif',
-            'icon' => 'fas fa-child',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 4,
         ]);
@@ -90,7 +81,6 @@ class CategorySeeder extends Seeder
             'name' => 'Dapur',
             'slug' => 'dapur',
             'description' => 'Desain dapur modern dan fungsional',
-            'icon' => 'fas fa-utensils',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 5,
         ]);
@@ -99,7 +89,6 @@ class CategorySeeder extends Seeder
             'name' => 'Ruang Makan',
             'slug' => 'ruang-makan',
             'description' => 'Desain ruang makan untuk keluarga',
-            'icon' => 'fas fa-wine-glass',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 6,
         ]);
@@ -108,7 +97,6 @@ class CategorySeeder extends Seeder
             'name' => 'Kamar Mandi',
             'slug' => 'kamar-mandi',
             'description' => 'Desain kamar mandi modern dan higienis',
-            'icon' => 'fas fa-bath',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 7,
         ]);
@@ -117,7 +105,6 @@ class CategorySeeder extends Seeder
             'name' => 'Ruang Kerja',
             'slug' => 'ruang-kerja',
             'description' => 'Desain home office dan ruang kerja produktif',
-            'icon' => 'fas fa-desktop',
             'parent_id' => $rumahTinggal->id,
             'sort_order' => 8,
         ]);
@@ -127,7 +114,6 @@ class CategorySeeder extends Seeder
             'name' => 'Studio Apartment',
             'slug' => 'studio-apartment',
             'description' => 'Desain studio apartment yang kompak dan efisien',
-            'icon' => 'fas fa-cube',
             'parent_id' => $apartemen->id,
             'sort_order' => 1,
         ]);
@@ -136,7 +122,6 @@ class CategorySeeder extends Seeder
             'name' => '1 Bedroom',
             'slug' => '1-bedroom',
             'description' => 'Desain apartemen 1 kamar tidur',
-            'icon' => 'fas fa-bed',
             'parent_id' => $apartemen->id,
             'sort_order' => 2,
         ]);
@@ -145,7 +130,6 @@ class CategorySeeder extends Seeder
             'name' => '2 Bedroom',
             'slug' => '2-bedroom',
             'description' => 'Desain apartemen 2 kamar tidur',
-            'icon' => 'fas fa-bed',
             'parent_id' => $apartemen->id,
             'sort_order' => 3,
         ]);
@@ -154,7 +138,6 @@ class CategorySeeder extends Seeder
             'name' => 'Penthouse',
             'slug' => 'penthouse',
             'description' => 'Desain penthouse mewah',
-            'icon' => 'fas fa-crown',
             'parent_id' => $apartemen->id,
             'sort_order' => 4,
         ]);
@@ -163,7 +146,6 @@ class CategorySeeder extends Seeder
             'name' => 'Balkon & Teras',
             'slug' => 'balkon-teras',
             'description' => 'Desain balkon dan teras apartemen',
-            'icon' => 'fas fa-leaf',
             'parent_id' => $apartemen->id,
             'sort_order' => 5,
         ]);
@@ -173,7 +155,6 @@ class CategorySeeder extends Seeder
             'name' => 'Kantor Modern',
             'slug' => 'kantor-modern',
             'description' => 'Desain kantor modern dan produktif',
-            'icon' => 'fas fa-building',
             'parent_id' => $komersial->id,
             'sort_order' => 1,
         ]);
@@ -182,7 +163,6 @@ class CategorySeeder extends Seeder
             'name' => 'Retail & Toko',
             'slug' => 'retail-toko',
             'description' => 'Desain toko dan ruang retail',
-            'icon' => 'fas fa-store',
             'parent_id' => $komersial->id,
             'sort_order' => 2,
         ]);
@@ -191,7 +171,6 @@ class CategorySeeder extends Seeder
             'name' => 'Restoran & Kafe',
             'slug' => 'restoran-kafe',
             'description' => 'Desain restoran dan kafe',
-            'icon' => 'fas fa-coffee',
             'parent_id' => $komersial->id,
             'sort_order' => 3,
         ]);
@@ -200,7 +179,6 @@ class CategorySeeder extends Seeder
             'name' => 'Hotel & Hospitality',
             'slug' => 'hotel-hospitality',
             'description' => 'Desain hotel dan industri hospitality',
-            'icon' => 'fas fa-hotel',
             'parent_id' => $komersial->id,
             'sort_order' => 4,
         ]);
@@ -210,7 +188,6 @@ class CategorySeeder extends Seeder
             'name' => 'Taman Rumah',
             'slug' => 'taman-rumah',
             'description' => 'Desain taman dan landscape rumah',
-            'icon' => 'fas fa-seedling',
             'parent_id' => $outdoor->id,
             'sort_order' => 1,
         ]);
@@ -219,7 +196,6 @@ class CategorySeeder extends Seeder
             'name' => 'Kolam Renang',
             'slug' => 'kolam-renang',
             'description' => 'Desain area kolam renang',
-            'icon' => 'fas fa-swimming-pool',
             'parent_id' => $outdoor->id,
             'sort_order' => 2,
         ]);
@@ -228,7 +204,6 @@ class CategorySeeder extends Seeder
             'name' => 'Gazebo & Pergola',
             'slug' => 'gazebo-pergola',
             'description' => 'Desain gazebo dan pergola outdoor',
-            'icon' => 'fas fa-umbrella',
             'parent_id' => $outdoor->id,
             'sort_order' => 3,
         ]);

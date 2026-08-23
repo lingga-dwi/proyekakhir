@@ -1,402 +1,162 @@
 @extends('layouts.main')
 
 @section('title', $katalog->nama_desain . ' - Daiku Interior')
+@section('meta_description', Str::limit(strip_tags($katalog->deskripsi), 155))
+@section('meta_image', $katalog->gambar_utama_url ?? asset('images/logo/image.png'))
 
 @section('content')
-<div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Breadcrumb -->
-        <nav class="mb-8">
-            <ol class="flex items-center space-x-2 text-sm text-gray-500">
-                <li><a href="{{ route('home') }}" class="hover:text-yellow-600">Beranda</a></li>
-                <li><i class="fas fa-chevron-right"></i></li>
-                <li><a href="{{ route('katalog') }}" class="hover:text-yellow-600">Katalog</a></li>
-                <li><i class="fas fa-chevron-right"></i></li>
-                <li class="text-gray-800">{{ $katalog->nama_desain }}</li>
+<div class="min-h-screen bg-stone-50 py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <nav class="mb-8" aria-label="Breadcrumb">
+            <ol class="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                <li><a href="{{ route('home') }}" class="hover:text-amber-700">Beranda</a></li>
+                <li><i class="fas fa-chevron-right text-xs" aria-hidden="true"></i></li>
+                <li><a href="{{ route('katalog') }}" class="hover:text-amber-700">Katalog</a></li>
+                <li><i class="fas fa-chevron-right text-xs" aria-hidden="true"></i></li>
+                <li class="font-medium text-gray-800" aria-current="page">{{ $katalog->nama_desain }}</li>
             </ol>
         </nav>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <!-- Image Gallery -->
-            <div class="space-y-4">
-                <!-- Main Image with Product Spots -->
-                <div class="relative aspect-w-16 aspect-h-10 bg-gray-200 rounded-lg overflow-hidden">
+        <div class="grid gap-12 lg:grid-cols-[1.2fr_0.8fr]">
+            <section aria-label="Galeri desain">
+                <div class="overflow-hidden rounded-2xl bg-gray-100 ring-1 ring-gray-200">
                     @if($katalog->gambar_utama_url)
-                        <img src="{{ $katalog->gambar_utama_url }}" 
-                             alt="{{ $katalog->nama_desain }}" 
-                             class="w-full h-96 object-cover">
+                        <img id="catalog-main-image"
+                             src="{{ $katalog->gambar_utama_url }}"
+                             alt="{{ $katalog->nama_desain }}"
+                             class="h-[520px] w-full object-cover"
+                             fetchpriority="high"
+                             decoding="async">
                     @else
-                        <div class="w-full h-96 bg-gray-200 flex items-center justify-center">
-                            <i class="fas fa-image text-gray-400 text-6xl"></i>
+                        <div class="flex h-[520px] items-center justify-center text-gray-400">
+                            <i class="fas fa-image text-5xl" aria-hidden="true"></i>
                         </div>
                     @endif
-                    
-                    <!-- Product Spots -->
-                    @if($katalog->product_spots && count($katalog->product_spots) > 0)
-                        @foreach($katalog->product_spots as $index => $spot)
-                            <div class="absolute cursor-pointer product-spot" 
-                                 style="left: {{ $spot['x'] }}%; top: {{ $spot['y'] }}%;"
-                                 data-product="{{ $spot['product'] }}"
-                                 data-price="{{ $spot['price'] }}"
-                                 data-index="{{ $index }}">
-                                <!-- Spot Indicator -->
-                                <div class="w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-transform duration-200">
-                                    <div class="w-4 h-4 bg-blue-500 rounded-full pulse-animation"></div>
-                                </div>
-                                
-                                <!-- Product Tooltip -->
-                                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 hover:opacity-100 transition-opacity duration-200 z-10 product-tooltip">
-                                    <div class="bg-white rounded-lg shadow-xl p-4 w-64 border">
-                                        <h4 class="font-semibold text-gray-800 text-sm mb-1">{{ $spot['product'] }}</h4>
-                                        <p class="text-blue-600 font-bold text-lg">{{ $spot['price'] }}</p>
-                                        <div class="mt-2">
-                                            <button class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-                                                Lihat Detail
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <!-- Arrow -->
-                                    <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-l-8 border-r-8 border-t-8 border-transparent border-t-white"></div>
-                                </div>
-                            </div>
-                        @endforeach
-                    @endif
-                </div>
-                
-                <!-- Gallery Thumbnails -->
-                @if($katalog->galeri_gambar_urls && count($katalog->galeri_gambar_urls) > 0)
-                <div class="grid grid-cols-4 gap-4">
-                    @foreach($katalog->galeri_gambar_urls as $image)
-                    <div class="aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden cursor-pointer hover:opacity-75">
-                        <img src="{{ $image }}" 
-                             alt="{{ $katalog->nama_desain }}" 
-                             class="w-full h-20 object-cover">
-                    </div>
-                    @endforeach
-                </div>
-                @endif
-            </div>
-
-            <!-- Product Info -->
-            <div class="space-y-6">
-                <!-- Category Badge -->
-                <div>
-                    <span class="inline-block bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
-                        {{ $katalog->category ? $katalog->category->name : $katalog->kategori }}
-                    </span>
                 </div>
 
-                <!-- Title & Description -->
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-4">{{ $katalog->nama_desain }}</h1>
-                    <p class="text-gray-600 leading-relaxed">{{ $katalog->deskripsi }}</p>
-                </div>
-
-                <!-- Price -->
-                <div class="border-t border-b border-gray-200 py-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-600">Estimasi Harga</p>
-                            <p class="text-3xl font-bold text-yellow-600">{{ $katalog->getFormattedHargaAttribute() }}</p>
-                            <p class="text-sm text-gray-500">*Harga dapat berubah sesuai spesifikasi</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Features -->
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Yang Anda Dapatkan:</h3>
-                    <ul class="space-y-2">
-                        <li class="flex items-center text-gray-600">
-                            <i class="fas fa-check text-green-500 mr-3"></i>
-                            Konsultasi gratis dengan designer
-                        </li>
-                        <li class="flex items-center text-gray-600">
-                            <i class="fas fa-check text-green-500 mr-3"></i>
-                            Desain 3D visualization
-                        </li>
-                        <li class="flex items-center text-gray-600">
-                            <i class="fas fa-check text-green-500 mr-3"></i>
-                            Material recommendation
-                        </li>
-                        <li class="flex items-center text-gray-600">
-                            <i class="fas fa-check text-green-500 mr-3"></i>
-                            Project management
-                        </li>
-                        <li class="flex items-center text-gray-600">
-                            <i class="fas fa-check text-green-500 mr-3"></i>
-                            Garansi hasil kerja
-                        </li>
-                    </ul>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="space-y-4">
-                    @auth
-                        <a href="{{ route('pemesanan.create', ['katalog_id' => $katalog->id]) }}" 
-                           class="w-full bg-yellow-500 text-white py-4 rounded-lg text-center font-semibold hover:bg-yellow-600 transition duration-200 block">
-                            <i class="fas fa-comments mr-2"></i>Mulai Konsultasi
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" 
-                           class="w-full bg-yellow-500 text-white py-4 rounded-lg text-center font-semibold hover:bg-yellow-600 transition duration-200 block">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Login untuk Konsultasi
-                        </a>
-                    @endauth
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
-                            <i class="fas fa-heart mr-2"></i>Simpan
-                        </button>
-                        <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-200">
-                            <i class="fas fa-share mr-2"></i>Bagikan
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Contact Info -->
-                <div class="bg-gray-100 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Butuh Bantuan?</h3>
-                    <div class="space-y-2">
-                        <div class="flex items-center text-gray-600">
-                            <i class="fas fa-phone text-yellow-500 w-5 mr-3"></i>
-                            <span>+62 761-123456</span>
-                        </div>
-                        <div class="flex items-center text-gray-600">
-                            <i class="fas fa-envelope text-yellow-500 w-5 mr-3"></i>
-                            <span>info@daikuinterior.com</span>
-                        </div>
-                        <div class="flex items-center text-gray-600">
-                            <i class="fas fa-map-marker-alt text-yellow-500 w-5 mr-3"></i>
-                            <span>Pekanbaru, Riau</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Product List Section -->
-        @if($katalog->product_spots && count($katalog->product_spots) > 0)
-        <div class="mt-16 bg-white rounded-xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">Produk dalam Desain Ini</h2>
-            <p class="text-gray-600 mb-8">Klik pada titik di gambar untuk melihat detail produk atau lihat semua produk di bawah</p>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                @foreach($katalog->product_spots as $index => $spot)
-                    <div class="border rounded-lg p-4 hover:shadow-md transition duration-300 product-item" data-index="{{ $index }}">
-                        <div class="flex items-start space-x-4">
-                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span class="text-blue-600 font-bold">{{ $index + 1 }}</span>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="font-semibold text-gray-800 mb-1">{{ $spot['product'] }}</h3>
-                                <p class="text-blue-600 font-bold text-lg mb-2">{{ $spot['price'] }}</p>
-                                <button class="text-sm bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition duration-200">
-                                    <i class="fas fa-shopping-cart mr-2"></i>Tambah ke Keranjang
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-            
-            <div class="mt-8 text-center">
-                <button class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300">
-                    <i class="fas fa-list mr-2"></i>Lihat Semua Produk dalam Set
-                </button>
-            </div>
-        </div>
-        @endif
-
-        <!-- Room Details -->
-        @if($katalog->style_tags || $katalog->room_size || $katalog->inspiration_story)
-        <div class="mt-16 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Detail Ruangan</h2>
-            
-            <div class="grid md:grid-cols-3 gap-8">
-                @if($katalog->style_tags)
-                <div>
-                    <h3 class="font-semibold text-gray-700 mb-3">Style Tags</h3>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach(explode(', ', $katalog->style_tags) as $tag)
-                            <span class="bg-white px-3 py-1 rounded-full text-sm text-gray-700 border">{{ $tag }}</span>
+                @if($katalog->galeri_gambar_urls)
+                    <div class="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
+                        @foreach($katalog->galeri_gambar_urls as $index => $image)
+                            <button type="button"
+                                    class="overflow-hidden rounded-xl bg-gray-100 ring-1 ring-gray-200 transition hover:ring-2 hover:ring-amber-400"
+                                    onclick="changeCatalogImage(@js($image), @js($katalog->nama_desain . ' - galeri ' . ($index + 1)))"
+                                    aria-label="Tampilkan gambar galeri {{ $index + 1 }}">
+                                <img src="{{ $image }}"
+                                     alt="{{ $katalog->nama_desain }} - galeri {{ $index + 1 }}"
+                                     class="h-24 w-full object-cover"
+                                     loading="lazy"
+                                     decoding="async"
+                                     width="320"
+                                     height="240">
+                            </button>
                         @endforeach
                     </div>
-                </div>
                 @endif
-                
-                @if($katalog->room_size)
-                <div>
-                    <h3 class="font-semibold text-gray-700 mb-3">Ukuran Ruangan</h3>
-                    <p class="text-2xl font-bold text-blue-600">{{ $katalog->room_size }} m²</p>
-                </div>
-                @endif
-                
-                @if($katalog->inspiration_story)
-                <div>
-                    <h3 class="font-semibold text-gray-700 mb-3">Inspirasi</h3>
-                    <p class="text-gray-600 leading-relaxed">{{ $katalog->inspiration_story }}</p>
-                </div>
-                @endif
-            </div>
-        </div>
-        @endif
+            </section>
 
-        <!-- Related Designs -->
-        @if($relatedKatalogs->count() > 0)
-        <div class="mt-16">
-            <h2 class="text-2xl font-bold text-gray-800 mb-8">Desain Serupa</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                @foreach($relatedKatalogs as $related)
-                <div class="bg-white rounded-lg shadow-sm overflow-hidden group hover:shadow-lg transition duration-300">
-                    <div class="aspect-w-16 aspect-h-9 bg-gray-200">
-                        @if($related->gambar_utama_url)
-                            <img src="{{ $related->gambar_utama_url }}" 
-                                 alt="{{ $related->nama_desain }}" 
-                                 class="w-full h-48 object-cover group-hover:scale-105 transition duration-300">
-                        @else
-                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-                                <i class="fas fa-image text-gray-400 text-3xl"></i>
+            <article class="flex h-full flex-col self-start rounded-2xl bg-white p-7 shadow-sm ring-1 ring-gray-200 lg:sticky lg:top-24">
+                <p class="text-sm font-bold uppercase tracking-[0.16em] text-amber-700">
+                    {{ $katalog->category?->name ?? 'Tanpa kategori' }}
+                </p>
+                <h1 class="mt-3 text-3xl font-bold text-slate-900">{{ $katalog->nama_desain }}</h1>
+                <p class="mt-5 leading-relaxed text-gray-600">{{ $katalog->deskripsi }}</p>
+
+                @if($katalog->style_tags || $katalog->room_size || $katalog->inspiration_story)
+                    <div class="mt-7 space-y-5 border-t border-gray-200 pt-6">
+                        @if($katalog->style_tags)
+                            <div>
+                                <h2 class="text-sm font-semibold text-gray-500">Gaya</h2>
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    @foreach(array_filter(array_map('trim', explode(',', $katalog->style_tags))) as $tag)
+                                        <span class="rounded-full bg-stone-100 px-3 py-1 text-sm text-gray-700">{{ $tag }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
+                        @if($katalog->room_size)
+                            <div>
+                                <h2 class="text-sm font-semibold text-gray-500">Referensi ukuran</h2>
+                                <p class="mt-1 font-semibold text-slate-900">{{ $katalog->room_size }} m&sup2;</p>
+                            </div>
+                        @endif
+
+                        @if($katalog->inspiration_story)
+                            <div>
+                                <h2 class="text-sm font-semibold text-gray-500">Inspirasi desain</h2>
+                                <p class="mt-2 leading-relaxed text-gray-600">{{ $katalog->inspiration_story }}</p>
                             </div>
                         @endif
                     </div>
-                    <div class="p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ $related->nama_desain }}</h3>
-                        <p class="text-gray-600 text-sm mb-4">{{ Str::limit($related->deskripsi, 100) }}</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-lg font-bold text-yellow-600">{{ $related->getFormattedHargaAttribute() }}</span>
-                            <a href="{{ route('katalog.detail', $related->id) }}" 
-                               class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
-                                Lihat Detail
-                            </a>
-                        </div>
-                    </div>
+                @endif
+
+                @php
+                    $canConsultCatalog = ! auth()->check() || auth()->user()->isPelanggan();
+                @endphp
+                <div class="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 lg:mt-auto">
+                    <h2 class="font-bold text-slate-900">Gunakan sebagai referensi awal</h2>
+                    <p class="mt-2 text-sm leading-relaxed text-gray-600">Setiap ruang memiliki ukuran dan kebutuhan berbeda. Detail pekerjaan dibahas setelah informasi proyek ditinjau.</p>
+                    @if($canConsultCatalog)
+                        <a href="{{ route('konsultasi.create', ['katalog_id' => $katalog->id]) }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300">
+                            Konsultasikan Desain Ini
+                        </a>
+                    @else
+                        <button
+                            type="button"
+                            class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-amber-400 px-5 py-3.5 font-semibold text-slate-950 transition hover:bg-amber-300"
+                            onclick="window.dispatchEvent(new CustomEvent('open-notice', { detail: { title: 'Tidak dapat diakses', message: 'Konsultasi desain hanya dapat diajukan oleh akun pelanggan. Anda login sebagai {{ auth()->user()->isAdmin() ? 'admin' : 'desainer' }}.' } }))"
+                        >
+                            Konsultasikan Desain Ini
+                        </button>
+                    @endif
                 </div>
-                @endforeach
-            </div>
+            </article>
         </div>
+
+        @if($relatedKatalogs->isNotEmpty())
+            <section class="mt-20" aria-labelledby="related-designs">
+                <div class="mb-8 flex items-end justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-bold uppercase tracking-[0.16em] text-amber-700">Inspirasi lainnya</p>
+                        <h2 id="related-designs" class="mt-2 text-3xl font-bold text-slate-900">Desain Serupa</h2>
+                    </div>
+                    <a href="{{ route('katalog') }}" class="font-semibold text-amber-700 hover:text-amber-800">Semua desain</a>
+                </div>
+                <div class="grid gap-7 md:grid-cols-3">
+                    @foreach($relatedKatalogs as $related)
+                        <a href="{{ route('katalog.detail', $related->id) }}" class="group overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200 transition hover:-translate-y-1 hover:shadow-xl">
+                            @if($related->gambar_utama_url)
+                                <img src="{{ $related->gambar_utama_url }}"
+                                     alt="{{ $related->nama_desain }}"
+                                     class="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
+                                     loading="lazy"
+                                     decoding="async"
+                                     width="640"
+                                     height="448">
+                            @endif
+                            <div class="p-5">
+                                <p class="text-xs font-bold uppercase tracking-wider text-amber-700">{{ $related->category?->name ?? 'Tanpa kategori' }}</p>
+                                <h3 class="mt-2 text-lg font-bold text-slate-900">{{ $related->nama_desain }}</h3>
+                                <p class="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-600">{{ $related->deskripsi }}</p>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
         @endif
     </div>
 </div>
-
-<style>
-/* Product Spot Animations */
-.pulse-animation {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(1.1);
-        opacity: 0.7;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.product-spot:hover .product-tooltip {
-    opacity: 1 !important;
-}
-
-.product-spot:hover .pulse-animation {
-    animation-play-state: paused;
-    transform: scale(1.1);
-}
-
-/* Smooth tooltip transitions */
-.product-tooltip {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    pointer-events: none;
-}
-
-.product-spot:hover .product-tooltip {
-    pointer-events: auto;
-}
-
-/* Highlight effect for product items */
-.product-item.highlighted {
-    border-color: #3B82F6;
-    background-color: #EFF6FF;
-    transform: scale(1.02);
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Product spot interactions
-    const productSpots = document.querySelectorAll('.product-spot');
-    const productItems = document.querySelectorAll('.product-item');
-    
-    // Hover effects for product spots
-    productSpots.forEach(spot => {
-        spot.addEventListener('mouseenter', function() {
-            const index = this.getAttribute('data-index');
-            highlightProductItem(index);
-        });
-        
-        spot.addEventListener('mouseleave', function() {
-            removeHighlights();
-        });
-        
-        // Click to show detailed info
-        spot.addEventListener('click', function() {
-            const product = this.getAttribute('data-product');
-            const price = this.getAttribute('data-price');
-            showProductModal(product, price);
-        });
-    });
-    
-    // Hover effects for product items
-    productItems.forEach(item => {
-        item.addEventListener('mouseenter', function() {
-            const index = this.getAttribute('data-index');
-            highlightProductSpot(index);
-        });
-        
-        item.addEventListener('mouseleave', function() {
-            removeSpotHighlights();
-        });
-    });
-    
-    function highlightProductItem(index) {
-        const item = document.querySelector(`.product-item[data-index="${index}"]`);
-        if (item) {
-            item.classList.add('highlighted');
-            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-    
-    function removeHighlights() {
-        productItems.forEach(item => {
-            item.classList.remove('highlighted');
-        });
-    }
-    
-    function highlightProductSpot(index) {
-        const spot = document.querySelector(`.product-spot[data-index="${index}"]`);
-        if (spot) {
-            spot.style.transform = 'scale(1.2)';
-            spot.style.zIndex = '1000';
-        }
-    }
-    
-    function removeSpotHighlights() {
-        productSpots.forEach(spot => {
-            spot.style.transform = '';
-            spot.style.zIndex = '';
-        });
-    }
-    
-    function showProductModal(product, price) {
-        // Simple alert for now - can be enhanced with proper modal
-        alert(`${product}\n\nHarga: ${price}\n\nFitur ini dapat dikembangkan lebih lanjut untuk menampilkan detail produk lengkap.`);
-    }
-});
-</script>
 @endsection
+
+@push('scripts')
+<script>
+function changeCatalogImage(source, alt) {
+    const image = document.getElementById('catalog-main-image');
+    if (!image) return;
+
+    image.src = source;
+    image.alt = alt;
+    image.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+</script>
+@endpush

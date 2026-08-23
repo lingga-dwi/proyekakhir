@@ -3,51 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    @include('partials.favicon')
     <title>@yield('title', 'Daiku Interior')</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- Custom Styles -->
-    <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .yellow-gradient {
-            background: linear-gradient(135deg, #f7b733 0%, #fc4a1a 100%);
-        }
-        .daiku-yellow {
-            background-color: #fbbf24;
-        }
-        .daiku-yellow-hover:hover {
-            background-color: #f59e0b;
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex">
-    <!-- Left Side - Image -->
-    <div class="hidden lg:flex lg:w-1/2 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');">
-        <div class="flex items-center justify-center w-full bg-black bg-opacity-40">
-            <div class="text-center text-white">
-                <img src="{{ asset('images/logo/image.png') }}" alt="Daiku Interior" class="h-8 mx-auto mb-6">
-                <h1 class="text-4xl font-bold mb-4">Wujudkan Interior Impian Anda</h1>
-                <p class="text-xl">Bersama Daiku Interior Pekanbaru</p>
+<body class="min-h-screen bg-[#f4f2ed] text-slate-950 antialiased">
+    <main class="flex min-h-screen items-center justify-center p-3 sm:p-6 lg:p-10">
+        <section class="grid w-full max-w-[1280px] overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-[0_28px_80px_rgba(15,23,42,0.12)] lg:min-h-[760px] lg:grid-cols-[1.08fr_0.92fr]">
+            <div class="relative min-h-52 overflow-hidden bg-slate-100 sm:min-h-72 lg:m-5 lg:min-h-0 lg:rounded-[22px]">
+                <img
+                    src="{{ asset('images/hero/daiku-home-hero.jpg') }}"
+                    alt="Interior kamar bergaya modern karya Daiku Interior"
+                    class="absolute inset-0 h-full w-full object-cover object-center"
+                    fetchpriority="high"
+                >
             </div>
-        </div>
-    </div>
-    
-    <!-- Right Side - Form -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div class="max-w-md w-full">
-            @yield('content')
-        </div>
-    </div>
-    
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+            <div class="flex items-center px-6 py-9 sm:px-12 sm:py-12 lg:px-16 xl:px-20">
+                <div class="mx-auto w-full max-w-[470px]">
+                    @yield('content')
+                </div>
+            </div>
+        </section>
+    </main>
+
     @stack('scripts')
 </body>
 </html>

@@ -6,6 +6,55 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    --z-index-45: 45;
+    --z-index-70: 70;
+    --z-index-80: 80;
+    --z-index-100: 100;
+    --z-index-110: 110;
+    --z-index-120: 120;
+    --z-index-200: 200;
+}
+
+@layer base {
+    [x-cloak] {
+        display: none !important;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-gray-50 text-gray-900 antialiased;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-amber-500;
+    }
+
+    /* Tailwind's Preflight zeroes out margins, which breaks the browser's
+       default auto-margin centering for <dialog> opened via showModal(). */
+    dialog[open] {
+        margin: auto;
+    }
+}
+
+@layer components {
+    .daiku-yellow {
+        background-color: #fbbf24;
+    }
+
+    .daiku-yellow-hover:hover {
+        background-color: #f59e0b;
+    }
+
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .yellow-gradient {
+        background: linear-gradient(135deg, #f7b733 0%, #fc4a1a 100%);
+    }
 }

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'daiku' => [
+        'whatsapp_number' => env('DAIKU_WHATSAPP_NUMBER', '6282186888824'),
+        'email_notifications' => env('DAIKU_EMAIL_NOTIFICATIONS', false),
+        'admin_notification_email' => env('DAIKU_ADMIN_NOTIFICATION_EMAIL'),
+    ],
+
 ];
