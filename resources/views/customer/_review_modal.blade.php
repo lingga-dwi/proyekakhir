@@ -75,13 +75,15 @@
                 <button type="button" id="reviewModalCancelRevisionBtn" onclick="hideRevisionPanel()" class="hidden rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100">Batal</button>
                 <button type="button" id="reviewModalSubmitRevisionBtn" onclick="submitReviewDecision('revision_requested')" class="hidden rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">Kirim Permintaan Revisi</button>
                 <button type="button" id="reviewModalApproveBtn" onclick="confirmApproveReviewDecision()" class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
-                    <i class="fas fa-check" aria-hidden="true"></i> Setujui
+                    <i class="fas fa-check" aria-hidden="true"></i> Setujui &amp; Kirim
                 </button>
             </div>
         </div>
 
         <div id="reviewModalStatusFooter" class="mt-4 hidden items-center justify-end gap-3 border-t border-slate-100 pt-4">
-            <button type="button" onclick="closeReviewModal()" class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Tutup</button>
+            <button type="button" onclick="acknowledgeReviewStatus()" class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
+                <i class="fas fa-paper-plane" aria-hidden="true"></i> Kirim
+            </button>
         </div>
     </div>
 </div>

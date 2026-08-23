@@ -441,6 +441,11 @@ function closeReviewModal() {
     if (reviewModalNeedsRefresh) window.location.reload();
 }
 
+function acknowledgeReviewStatus() {
+    showReviewToast('Terkirim.');
+    closeReviewModal();
+}
+
 function openHistoryModal(button) {
     const data = JSON.parse(button.dataset.history);
     document.getElementById('historyModalReference').textContent = `#${data.reference}`;
