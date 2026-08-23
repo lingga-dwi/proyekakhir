@@ -65,6 +65,7 @@
                         $statusClass = match(true) {
                             $project->status_pemesanan === 'dibatalkan' => 'bg-red-50 text-red-700',
                             $project->status_pemesanan === 'selesai' => 'bg-emerald-50 text-emerald-700',
+                            $project->workflow_stage === 'approved' && str_contains($statusLabel, 'Pembayaran') => 'bg-amber-50 text-amber-700',
                             $project->workflow_stage === 'approved' => 'bg-purple-50 text-purple-700',
                             in_array($project->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true) => 'bg-orange-50 text-orange-700',
                             default => 'bg-blue-50 text-blue-700',

@@ -85,6 +85,7 @@
                 @forelse($workItems as $item)
                     @php
                         $isConsultation = $item->item_type === 'consultation';
+                        $statusProject = ! $isConsultation ? ($projectDocumentsById[$item->id] ?? null) : null;
                         $reference = ($isConsultation ? 'KS-' : 'DI-').str_pad((string) $item->id, 3, '0', STR_PAD_LEFT);
                         $title = $isConsultation ? match($item->title) {
                             'free_consultation' => 'Desain Interior Baru',
@@ -139,7 +140,7 @@
                                 default => null,
                             };
                         } else {
-                            $tempPemesanan = new \App\Models\Pemesanan([
+                            $tempPemesanan = $statusProject ?? new \App\Models\Pemesanan([
                                 'status_pemesanan' => $item->status,
                                 'workflow_stage' => $item->workflow_stage,
                             ]);
@@ -149,6 +150,7 @@
                             $statusClass = match(true) {
                                 $item->status === 'dibatalkan' => 'bg-red-100 text-red-800',
                                 $item->status === 'selesai' => 'bg-green-100 text-green-800',
+                                $item->workflow_stage === 'approved' && str_contains($statusLabel, 'Pembayaran') => 'bg-amber-100 text-amber-800',
                                 $item->workflow_stage === 'approved' => 'bg-purple-100 text-purple-800',
                                 $item->workflow_stage === 'konsultasi' => 'bg-violet-100 text-violet-700',
                                 $item->workflow_stage === 'awaiting_admin_validation' => 'bg-orange-100 text-orange-800',
@@ -351,7 +353,7 @@
                                 </div>
                             @else
                                 @php
-                                    $project = $projectDocumentsById[$item->id] ?? null;
+                                    $project = $statusProject;
                                     $docStage = null;
                                     $docRound = null;
                                     if ($project) {

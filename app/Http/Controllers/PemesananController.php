@@ -43,7 +43,7 @@ class PemesananController extends Controller
 
     public function show(Request $request, $id)
     {
-        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'documentDecisions.customer', 'dpInvoice', 'statusTrackings' => fn ($query) => $query->oldest()])->findOrFail($id);
+        $pemesanan = Pemesanan::with(['user', 'katalog', 'documents.uploader', 'documentDecisions.customer', 'dpInvoice', 'invoices', 'statusTrackings' => fn ($query) => $query->oldest()])->findOrFail($id);
         $this->authorizeOrderAccess($request, $pemesanan);
 
         return view('pemesanan.show', compact('pemesanan'));

@@ -100,7 +100,7 @@ class DashboardController extends Controller
                     ])
             )
             ->concat(
-                Pemesanan::with('user')
+                Pemesanan::with(['user', 'invoices'])
                     ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
                     ->latest('updated_at')
                     ->take(6)
@@ -167,7 +167,7 @@ class DashboardController extends Controller
                 ]),
             ]);
 
-        $latestOrderStatuses = (clone $assignedProjects)->with('user')
+        $latestOrderStatuses = (clone $assignedProjects)->with(['user', 'invoices'])
             ->whereNotIn('status_pemesanan', ['selesai', 'dibatalkan'])
             ->latest('updated_at')
             ->take(6)
@@ -192,7 +192,7 @@ class DashboardController extends Controller
         $allowedStatuses = Pemesanan::STATUSES;
 
         $projects = Pemesanan::with([
-            'user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer',
+            'user', 'katalog', 'konsultasi', 'documents', 'documentDecisions.customer', 'invoices',
             'statusTrackings' => fn ($query) => $query->orderByDesc('created_at'),
         ])
             ->where('designer_id', $designer->id)

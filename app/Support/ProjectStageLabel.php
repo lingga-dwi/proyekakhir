@@ -37,6 +37,11 @@ class ProjectStageLabel
         }
 
         if ($pemesanan->workflow_stage === 'approved') {
+            $unpaidInvoice = self::latestUnpaidInvoice($pemesanan);
+            if ($unpaidInvoice) {
+                return $unpaidInvoice->status === 'submitted' ? 'Menunggu Verifikasi Pembayaran' : 'Menunggu Pembayaran';
+            }
+
             return 'Pengerjaan Proyek';
         }
 
@@ -66,12 +71,41 @@ class ProjectStageLabel
             return null;
         }
 
+        if ($pemesanan->workflow_stage === 'approved') {
+            $unpaidInvoice = self::latestUnpaidInvoice($pemesanan);
+            if ($unpaidInvoice) {
+                return $unpaidInvoice->status === 'submitted' ? 'Admin' : 'Pelanggan';
+            }
+
+            return 'Tim Lapangan';
+        }
+
         return match ($pemesanan->workflow_stage) {
             'konsultasi', 'draft_design', 'revision_requested', 'survey_scheduled', 'final_design' => 'Desainer',
             'awaiting_admin_validation', 'dp_verification', 'awaiting_admin_validation_final' => 'Admin',
             'awaiting_draft_approval', 'awaiting_dp', 'awaiting_final_approval' => 'Pelanggan',
-            'approved' => 'Tim Lapangan',
             default => null,
         };
+    }
+
+    /**
+     * The most recently created invoice awaiting payment for an in-progress
+     * (approved-stage) project — used to surface additional/final billing
+     * that comes up after the design phase is already done.
+     *
+     * Reads only the already-loaded `invoices` relation (never lazy-loads)
+     * so this stays safe to call from contexts without a DB connection,
+     * such as plain PHPUnit\Framework\TestCase unit tests.
+     */
+    private static function latestUnpaidInvoice(Pemesanan $pemesanan)
+    {
+        if (! $pemesanan->relationLoaded('invoices')) {
+            return null;
+        }
+
+        return $pemesanan->invoices
+            ->where('status', '!=', 'paid')
+            ->sortByDesc('created_at')
+            ->first();
     }
 }

@@ -62,10 +62,11 @@ class CustomerActivityController extends Controller
                         default => 'pending',
                     },
                     'progress' => (int) $pemesanan->progress,
-                    'stage_label' => \App\Support\ProjectStageLabel::forPemesanan($pemesanan),
+                    'stage_label' => $stageLabel = \App\Support\ProjectStageLabel::forPemesanan($pemesanan),
                     'stage_class' => match (true) {
                         $pemesanan->status_pemesanan === 'dibatalkan' => 'bg-red-100 text-red-800',
                         $pemesanan->status_pemesanan === 'selesai' => 'bg-green-100 text-green-800',
+                        $pemesanan->workflow_stage === 'approved' && str_contains($stageLabel, 'Pembayaran') => 'bg-amber-100 text-amber-800',
                         $pemesanan->workflow_stage === 'approved' => 'bg-purple-100 text-purple-800',
                         $pemesanan->workflow_stage === 'konsultasi' => 'bg-violet-100 text-violet-700',
                         in_array($pemesanan->workflow_stage, ['awaiting_admin_validation', 'awaiting_admin_validation_final'], true) => 'bg-orange-100 text-orange-800',
